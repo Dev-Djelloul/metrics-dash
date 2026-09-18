@@ -49,6 +49,9 @@
   .toolbar-row { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin: var(--sp-5) 0 var(--sp-6); }
   .stripe-mark { width: 36px; height: 36px; object-fit: contain; flex-shrink: 0; }
   #status.status-pill { padding: 8px 16px; gap: 10px; }
+  .status-action { color: inherit; font-weight: 700; text-decoration: underline; margin-left: 4px; }
+  .status-action-primary { text-decoration: none; background: var(--accent); color: #fff; padding: 4px 12px; border-radius: var(--radius-pill); }
+  .status-action-primary:hover { background: var(--accent-hover); }
 
   .demo-btn { display: inline-flex; align-items: center; gap: var(--sp-2); font-family: var(--font-sans); font-size: var(--fs-small); font-weight: var(--fw-small); color: var(--text-secondary); background: var(--surface-2); border: var(--border-w) solid var(--border-strong); border-radius: var(--radius-pill); padding: 7px 14px 7px 8px; cursor: pointer; transition: var(--transition); }
   .demo-btn:hover { border-color: var(--accent); color: var(--text-primary); }
@@ -572,10 +575,13 @@ async function loadStatus() {
   const el = document.getElementById('status');
   const stripeIcon = '<img class="stripe-mark" src="icons8-stripe-100.png" alt="" aria-hidden="true">';
   if (data.connected) {
-    el.innerHTML = `${stripeIcon}<span class="status-dot"></span>Connecté à Stripe (compte ${data.account})`;
+    el.innerHTML = `${stripeIcon}<span class="status-dot"></span>Connecté à Stripe (${data.account})<a class="status-action" href="/auth/logout">Se déconnecter</a>`;
     el.className = 'status-pill';
+  } else if (data.connect_configured) {
+    el.innerHTML = `${stripeIcon}<a class="status-action status-action-primary" href="/auth/login">Se connecter avec Stripe</a>`;
+    el.className = 'status-pill error';
   } else {
-    el.innerHTML = `${stripeIcon}<span class="status-dot"></span>Non connecté — ${data.reason}`;
+    el.innerHTML = `${stripeIcon}<span class="status-dot"></span>Non connecté — utilise le mode démo`;
     el.className = 'status-pill error';
   }
   return data.connected;

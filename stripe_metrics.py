@@ -9,14 +9,20 @@ from datetime import datetime, timezone
 import stripe
 
 
-def fetch_recent_charges(limit_pages: int = 5):
-    """Pulls up to `limit_pages` pages (100 each) of succeeded charges."""
+def fetch_recent_charges(api_key: str, limit_pages: int = 5):
+    """Pulls up to `limit_pages` pages (100 each) of succeeded charges.
+
+    `api_key` is passed explicitly (rather than relying on the module-level
+    `stripe.api_key`) because this now runs per logged-in user: mutating a
+    shared global would race between concurrent requests from different
+    users."""
     charges = []
     starting_after = None
     for _ in range(limit_pages):
         page = stripe.Charge.list(
             limit=100,
             starting_after=starting_after,
+            api_key=api_key,
         )
         charges.extend(page.data)
         if not page.has_more:
