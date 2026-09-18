@@ -318,6 +318,7 @@ def export_cohorts_csv(demo: bool = False, start: str = None, end: str = None, u
             "month_offset": r["month_offset"],
             "active": r["active"],
             "pct": r["pct"],
+            "revenue": r["revenue"],
         }
         for cohort in analytics.cohort_retention(records)
         for r in cohort["retention"]

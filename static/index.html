@@ -39,6 +39,7 @@
   .brand-mark { width: 40px; height: 40px; color: var(--accent); flex-shrink: 0; }
   .brand-name { font-family: 'Sansation', sans-serif; font-size: 28px; font-weight: 700; font-style: normal; letter-spacing: -0.01em; color: var(--text-primary); }
   .brand-accent { color: var(--accent); }
+  .brand-blue { color: var(--chart-line-2); }
 
   .header-actions { display: flex; align-items: center; gap: var(--sp-5); flex-wrap: wrap; }
   .theme-toggle { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-small); color: var(--text-secondary); }
@@ -172,7 +173,7 @@
           </linearGradient>
         </defs>
       </svg>
-      <span class="brand-name">metrics<span class="brand-accent">-</span>dash</span>
+      <span class="brand-name"><span class="brand-blue">metrics</span><span class="brand-accent">-</span>dash</span>
     </div>
     <div class="header-actions">
       <button class="powerbi-link" id="powerBiLink" type="button">
@@ -344,6 +345,23 @@
         <span class="line">C'est l'outil de référence pour mesurer la <span class="term term-retention">fidélisation</span> dans le temps.</span>
       </p>
       <div id="cohortTable" class="scroll" style="overflow-x:auto;"></div>
+    </div>
+
+    <div class="card chart-box">
+      <h3>Rétention moyenne toutes cohortes confondues</h3>
+      <p class="explainer">
+        <span class="line">Moyenne du % de rétention à chaque mois écoulé, sur toutes les cohortes — une seule courbe pour voir la tendance générale sans lire tout le tableau.</span>
+      </p>
+      <div class="canvas-wrap"><canvas id="cohortAvgChart"></canvas></div>
+    </div>
+
+    <div class="card chart-box">
+      <h3>CA généré par cohorte</h3>
+      <p class="explainer">
+        <span class="line">Même lecture que le tableau de rétention, mais en <span class="term term-cohort">chiffre d'affaires</span> plutôt qu'en % de clients actifs.</span>
+        <span class="line">Deux cohortes avec la même rétention en % peuvent valoir très différemment si l'une regroupe des clients qui dépensent plus.</span>
+      </p>
+      <div id="cohortRevenueTable" class="scroll" style="overflow-x:auto;"></div>
     </div>
   </div>
 
@@ -1002,9 +1020,14 @@ async function loadRfm() {
   });
 }
 
-function heatBucket(pct) {
-  // 0-8 : mappe le % de rétention sur les 9 nuances --heat-0..8 du design system
-  return Math.min(8, Math.max(0, Math.round((pct / 100) * 8)));
+function heatBucket(value, max = 100) {
+  // 0-8 : mappe une valeur (0..max) sur les 9 nuances --heat-0..8 du design system
+  return Math.min(8, Math.max(0, Math.round((value / max) * 8)));
+}
+
+function heatCell(bucket, label) {
+  const textColor = bucket >= 6 ? '#14161D' : '#F2F3F5';
+  return `<td><div class="heat-cell" style="background:var(--heat-${bucket}); color:${textColor}">${label}</div></td>`;
 }
 
 async function loadCohorts() {
@@ -1013,6 +1036,8 @@ async function loadCohorts() {
   const cohorts = await res.json();
 
   const maxOffset = Math.max(0, ...cohorts.flatMap(c => c.retention.map(r => r.month_offset)));
+
+  // --- Tableau de rétention (%) ---
   let html = '<table class="data"><thead><tr><th>Cohorte</th><th class="num">Taille</th>';
   for (let i = 0; i <= maxOffset; i++) html += `<th class="num">M+${i}</th>`;
   html += '</tr></thead><tbody>';
@@ -1022,18 +1047,71 @@ async function loadCohorts() {
     const byOffset = Object.fromEntries(c.retention.map(r => [r.month_offset, r]));
     for (let i = 0; i <= maxOffset; i++) {
       const cell = byOffset[i];
-      if (cell) {
-        const bucket = heatBucket(cell.pct);
-        const textColor = bucket >= 6 ? '#14161D' : '#F2F3F5';
-        html += `<td><div class="heat-cell" style="background:var(--heat-${bucket}); color:${textColor}">${cell.pct}%</div></td>`;
-      } else {
-        html += '<td></td>';
-      }
+      html += cell ? heatCell(heatBucket(cell.pct), `${cell.pct}%`) : '<td></td>';
     }
     html += '</tr>';
   }
   html += '</tbody></table>';
   document.getElementById('cohortTable').innerHTML = html;
+
+  // --- Tableau CA par cohorte ---
+  const maxRevenue = Math.max(1, ...cohorts.flatMap(c => c.retention.map(r => r.revenue)));
+  let revHtml = '<table class="data"><thead><tr><th>Cohorte</th><th class="num">Taille</th>';
+  for (let i = 0; i <= maxOffset; i++) revHtml += `<th class="num">M+${i}</th>`;
+  revHtml += '</tr></thead><tbody>';
+
+  for (const c of cohorts) {
+    revHtml += `<tr><td>${c.cohort_month}</td><td class="num">${c.cohort_size}</td>`;
+    const byOffset = Object.fromEntries(c.retention.map(r => [r.month_offset, r]));
+    for (let i = 0; i <= maxOffset; i++) {
+      const cell = byOffset[i];
+      revHtml += cell ? heatCell(heatBucket(cell.revenue, maxRevenue), fmtMoney(cell.revenue)) : '<td></td>';
+    }
+    revHtml += '</tr>';
+  }
+  revHtml += '</tbody></table>';
+  document.getElementById('cohortRevenueTable').innerHTML = revHtml;
+
+  // --- Courbe de rétention moyenne (pondérée par la taille des cohortes,
+  // pas une simple moyenne de %, pour ne pas laisser une petite cohorte
+  // peser autant qu'une grande) ---
+  const activeByOffset = new Array(maxOffset + 1).fill(0);
+  const sizeByOffset = new Array(maxOffset + 1).fill(0);
+  for (const c of cohorts) {
+    for (const r of c.retention) {
+      activeByOffset[r.month_offset] += r.active;
+      sizeByOffset[r.month_offset] += c.cohort_size;
+    }
+  }
+  const avgLabels = [];
+  const avgData = [];
+  for (let i = 0; i <= maxOffset; i++) {
+    avgLabels.push(`M+${i}`);
+    avgData.push(sizeByOffset[i] ? Math.round((activeByOffset[i] / sizeByOffset[i]) * 1000) / 10 : null);
+  }
+
+  destroyChart('cohortAvg');
+  charts.cohortAvg = new Chart(document.getElementById('cohortAvgChart'), {
+    type: 'line',
+    data: {
+      labels: avgLabels,
+      datasets: [{
+        label: 'Rétention moyenne', data: avgData,
+        borderColor: cssVar('--chart-line-1'), backgroundColor: cssVar('--accent-soft'), fill: true, tension: 0.3,
+      }]
+    },
+    options: {
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (ctx) => ctx.parsed.y === null ? '' : `Rétention moyenne: ${ctx.parsed.y}%` } },
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: cssVar('--text-secondary') } },
+        y: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary'), callback: (v) => `${v}%` }, min: 0, max: 100 },
+      },
+    }
+  });
 }
 
 function countTooltip(ctx) {

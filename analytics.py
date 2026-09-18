@@ -172,11 +172,13 @@ def rfm_segments(records, as_of: datetime = None):
 def cohort_retention(records):
     first_purchase = {}
     purchases_by_customer_month = defaultdict(set)
+    revenue_by_customer_month = defaultdict(float)
 
     for r in records:
         month = _month_key(r["created"])
         cust = r["customer"]
         purchases_by_customer_month[cust].add(month)
+        revenue_by_customer_month[(cust, month)] += r["amount"]
         if cust not in first_purchase or month < first_purchase[cust]:
             first_purchase[cust] = month
 
@@ -205,7 +207,10 @@ def cohort_retention(records):
                 1 for cust in cohort_customers if m in purchases_by_customer_month[cust]
             )
             pct = round(active / cohort_size * 100, 1) if cohort_size else 0
-            row["retention"].append({"month_offset": offset, "active": active, "pct": pct})
+            revenue = sum(revenue_by_customer_month.get((cust, m), 0) for cust in cohort_customers)
+            row["retention"].append(
+                {"month_offset": offset, "active": active, "pct": pct, "revenue": round(revenue, 2)}
+            )
 
         table.append(row)
 
