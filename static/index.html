@@ -66,6 +66,26 @@
   .demo-btn[data-on="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-text); }
   .demo-btn .demo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-tertiary); transition: var(--transition); }
   .demo-btn[data-on="true"] .demo-dot { background: var(--accent); }
+  /* Couleur du secteur d'activité : reprend les mêmes 4 teintes que la
+     popup de sélection (cycle c1-c4), pour qu'on reconnaisse le secteur
+     d'un coup d'œil partout où il apparaît (badge, repères sectoriels). */
+  #sectorBadge.sector-c1 { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-text); }
+  #sectorBadge.sector-c1 .demo-dot { background: var(--accent); }
+  #sectorBadge.sector-c2 { background: var(--pos-soft); border-color: var(--pos); color: var(--pos-text); }
+  #sectorBadge.sector-c2 .demo-dot { background: var(--pos); }
+  #sectorBadge.sector-c3 { background: var(--warn-soft); border-color: var(--warn); color: var(--warn-text); }
+  #sectorBadge.sector-c3 .demo-dot { background: var(--warn); }
+  #sectorBadge.sector-c4 { background: var(--seg-new-soft); border-color: var(--seg-new); color: var(--seg-new); }
+  #sectorBadge.sector-c4 .demo-dot { background: var(--seg-new); }
+  .sector-label-c1 { color: var(--accent-text); }
+  .sector-label-c2 { color: var(--pos-text); }
+  .sector-label-c3 { color: var(--warn-text); }
+  .sector-label-c4 { color: var(--seg-new); }
+  .sector-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+  .sector-dot-c1 { background: var(--accent); }
+  .sector-dot-c2 { background: var(--pos); }
+  .sector-dot-c3 { background: var(--warn); }
+  .sector-dot-c4 { background: var(--seg-new); }
 
   .date-range { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-small); color: var(--text-secondary); }
   .date-range input[type="date"] { font-family: var(--font-sans); font-size: var(--fs-small); color: var(--text-primary); background: var(--surface-2); border: var(--border-w) solid var(--border-strong); border-radius: var(--radius-sm); padding: 6px 10px; color-scheme: dark; }
@@ -599,7 +619,7 @@ async function renderSectorList(currentSector) {
           body: JSON.stringify({ sector }),
         });
       }
-      updateSectorBadge(sector);
+      await updateSectorBadge(sector);
       closeSectorModal();
       await loadAll();
     });
@@ -608,9 +628,38 @@ async function renderSectorList(currentSector) {
 
 let currentSector = null;
 
-function updateSectorBadge(sector) {
+// Même cycle de 4 couleurs que la popup de sélection (renderSectorList),
+// pour que le secteur soit reconnaissable à sa couleur partout où il est
+// mentionné (badge, repères sectoriels dans les KPI).
+const SECTOR_COLOR_CLASSES = ['c1', 'c2', 'c3', 'c4'];
+
+function sectorColorClass(sector) {
+  if (!sector || !sectorsCache) return null;
+  const idx = sectorsCache.indexOf(sector);
+  return idx >= 0 ? SECTOR_COLOR_CLASSES[idx % 4] : null;
+}
+
+function sectorLabelSpan(sector, text) {
+  const cls = sectorColorClass(sector);
+  return cls ? `<span class="sector-label-${cls}">${text}</span>` : text;
+}
+
+function sectorDot(sector) {
+  const cls = sectorColorClass(sector);
+  return cls ? `<span class="sector-dot sector-dot-${cls}"></span>` : '';
+}
+
+async function updateSectorBadge(sector) {
   currentSector = sector || null;
   document.getElementById('sectorBadgeLabel').textContent = sector || 'Secteur non renseigné';
+
+  const badge = document.getElementById('sectorBadge');
+  badge.classList.remove('sector-c1', 'sector-c2', 'sector-c3', 'sector-c4');
+  if (sector) {
+    await getSectors(); // s'assure que sectorsCache est rempli pour résoudre la couleur
+    const cls = sectorColorClass(sector);
+    if (cls) badge.classList.add('sector-' + cls);
+  }
 }
 
 let benchmarksCache = {};
@@ -753,7 +802,7 @@ async function loadStatus() {
     el.innerHTML = `${stripeIcon}<span class="status-dot"></span>Non connecté — utilise le mode démo`;
     el.className = 'status-pill error';
   }
-  updateSectorBadge(isDemo() ? localStorage.getItem(DEMO_SECTOR_KEY) : data.sector);
+  await updateSectorBadge(isDemo() ? localStorage.getItem(DEMO_SECTOR_KEY) : data.sector);
   return data.connected;
 }
 
@@ -852,7 +901,7 @@ async function loadConcentration() {
     if (benchmark && c.segments[0]) {
       const observedPct = Math.round((c.segments[0].amount / (c.segments[0].amount + c.segments[1].amount)) * 100);
       noteEl.style.display = 'block';
-      noteEl.textContent = `Repère secteur : le top ${c.top_share_pct}% des clients y pèse en général ${benchmark.top_share_pct}% du CA (toi : ${observedPct}%).`;
+      noteEl.innerHTML = `${sectorDot(currentSector)}Repère secteur : le top ${c.top_share_pct}% des clients y pèse en général ${benchmark.top_share_pct}% du CA (toi : ${observedPct}%).`;
     } else {
       noteEl.style.display = 'none';
     }
@@ -1047,11 +1096,11 @@ async function loadLoyaltyCards() {
 
   const delaySub = (benchmark && loyalty.avg_days_between_purchases !== null)
     ? { cls: loyalty.avg_days_between_purchases <= benchmark.avg_days_between_purchases ? 'pos' : 'neg',
-        text: `Secteur : ${benchmark.avg_days_between_purchases} j` }
+        text: `${sectorDot(currentSector)}Secteur : ${benchmark.avg_days_between_purchases} j` }
     : null;
   const repeatSub = benchmark
     ? { cls: loyalty.repeat_customer_pct >= benchmark.repeat_customer_pct ? 'pos' : 'neg',
-        text: `Secteur : ${benchmark.repeat_customer_pct}%` }
+        text: `${sectorDot(currentSector)}Secteur : ${benchmark.repeat_customer_pct}%` }
     : null;
 
   document.getElementById('loyaltyCards').innerHTML =
