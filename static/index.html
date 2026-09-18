@@ -5,6 +5,7 @@
 <title>metrics-dash</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-geo@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2"></script>
 <link rel="stylesheet" href="design-system.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -78,6 +79,10 @@
      énorme sur un écran large. maintainAspectRatio:false (côté JS) fait que
      chaque chart remplit exactement ce conteneur, quelle que soit sa largeur. */
   .canvas-wrap { position: relative; width: 100%; height: 260px; }
+
+  .map-zoom-controls { position: absolute; top: var(--sp-2); right: var(--sp-2); display: flex; flex-direction: column; gap: 4px; z-index: 2; }
+  .map-zoom-controls button { width: 28px; height: 28px; border-radius: var(--radius-sm); border: var(--border-w) solid var(--border-strong); background: var(--surface-2); color: var(--text-primary); font-size: 16px; font-weight: 700; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: var(--transition); }
+  .map-zoom-controls button:hover { background: var(--surface-3); border-color: var(--accent); }
   .explainer { font-size: var(--fs-small); color: var(--text-secondary); margin: 0 0 var(--sp-4) 0; line-height: var(--fs-small-lh); }
   .explainer .line { display: block; }
   .explainer .line + .line { margin-top: 4px; }
@@ -192,10 +197,15 @@
         <h3>CA par pays</h3>
         <p class="explainer">
           <span class="line">Carte colorée selon le CA généré par pays de facturation.</span>
-          <span class="line">Plus la couleur est intense, plus ce pays représente une part importante du chiffre d'affaires.</span>
+          <span class="line">Plus la couleur est intense, plus ce pays représente une part importante du chiffre d'affaires. Molette ou pincement pour zoomer, glisser pour te déplacer.</span>
         </p>
         <div id="geoMapWrap" class="canvas-wrap">
           <canvas id="geoChart"></canvas>
+          <div class="map-zoom-controls">
+            <button type="button" id="geoZoomIn" aria-label="Zoomer">+</button>
+            <button type="button" id="geoZoomOut" aria-label="Dézoomer">−</button>
+            <button type="button" id="geoZoomReset" aria-label="Réinitialiser le zoom">↺</button>
+          </div>
         </div>
       </div>
       <div class="card chart-box">
@@ -438,6 +448,12 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && !powerBiModal.hidden) closePowerBiModal();
 });
 
+// Boutons de zoom de la carte géographique : brochés une seule fois,
+// référencent charts.geo dynamiquement (recréé à chaque loadGeo()).
+document.getElementById('geoZoomIn').addEventListener('click', () => charts.geo && charts.geo.zoom(1.2));
+document.getElementById('geoZoomOut').addEventListener('click', () => charts.geo && charts.geo.zoom(0.8));
+document.getElementById('geoZoomReset').addEventListener('click', () => charts.geo && charts.geo.resetZoom());
+
 function isDemo() {
   return document.getElementById('demoToggle').getAttribute('data-on') === 'true';
 }
@@ -665,6 +681,15 @@ async function loadGeo() {
                 return d.value ? `${name}: ${fmtMoney(d.value)}` : name;
               },
             },
+          },
+          zoom: {
+            pan: { enabled: true, mode: 'xy' },
+            zoom: {
+              wheel: { enabled: true },
+              pinch: { enabled: true },
+              mode: 'xy',
+            },
+            limits: { x: { min: 'original', max: 'original' }, y: { min: 'original', max: 'original' } },
           },
         },
         scales: {
