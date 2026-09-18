@@ -235,3 +235,59 @@ def forecast_revenue(records, periods_ahead: int = 3):
         "trend": "croissant" if slope > 0 else ("décroissant" if slope < 0 else "stable"),
         "slope_per_month": round(slope, 2),
     }
+
+
+# ---------------------------------------------------------------------------
+# 5. Revenue by weekday: total CA and nombre de commandes par jour de la
+#    semaine (toutes semaines confondues) — utile pour repérer un jour fort.
+# ---------------------------------------------------------------------------
+WEEKDAY_LABELS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
+
+
+def revenue_by_weekday(records):
+    revenue = defaultdict(float)
+    orders = defaultdict(int)
+    for r in records:
+        weekday = r["created"].weekday()  # 0 = lundi ... 6 = dimanche
+        revenue[weekday] += r["amount"]
+        orders[weekday] += 1
+
+    return [
+        {
+            "weekday": WEEKDAY_LABELS[i],
+            "revenue": round(revenue.get(i, 0), 2),
+            "orders": orders.get(i, 0),
+        }
+        for i in range(7)
+    ]
+
+
+# ---------------------------------------------------------------------------
+# 6. Revenue concentration: quelle part du CA vient des X% de clients qui
+#    dépensent le plus (illustre le principe de Pareto / 80-20).
+# ---------------------------------------------------------------------------
+def revenue_concentration(records, top_share: float = 0.2):
+    totals_by_customer = defaultdict(float)
+    for r in records:
+        totals_by_customer[r["customer"]] += r["amount"]
+
+    if not totals_by_customer:
+        return {"top_share_pct": round(top_share * 100), "segments": [], "total_customers": 0}
+
+    sorted_totals = sorted(totals_by_customer.values(), reverse=True)
+    total_revenue = sum(sorted_totals)
+    n_customers = len(sorted_totals)
+    n_top = max(1, round(n_customers * top_share))
+
+    top_revenue = sum(sorted_totals[:n_top])
+    rest_revenue = total_revenue - top_revenue
+
+    return {
+        "top_share_pct": round(top_share * 100),
+        "top_customers_count": n_top,
+        "total_customers": n_customers,
+        "segments": [
+            {"label": f"Top {round(top_share * 100)}% clients", "amount": round(top_revenue, 2)},
+            {"label": "Autres clients", "amount": round(rest_revenue, 2)},
+        ],
+    }

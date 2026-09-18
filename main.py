@@ -96,4 +96,16 @@ def forecast(periods: int = 3, demo: bool = False):
     return analytics.forecast_revenue(records, periods_ahead=periods)
 
 
+@app.get("/api/weekday")
+def weekday(demo: bool = False):
+    records, _ = get_records(demo)
+    return analytics.revenue_by_weekday(records)
+
+
+@app.get("/api/concentration")
+def concentration(demo: bool = False):
+    records, _ = get_records(demo)
+    return analytics.revenue_concentration(records)
+
+
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
