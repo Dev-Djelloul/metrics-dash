@@ -228,6 +228,22 @@ def forecast(
     return analytics.forecast_revenue(records, periods_ahead=periods)
 
 
+@app.get("/api/forecast/orders")
+def forecast_orders(
+    periods: int = 3, demo: bool = False, start: str = None, end: str = None, user=Depends(get_current_user)
+):
+    records, _ = get_records(demo, start, end, user)
+    return analytics.forecast_order_count(records, periods_ahead=periods)
+
+
+@app.get("/api/forecast/newcustomers")
+def forecast_new_customers(
+    periods: int = 3, demo: bool = False, start: str = None, end: str = None, user=Depends(get_current_user)
+):
+    records, _ = get_records(demo, start, end, user)
+    return analytics.forecast_new_customers(records, periods_ahead=periods)
+
+
 @app.get("/api/weekday")
 def weekday(demo: bool = False, start: str = None, end: str = None, user=Depends(get_current_user)):
     records, _ = get_records(demo, start, end, user)

@@ -216,6 +216,59 @@ def cohort_retention(records):
 # 4. Forecasting: simple linear regression on monthly revenue to project
 #    the next few periods. No numpy — least squares by hand.
 # ---------------------------------------------------------------------------
+def _year_month_add(month_str, offset):
+    y, m = map(int, month_str.split("-"))
+    total = (y * 12 + (m - 1)) + offset
+    return f"{total // 12}-{total % 12 + 1:02d}"
+
+
+def _fit_linear_regression(xs, ys):
+    """Régression linéaire par les moindres carrés, à la main. Retourne
+    aussi de quoi construire un intervalle de confiance (écart-type des
+    résidus, position par rapport à la moyenne) plutôt qu'une seule
+    fonction de calcul de pente."""
+    n = len(xs)
+    mean_x = sum(xs) / n
+    mean_y = sum(ys) / n
+    num = sum((x - mean_x) * (y - mean_y) for x, y in zip(xs, ys))
+    den = sum((x - mean_x) ** 2 for x in xs) or 1
+    slope = num / den
+    intercept = mean_y - slope * mean_x
+
+    residuals = [y - (slope * x + intercept) for x, y in zip(xs, ys)]
+    dof = max(1, n - 2)  # degrés de liberté : n points - 2 paramètres estimés
+    residual_std = (sum(e**2 for e in residuals) / dof) ** 0.5
+
+    return {"slope": slope, "intercept": intercept, "mean_x": mean_x, "den": den, "residual_std": residual_std, "n": n}
+
+
+def _forecast_series(months, values, periods_ahead, value_key):
+    """Projette une série mensuelle (CA, nb de commandes, nb de nouveaux
+    clients...) par régression linéaire, avec une zone d'incertitude
+    (~95%) qui s'élargit avec l'horizon de prévision — une prévision loin
+    dans le futur est statistiquement moins fiable qu'une prévision proche,
+    ce qu'une seule ligne de prédiction ne montre pas."""
+    xs = list(range(len(months)))
+    fit = _fit_linear_regression(xs, values)
+    slope, intercept = fit["slope"], fit["intercept"]
+
+    forecast = []
+    for i in range(1, periods_ahead + 1):
+        x = len(months) - 1 + i
+        predicted = max(0, slope * x + intercept)
+        margin = 1.96 * fit["residual_std"] * (1 + 1 / fit["n"] + (x - fit["mean_x"]) ** 2 / fit["den"]) ** 0.5
+        forecast.append(
+            {
+                "month": _year_month_add(months[-1], i),
+                value_key: round(predicted, 2),
+                "low": round(max(0, predicted - margin), 2),
+                "high": round(predicted + margin, 2),
+            }
+        )
+
+    return forecast, slope
+
+
 def forecast_revenue(records, periods_ahead: int = 3):
     revenue_by_month = defaultdict(float)
     for r in records:
@@ -225,30 +278,8 @@ def forecast_revenue(records, periods_ahead: int = 3):
     if len(months) < 2:
         return {"history": [], "forecast": [], "note": "Pas assez de mois de données pour projeter."}
 
-    xs = list(range(len(months)))
-    ys = [revenue_by_month[m] for m in months]
-
-    n = len(xs)
-    mean_x = sum(xs) / n
-    mean_y = sum(ys) / n
-    num = sum((x - mean_x) * (y - mean_y) for x, y in zip(xs, ys))
-    den = sum((x - mean_x) ** 2 for x in xs) or 1
-    slope = num / den
-    intercept = mean_y - slope * mean_x
-
-    def year_month_add(month_str, offset):
-        y, m = map(int, month_str.split("-"))
-        total = (y * 12 + (m - 1)) + offset
-        return f"{total // 12}-{total % 12 + 1:02d}"
-
-    forecast = []
-    for i in range(1, periods_ahead + 1):
-        x = len(months) - 1 + i
-        predicted = max(0, slope * x + intercept)
-        forecast.append(
-            {"month": year_month_add(months[-1], i), "predicted_revenue": round(predicted, 2)}
-        )
-
+    values = [revenue_by_month[m] for m in months]
+    forecast, slope = _forecast_series(months, values, periods_ahead, "predicted_revenue")
     history = [{"month": m, "revenue": round(revenue_by_month[m], 2)} for m in months]
 
     return {
@@ -256,6 +287,61 @@ def forecast_revenue(records, periods_ahead: int = 3):
         "forecast": forecast,
         "trend": "croissant" if slope > 0 else ("décroissant" if slope < 0 else "stable"),
         "slope_per_month": round(slope, 2),
+    }
+
+
+def forecast_order_count(records, periods_ahead: int = 3):
+    orders_by_month = defaultdict(int)
+    for r in records:
+        orders_by_month[_month_key(r["created"])] += 1
+
+    months = sorted(orders_by_month.keys())
+    if len(months) < 2:
+        return {"history": [], "forecast": [], "note": "Pas assez de mois de données pour projeter."}
+
+    values = [orders_by_month[m] for m in months]
+    forecast, slope = _forecast_series(months, values, periods_ahead, "predicted_orders")
+    for point in forecast:
+        point["predicted_orders"] = round(point["predicted_orders"])
+        point["low"] = round(point["low"])
+        point["high"] = round(point["high"])
+    history = [{"month": m, "orders": orders_by_month[m]} for m in months]
+
+    return {
+        "history": history,
+        "forecast": forecast,
+        "trend": "croissant" if slope > 0 else ("décroissant" if slope < 0 else "stable"),
+    }
+
+
+def forecast_new_customers(records, periods_ahead: int = 3):
+    first_purchase_month = {}
+    for r in records:
+        month = _month_key(r["created"])
+        cust = r["customer"]
+        if cust not in first_purchase_month or month < first_purchase_month[cust]:
+            first_purchase_month[cust] = month
+
+    new_customers_by_month = defaultdict(int)
+    for month in first_purchase_month.values():
+        new_customers_by_month[month] += 1
+
+    months = sorted(new_customers_by_month.keys())
+    if len(months) < 2:
+        return {"history": [], "forecast": [], "note": "Pas assez de mois de données pour projeter."}
+
+    values = [new_customers_by_month[m] for m in months]
+    forecast, slope = _forecast_series(months, values, periods_ahead, "predicted_new_customers")
+    for point in forecast:
+        point["predicted_new_customers"] = round(point["predicted_new_customers"])
+        point["low"] = round(point["low"])
+        point["high"] = round(point["high"])
+    history = [{"month": m, "new_customers": new_customers_by_month[m]} for m in months]
+
+    return {
+        "history": history,
+        "forecast": forecast,
+        "trend": "croissant" if slope > 0 else ("décroissant" if slope < 0 else "stable"),
     }
 
 
