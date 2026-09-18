@@ -135,6 +135,22 @@
         <tbody></tbody>
       </table>
     </div>
+    <div class="card chart-box">
+      <h3>CA par jour de la semaine</h3>
+      <p class="explainer">
+        <span class="line">Regroupe toutes les commandes par <span class="term term-mom">jour de la semaine</span>, toutes semaines confondues.</span>
+        <span class="line">Utile pour repérer un jour fort ou faible dans ton activité (ex : plus de ventes le vendredi).</span>
+      </p>
+      <canvas id="weekdayChart" height="90"></canvas>
+    </div>
+    <div class="card chart-box">
+      <h3>Concentration du CA</h3>
+      <p class="explainer">
+        <span class="line">Illustre le <span class="term term-forecast">principe de Pareto</span> (souvent "80/20") : une petite part de tes clients fait-elle une grande part du CA ?</span>
+        <span class="line">Ici : la part du chiffre d'affaires venant des 20% de clients qui dépensent le plus, vs tous les autres.</span>
+      </p>
+      <canvas id="concentrationChart" height="90"></canvas>
+    </div>
   </div>
 
   <!-- Growth -->
@@ -174,6 +190,14 @@
         <thead><tr><th>Client</th><th class="num">Récence (j)</th><th class="num">Fréquence</th><th class="num">Montant</th><th class="num">R</th><th class="num">F</th><th class="num">M</th><th>Segment</th></tr></thead>
         <tbody></tbody>
       </table>
+    </div>
+    <div class="card chart-box">
+      <h3>Répartition des clients par segment</h3>
+      <p class="explainer">
+        <span class="line">Combien de clients dans chaque segment RFM, en proportion.</span>
+        <span class="line">Un camembert convient bien ici : peu de catégories, et on regarde des parts d'un tout — le nombre total de clients.</span>
+      </p>
+      <canvas id="segmentChart" height="90"></canvas>
     </div>
   </div>
 
@@ -316,6 +340,54 @@ async function loadOverview() {
   ).join('');
 }
 
+async function loadWeekday() {
+  const res = await fetch(apiUrl('/api/weekday'));
+  if (!res.ok) return;
+  const days = await res.json();
+
+  destroyChart('weekday');
+  charts.weekday = new Chart(document.getElementById('weekdayChart'), {
+    type: 'bar',
+    data: {
+      labels: days.map(d => d.weekday),
+      datasets: [{
+        label: 'CA', data: days.map(d => d.revenue),
+        backgroundColor: cssVar('--chart-line-1'), borderRadius: 4,
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: cssVar('--text-secondary') } },
+        y: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary') } },
+      },
+    }
+  });
+}
+
+async function loadConcentration() {
+  const res = await fetch(apiUrl('/api/concentration'));
+  if (!res.ok) return;
+  const c = await res.json();
+  if (!c.segments || !c.segments.length) return;
+
+  destroyChart('concentration');
+  charts.concentration = new Chart(document.getElementById('concentrationChart'), {
+    type: 'pie',
+    data: {
+      labels: c.segments.map(s => s.label),
+      datasets: [{
+        data: c.segments.map(s => s.amount),
+        backgroundColor: [cssVar('--accent'), cssVar('--surface-3')],
+        borderColor: cssVar('--surface-1'), borderWidth: 2,
+      }]
+    },
+    options: {
+      plugins: { legend: { position: 'bottom', labels: { color: cssVar('--text-secondary') } } },
+    }
+  });
+}
+
 function growthArrow(pct) {
   if (pct === null || pct === undefined) return '<span style="color:var(--text-tertiary)">—</span>';
   const cls = pct >= 0 ? 'pos' : 'neg';
@@ -360,6 +432,14 @@ const SEGMENT_CLASS = {
   'Perdus': 'lost',
 };
 
+const SEGMENT_COLOR_VAR = {
+  'Champions': '--seg-champions',
+  'Clients fidèles': '--seg-loyal',
+  'Nouveaux clients': '--seg-new',
+  'À risque': '--seg-atrisk',
+  'Perdus': '--seg-lost',
+};
+
 async function loadRfm() {
   const res = await fetch(apiUrl('/api/rfm'));
   if (!res.ok) return;
@@ -372,6 +452,26 @@ async function loadRfm() {
       <td><span class="badge ${SEGMENT_CLASS[r.segment] || 'loyal'}">${r.segment}</span></td>
     </tr>`
   ).join('');
+
+  const counts = {};
+  for (const r of rows) counts[r.segment] = (counts[r.segment] || 0) + 1;
+  const segments = Object.keys(counts);
+
+  destroyChart('segment');
+  charts.segment = new Chart(document.getElementById('segmentChart'), {
+    type: 'pie',
+    data: {
+      labels: segments,
+      datasets: [{
+        data: segments.map(s => counts[s]),
+        backgroundColor: segments.map(s => cssVar(SEGMENT_COLOR_VAR[s] || '--seg-loyal')),
+        borderColor: cssVar('--surface-1'), borderWidth: 2,
+      }]
+    },
+    options: {
+      plugins: { legend: { position: 'bottom', labels: { color: cssVar('--text-secondary') } } },
+    }
+  });
 }
 
 function heatBucket(pct) {
@@ -452,7 +552,7 @@ async function loadForecast() {
 }
 
 async function loadAll() {
-  await Promise.all([loadOverview(), loadGrowth(), loadRfm(), loadCohorts(), loadForecast()]);
+  await Promise.all([loadOverview(), loadGrowth(), loadRfm(), loadCohorts(), loadForecast(), loadWeekday(), loadConcentration()]);
 }
 
 (async () => {
