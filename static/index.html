@@ -174,39 +174,6 @@
   <div class="panel active" id="panel-overview">
     <div class="cards" id="cards"></div>
 
-    <div class="chart-row">
-      <div class="card chart-box">
-        <h3>CA par jour</h3>
-        <div class="canvas-wrap"><canvas id="revenueChart"></canvas></div>
-      </div>
-      <div class="card chart-box">
-        <h3>CA par jour de la semaine</h3>
-        <p class="explainer">
-          <span class="line">Regroupe toutes les commandes par <span class="term term-mom">jour de la semaine</span>, toutes semaines confondues.</span>
-          <span class="line">Utile pour repérer un jour fort ou faible (ex : plus de ventes le vendredi).</span>
-        </p>
-        <div class="canvas-wrap"><canvas id="weekdayChart"></canvas></div>
-      </div>
-    </div>
-
-    <div class="chart-row">
-      <div class="card chart-box">
-        <h3>Top clients</h3>
-        <table class="data" id="customersTable">
-          <thead><tr><th>Client</th><th class="num">Montant</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <div class="card chart-box">
-        <h3>Concentration du CA</h3>
-        <p class="explainer">
-          <span class="line">Illustre le <span class="term term-forecast">principe de Pareto</span> (souvent "80/20") : une petite part de tes clients fait-elle une grande part du CA ?</span>
-          <span class="line">Ici : part du CA venant des 20% de clients qui dépensent le plus, vs tous les autres.</span>
-        </p>
-        <div class="canvas-wrap"><canvas id="concentrationChart"></canvas></div>
-      </div>
-    </div>
-
     <div class="chart-row chart-row-wide">
       <div class="card chart-box">
         <h3>CA par pays</h3>
@@ -226,6 +193,37 @@
         </table>
         <p class="explainer" id="geoUnknownNote" style="display:none; margin: var(--sp-4) 0 0;"></p>
       </div>
+    </div>
+
+    <div class="card chart-box">
+      <h3>CA par jour</h3>
+      <div class="canvas-wrap"><canvas id="revenueChart"></canvas></div>
+    </div>
+
+    <div class="card chart-box">
+      <h3>CA par jour de la semaine</h3>
+      <p class="explainer">
+        <span class="line">Regroupe toutes les commandes par <span class="term term-mom">jour de la semaine</span>, toutes semaines confondues.</span>
+        <span class="line">Utile pour repérer un jour fort ou faible (ex : plus de ventes le vendredi).</span>
+      </p>
+      <div class="canvas-wrap"><canvas id="weekdayChart"></canvas></div>
+    </div>
+
+    <div class="card chart-box">
+      <h3>Concentration du CA</h3>
+      <p class="explainer">
+        <span class="line">Illustre le <span class="term term-forecast">principe de Pareto</span> (souvent "80/20") : une petite part de tes clients fait-elle une grande part du CA ?</span>
+        <span class="line">Ici : part du CA venant des 20% de clients qui dépensent le plus, vs tous les autres.</span>
+      </p>
+      <div class="canvas-wrap"><canvas id="concentrationChart"></canvas></div>
+    </div>
+
+    <div class="card chart-box">
+      <h3>Top clients</h3>
+      <table class="data" id="customersTable">
+        <thead><tr><th>Client</th><th class="num">Montant</th></tr></thead>
+        <tbody></tbody>
+      </table>
     </div>
   </div>
 
