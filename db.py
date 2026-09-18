@@ -10,6 +10,10 @@ import os
 
 import httpx
 
+# Force un rebuild de l'image Docker (donc un vrai redémarrage du
+# conteneur) : les secrets Cloudflare mis à jour via `wrangler secret put`
+# ne sont relus qu'au démarrage du conteneur, pas à chaud sur un process
+# déjà en cours d'exécution.
 CF_ACCOUNT_ID = os.getenv("CF_ACCOUNT_ID")
 CF_API_TOKEN = os.getenv("CF_API_TOKEN")
 CF_D1_DATABASE_ID = os.getenv("CF_D1_DATABASE_ID")
