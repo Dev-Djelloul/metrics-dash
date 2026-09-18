@@ -791,6 +791,15 @@ async function loadGeo() {
         plugins: {
           legend: { display: false },
           tooltip: {
+            // Taille de police fixée explicitement : par défaut, Chart.js
+            // dimensionne l'info-bulle par rapport à la résolution interne
+            // du canvas, qu'on a volontairement rendue très élevée
+            // (devicePixelRatio ci-dessus) pour que le zoom reste net —
+            // sans ces tailles fixes, l'info-bulle devient énorme.
+            titleFont: { size: 12 },
+            bodyFont: { size: 12 },
+            padding: 8,
+            displayColors: false,
             callbacks: {
               label: (ctx) => {
                 const d = ctx.raw;
