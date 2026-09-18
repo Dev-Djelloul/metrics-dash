@@ -7,10 +7,18 @@
 <link rel="stylesheet" href="design-system.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Sansation:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Electrolize&family=Sansation:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap" rel="stylesheet">
 <style>
   /* Styles propres à cette page, non couverts par le design system
      (layout de page, panneaux d'onglets, header). */
+
+  /* Corps de texte en Electrolize : redéfinit la variable du design system,
+     donc tous les composants qui l'utilisent (boutons, tabs, tableaux,
+     badges, labels KPI...) en héritent automatiquement.
+     Attention : Electrolize n'a qu'un poids (400) — le gras est un
+     "faux gras" simulé par le navigateur, à vérifier visuellement. */
+  :root { --font-sans: 'Electrolize', sans-serif; }
+
   body { padding: var(--sp-8); }
 
   .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-2); }
