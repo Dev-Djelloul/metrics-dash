@@ -1513,9 +1513,15 @@ function showAuthError() {
   };
   authErrorMessage = messages[code] || "La connexion a échoué. Réessaie.";
 
-  // Retire le paramètre de l'URL pour ne pas réafficher l'erreur au
+  // Diagnostic temporaire (voir main.py) : affiche le détail technique
+  // s'il est présent, pour identifier la cause d'un échec OAuth récurrent.
+  const detail = params.get('detail');
+  if (detail) authErrorMessage += ` [debug: ${detail}]`;
+
+  // Retire les paramètres de l'URL pour ne pas réafficher l'erreur au
   // prochain rechargement de la page.
   params.delete('auth_error');
+  params.delete('detail');
   const qs = params.toString();
   history.replaceState({}, '', window.location.pathname + (qs ? `?${qs}` : ''));
 }
