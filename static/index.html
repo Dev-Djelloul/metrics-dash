@@ -352,9 +352,27 @@
       <h3>Prévision de CA (régression linéaire)</h3>
       <p class="explainer" id="forecastNote">
         <span class="line">Projette les prochains mois à partir de la tendance historique (<span class="term term-forecast">régression linéaire simple</span>, sans librairie externe).</span>
-        <span class="line">À prendre avec des pincettes sur peu de données — c'est surtout pour comprendre le principe du forecasting.</span>
+        <span class="line">La zone bleue est l'intervalle de confiance (~95%) : elle s'élargit avec l'horizon, une prévision lointaine étant statistiquement moins fiable qu'une prévision proche.</span>
       </p>
       <div class="canvas-wrap"><canvas id="forecastChart"></canvas></div>
+    </div>
+
+    <div class="card chart-box">
+      <h3>Prévision du nombre de commandes</h3>
+      <p class="explainer">
+        <span class="line">Même méthode que la prévision de CA, appliquée au <span class="term term-forecast">nombre de commandes</span> plutôt qu'au montant.</span>
+        <span class="line">Répond à « combien de ventes » plutôt qu'à « combien ça va rapporter » — les deux ne bougent pas forcément ensemble (ex : panier moyen qui grimpe).</span>
+      </p>
+      <div class="canvas-wrap"><canvas id="forecastOrdersChart"></canvas></div>
+    </div>
+
+    <div class="card chart-box">
+      <h3>Prévision de nouveaux clients</h3>
+      <p class="explainer">
+        <span class="line">Projette le rythme d'<span class="term term-forecast">acquisition de nouveaux clients</span> par mois, à partir de la tendance historique.</span>
+        <span class="line">Utile pour anticiper si le rythme d'acquisition ralentit avant que ça se voie sur le CA.</span>
+      </p>
+      <div class="canvas-wrap"><canvas id="forecastNewCustomersChart"></canvas></div>
     </div>
   </div>
 
@@ -1017,6 +1035,60 @@ async function loadCohorts() {
   document.getElementById('cohortTable').innerHTML = html;
 }
 
+function countTooltip(ctx) {
+  const label = ctx.dataset.label || '';
+  const value = ctx.parsed && ctx.parsed.y;
+  return (value === null || value === undefined) ? label : `${label}: ${value}`;
+}
+
+// Trace un historique + une prévision avec une zone d'incertitude (~95%)
+// autour de la ligne de prévision — partagé par les 3 graphiques de
+// prévision (CA, commandes, nouveaux clients), même structure de données.
+function renderForecastChart(canvasId, chartKey, history, forecast, historyValueKey, forecastValueKey, tooltipFmt, tickFmt) {
+  const labels = [...history.map(h => h.month), ...forecast.map(x => x.month)];
+  const lastValue = history[history.length - 1][historyValueKey];
+
+  const historyData = [...history.map(h => h[historyValueKey]), ...forecast.map(() => null)];
+
+  const forecastData = [...history.map(() => null), lastValue, ...forecast.map(x => x[forecastValueKey])];
+  forecastData.splice(history.length - 1, 1, lastValue);
+
+  const lowData = [...history.map(() => null), lastValue, ...forecast.map(x => x.low)];
+  lowData.splice(history.length - 1, 1, lastValue);
+  const highData = [...history.map(() => null), lastValue, ...forecast.map(x => x.high)];
+  highData.splice(history.length - 1, 1, lastValue);
+
+  destroyChart(chartKey);
+  charts[chartKey] = new Chart(document.getElementById(canvasId), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Intervalle bas', data: lowData, borderWidth: 0, pointRadius: 0, fill: false },
+        { label: 'Intervalle ~95%', data: highData, borderWidth: 0, pointRadius: 0, fill: '-1', backgroundColor: hexToRgba(cssVar('--chart-line-2'), 0.15) },
+        { label: 'Historique', data: historyData, borderColor: cssVar('--chart-line-1'), tension: 0.2 },
+        { label: 'Prévision', data: forecastData, borderColor: cssVar('--chart-line-2'), borderDash: [6, 4], tension: 0.2 },
+      ]
+    },
+    options: {
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: { color: cssVar('--text-secondary'), filter: (item) => item.text !== 'Intervalle bas' },
+        },
+        tooltip: {
+          filter: (item) => item.dataset.label === 'Historique' || item.dataset.label === 'Prévision',
+          callbacks: { label: tooltipFmt },
+        },
+      },
+      scales: {
+        x: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary') } },
+        y: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary'), callback: tickFmt } },
+      },
+    }
+  });
+}
+
 async function loadForecast() {
   const res = await fetch(apiUrl('/api/forecast'));
   if (!res.ok) return;
@@ -1024,7 +1096,7 @@ async function loadForecast() {
 
   const defaultNoteHtml = `
     <span class="line">Projette les prochains mois à partir de la tendance historique (<span class="term term-forecast">régression linéaire simple</span>, sans librairie externe).</span>
-    <span class="line">À prendre avec des pincettes sur peu de données — c'est surtout pour comprendre le principe du forecasting.</span>
+    <span class="line">La zone bleue est l'intervalle de confiance (~95%) : elle s'élargit avec l'horizon, une prévision lointaine étant statistiquement moins fiable qu'une prévision proche.</span>
   `;
   const noteEl = document.getElementById('forecastNote');
   if (f.note) {
@@ -1034,31 +1106,25 @@ async function loadForecast() {
   }
   noteEl.innerHTML = defaultNoteHtml;
 
-  const labels = [...f.history.map(h => h.month), ...f.forecast.map(x => x.month)];
-  const historyData = [...f.history.map(h => h.revenue), ...f.forecast.map(() => null)];
-  const forecastData = [...f.history.map(() => null), f.history[f.history.length-1].revenue, ...f.forecast.map(x => x.predicted_revenue)];
-  // align forecast line to connect from last history point
-  forecastData.splice(f.history.length - 1, 1, f.history[f.history.length-1].revenue);
+  renderForecastChart('forecastChart', 'forecast', f.history, f.forecast, 'revenue', 'predicted_revenue', moneyTooltip, fmtMoney);
+}
 
-  destroyChart('forecast');
-  charts.forecast = new Chart(document.getElementById('forecastChart'), {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        { label: 'Historique', data: historyData, borderColor: cssVar('--chart-line-1'), tension: 0.2 },
-        { label: 'Prévision', data: forecastData, borderColor: cssVar('--chart-line-2'), borderDash: [6,4], tension: 0.2 },
-      ]
-    },
-    options: {
-      maintainAspectRatio: false,
-      plugins: { legend: { labels: { color: cssVar('--text-secondary') } }, tooltip: { callbacks: { label: moneyTooltip } } },
-      scales: {
-        x: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary') } },
-        y: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary'), callback: fmtMoney } },
-      },
-    }
-  });
+async function loadForecastOrders() {
+  const res = await fetch(apiUrl('/api/forecast/orders'));
+  if (!res.ok) return;
+  const f = await res.json();
+  if (f.note) { destroyChart('forecastOrders'); return; }
+
+  renderForecastChart('forecastOrdersChart', 'forecastOrders', f.history, f.forecast, 'orders', 'predicted_orders', countTooltip, (v) => v);
+}
+
+async function loadForecastNewCustomers() {
+  const res = await fetch(apiUrl('/api/forecast/newcustomers'));
+  if (!res.ok) return;
+  const f = await res.json();
+  if (f.note) { destroyChart('forecastNewCustomers'); return; }
+
+  renderForecastChart('forecastNewCustomersChart', 'forecastNewCustomers', f.history, f.forecast, 'new_customers', 'predicted_new_customers', countTooltip, (v) => v);
 }
 
 async function loadAll() {
@@ -1069,6 +1135,7 @@ async function loadAll() {
   await Promise.all([
     loadGrowth(), loadRfm(), loadCohorts(), loadForecast(), loadWeekday(),
     loadConcentration(), loadNewVsReturning(), loadLoyaltyCards(), loadGeo(),
+    loadForecastOrders(), loadForecastNewCustomers(),
   ]);
 }
 
