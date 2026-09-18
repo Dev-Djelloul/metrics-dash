@@ -357,6 +357,14 @@
   <!-- Cohorts -->
   <div class="panel" id="panel-cohorts">
     <div class="card chart-box">
+      <h3>Rétention moyenne toutes cohortes confondues</h3>
+      <p class="explainer">
+        <span class="line">Moyenne du % de rétention à chaque mois écoulé, sur toutes les cohortes — une seule courbe pour voir la tendance générale sans lire tout le tableau.</span>
+      </p>
+      <div class="canvas-wrap"><canvas id="cohortAvgChart"></canvas></div>
+    </div>
+
+    <div class="card chart-box">
       <h3>Analyse de cohortes (rétention)</h3>
       <p class="explainer">
         <span class="line">Chaque ligne = un groupe de clients ayant acheté pour la première fois ce mois-là (la <span class="term term-cohort">cohorte</span>).</span>
@@ -364,14 +372,6 @@
         <span class="line">C'est l'outil de référence pour mesurer la <span class="term term-retention">fidélisation</span> dans le temps.</span>
       </p>
       <div id="cohortTable" class="scroll" style="overflow-x:auto;"></div>
-    </div>
-
-    <div class="card chart-box">
-      <h3>Rétention moyenne toutes cohortes confondues</h3>
-      <p class="explainer">
-        <span class="line">Moyenne du % de rétention à chaque mois écoulé, sur toutes les cohortes — une seule courbe pour voir la tendance générale sans lire tout le tableau.</span>
-      </p>
-      <div class="canvas-wrap"><canvas id="cohortAvgChart"></canvas></div>
     </div>
 
     <div class="card chart-box">
@@ -1069,11 +1069,12 @@ async function loadLoyaltyCards() {
 async function loadAlerts() {
   const res = await fetch(apiUrl('/api/alerts'));
   const banner = document.getElementById('alertsBanner');
-  if (!res.ok) { banner.style.display = 'none'; return; }
-  const { alerts } = await res.json();
-  if (!alerts.length) { banner.style.display = 'none'; banner.innerHTML = ''; return; }
+  const messages = res.ok ? (await res.json()).alerts.map(a => a.message) : [];
+  if (authErrorMessage) messages.unshift(authErrorMessage);
+
+  if (!messages.length) { banner.style.display = 'none'; banner.innerHTML = ''; return; }
   banner.style.display = 'flex';
-  banner.innerHTML = alerts.map(a => `<div class="alert-item">${a.message}</div>`).join('');
+  banner.innerHTML = messages.map(m => `<div class="alert-item">${m}</div>`).join('');
 }
 
 function renderExportLinks() {
@@ -1389,7 +1390,31 @@ async function loadAll() {
   ]);
 }
 
+// Rempli par showAuthError() si la redirection OAuth contient une erreur ;
+// loadAlerts() l'inclut dans le bandeau au lieu de l'écraser (sinon le
+// premier appel à loadAlerts(), juste après, ferait disparaître le message).
+let authErrorMessage = null;
+
+function showAuthError() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('auth_error');
+  if (!code) return;
+
+  const messages = {
+    oauth_failed: "La connexion à Stripe a échoué (code refusé ou expiré). Réessaie.",
+    db_failed: "La connexion à Stripe a réussi côté Stripe, mais l'enregistrement a échoué côté serveur. Réessaie dans un instant.",
+  };
+  authErrorMessage = messages[code] || "La connexion a échoué. Réessaie.";
+
+  // Retire le paramètre de l'URL pour ne pas réafficher l'erreur au
+  // prochain rechargement de la page.
+  params.delete('auth_error');
+  const qs = params.toString();
+  history.replaceState({}, '', window.location.pathname + (qs ? `?${qs}` : ''));
+}
+
 (async () => {
+  showAuthError();
   const connected = await loadStatus();
   if (!connected && !isDemo()) return;
   await loadAll();
