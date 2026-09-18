@@ -23,14 +23,15 @@
 
   .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-2); }
   .brand { display: flex; align-items: center; gap: var(--sp-3); }
-  .brand-mark { width: 28px; height: 28px; color: var(--accent); flex-shrink: 0; }
-  .brand-name { font-family: 'Sansation', sans-serif; font-size: 22px; font-weight: 700; font-style: normal; letter-spacing: -0.01em; color: var(--text-primary); }
+  .brand-mark { width: 40px; height: 40px; color: var(--accent); flex-shrink: 0; }
+  .brand-name { font-family: 'Sansation', sans-serif; font-size: 28px; font-weight: 700; font-style: normal; letter-spacing: -0.01em; color: var(--text-primary); }
   .brand-accent { color: var(--accent); }
 
   .theme-toggle { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-small); color: var(--text-secondary); }
 
   .toolbar-row { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin: var(--sp-5) 0 var(--sp-6); }
-  .stripe-mark { width: 18px; height: 18px; border-radius: 4px; flex-shrink: 0; }
+  .stripe-mark { width: 22px; height: 22px; border-radius: 5px; flex-shrink: 0; }
+  #status.status-pill { padding: 8px 14px; gap: 8px; }
 
   .demo-btn { display: inline-flex; align-items: center; gap: var(--sp-2); font-family: var(--font-sans); font-size: var(--fs-small); font-weight: var(--fw-small); color: var(--text-secondary); background: var(--surface-2); border: var(--border-w) solid var(--border-strong); border-radius: var(--radius-pill); padding: 7px 14px 7px 8px; cursor: pointer; transition: var(--transition); }
   .demo-btn:hover { border-color: var(--accent); color: var(--text-primary); }
@@ -55,7 +56,9 @@
   @media (max-width: 640px) {
     body { padding: var(--sp-4); }
     .page-header { flex-wrap: wrap; gap: var(--sp-3); }
-    .brand-name { font-size: 17px; }
+    .brand-mark { width: 32px; height: 32px; }
+    .brand-name { font-size: 22px; }
+    .stripe-mark { width: 18px; height: 18px; }
     .toolbar-row { margin: var(--sp-4) 0 var(--sp-5); }
     .cards { grid-template-columns: 1fr; }
     .tabs { gap: var(--sp-3); overflow-x: auto; }
