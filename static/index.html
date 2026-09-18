@@ -48,6 +48,13 @@
 
   .chart-box { padding: var(--sp-5); margin-bottom: var(--sp-8); }
   .chart-box h3 { margin: 0 0 var(--sp-2); font-size: var(--fs-h2); font-weight: var(--fw-h2); color: var(--text-primary); }
+
+  /* Deux chart-box côte à côte : réduit mécaniquement la taille d'un
+     camembert en lui donnant la moitié de la largeur, au lieu de le
+     laisser s'étirer sur toute la largeur de la page. */
+  .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); margin-bottom: var(--sp-8); align-items: start; }
+  .chart-row .chart-box { margin-bottom: 0; }
+  .chart-row-wide { grid-template-columns: 2fr 1fr; }
   .explainer { font-size: var(--fs-small); color: var(--text-secondary); margin: 0 0 var(--sp-4) 0; line-height: var(--fs-small-lh); }
   .explainer .line { display: block; }
   .explainer .line + .line { margin-top: 4px; }
@@ -76,6 +83,7 @@
     .tabs { gap: var(--sp-3); overflow-x: auto; }
     .tab { padding: 8px 2px; white-space: nowrap; }
     .chart-box { padding: var(--sp-4); }
+    .chart-row, .chart-row-wide { grid-template-columns: 1fr; }
     table.data { display: block; overflow-x: auto; white-space: nowrap; }
     .kpi-card:hover, .chart-box:hover { transform: none; }
   }
@@ -124,32 +132,38 @@
   <!-- Overview -->
   <div class="panel active" id="panel-overview">
     <div class="cards" id="cards"></div>
-    <div class="card chart-box">
-      <h3>CA par jour</h3>
-      <canvas id="revenueChart" height="80"></canvas>
+
+    <div class="chart-row">
+      <div class="card chart-box">
+        <h3>CA par jour</h3>
+        <canvas id="revenueChart" height="80"></canvas>
+      </div>
+      <div class="card chart-box">
+        <h3>CA par jour de la semaine</h3>
+        <p class="explainer">
+          <span class="line">Regroupe toutes les commandes par <span class="term term-mom">jour de la semaine</span>, toutes semaines confondues.</span>
+          <span class="line">Utile pour repérer un jour fort ou faible (ex : plus de ventes le vendredi).</span>
+        </p>
+        <canvas id="weekdayChart" height="80"></canvas>
+      </div>
     </div>
-    <div class="card chart-box">
-      <h3>Top clients</h3>
-      <table class="data" id="customersTable">
-        <thead><tr><th>Client</th><th class="num">Montant</th></tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
-    <div class="card chart-box">
-      <h3>CA par jour de la semaine</h3>
-      <p class="explainer">
-        <span class="line">Regroupe toutes les commandes par <span class="term term-mom">jour de la semaine</span>, toutes semaines confondues.</span>
-        <span class="line">Utile pour repérer un jour fort ou faible dans ton activité (ex : plus de ventes le vendredi).</span>
-      </p>
-      <canvas id="weekdayChart" height="90"></canvas>
-    </div>
-    <div class="card chart-box">
-      <h3>Concentration du CA</h3>
-      <p class="explainer">
-        <span class="line">Illustre le <span class="term term-forecast">principe de Pareto</span> (souvent "80/20") : une petite part de tes clients fait-elle une grande part du CA ?</span>
-        <span class="line">Ici : la part du chiffre d'affaires venant des 20% de clients qui dépensent le plus, vs tous les autres.</span>
-      </p>
-      <canvas id="concentrationChart" height="90"></canvas>
+
+    <div class="chart-row">
+      <div class="card chart-box">
+        <h3>Top clients</h3>
+        <table class="data" id="customersTable">
+          <thead><tr><th>Client</th><th class="num">Montant</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="card chart-box">
+        <h3>Concentration du CA</h3>
+        <p class="explainer">
+          <span class="line">Illustre le <span class="term term-forecast">principe de Pareto</span> (souvent "80/20") : une petite part de tes clients fait-elle une grande part du CA ?</span>
+          <span class="line">Ici : part du CA venant des 20% de clients qui dépensent le plus, vs tous les autres.</span>
+        </p>
+        <canvas id="concentrationChart" height="80"></canvas>
+      </div>
     </div>
   </div>
 
@@ -179,25 +193,29 @@
 
   <!-- RFM -->
   <div class="panel" id="panel-rfm">
-    <div class="card chart-box">
-      <h3>Segmentation RFM (Récence / Fréquence / Montant)</h3>
-      <p class="explainer">
-        <span class="line">Technique de segmentation client classique en marketing/data : chaque client reçoit un score 1-4 sur trois axes.</span>
-        <span class="line"><span class="term term-r">Récence</span> (il a acheté récemment ?) · <span class="term term-f">Fréquence</span> (il achète souvent ?) · <span class="term term-m">Montant</span> (il dépense beaucoup ?).</span>
-        <span class="line">Les scores combinés donnent un segment actionnable (Champions, À risque, Perdus...).</span>
-      </p>
-      <table class="data" id="rfmTable">
-        <thead><tr><th>Client</th><th class="num">Récence (j)</th><th class="num">Fréquence</th><th class="num">Montant</th><th class="num">R</th><th class="num">F</th><th class="num">M</th><th>Segment</th></tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
-    <div class="card chart-box">
-      <h3>Répartition des clients par segment</h3>
-      <p class="explainer">
-        <span class="line">Combien de clients dans chaque segment RFM, en proportion.</span>
-        <span class="line">Un camembert convient bien ici : peu de catégories, et on regarde des parts d'un tout — le nombre total de clients.</span>
-      </p>
-      <canvas id="segmentChart" height="90"></canvas>
+    <div class="chart-row chart-row-wide">
+      <div class="card chart-box">
+        <h3>Segmentation RFM (Récence / Fréquence / Montant)</h3>
+        <p class="explainer">
+          <span class="line">Technique de segmentation client classique en marketing/data : chaque client reçoit un score 1-4 sur trois axes.</span>
+          <span class="line"><span class="term term-r">Récence</span> (il a acheté récemment ?) · <span class="term term-f">Fréquence</span> (il achète souvent ?) · <span class="term term-m">Montant</span> (il dépense beaucoup ?).</span>
+          <span class="line">Les scores combinés donnent un segment actionnable (Champions, À risque, Perdus...).</span>
+        </p>
+        <div class="scroll" style="overflow-x:auto;">
+          <table class="data" id="rfmTable">
+            <thead><tr><th>Client</th><th class="num">Récence (j)</th><th class="num">Fréquence</th><th class="num">Montant</th><th class="num">R</th><th class="num">F</th><th class="num">M</th><th>Segment</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card chart-box">
+        <h3>Répartition des clients par segment</h3>
+        <p class="explainer">
+          <span class="line">Combien de clients dans chaque segment RFM, en proportion.</span>
+          <span class="line">Un camembert convient bien ici : peu de catégories, on regarde une part d'un tout.</span>
+        </p>
+        <canvas id="segmentChart" height="80"></canvas>
+      </div>
     </div>
   </div>
 
