@@ -27,7 +27,12 @@
   .brand-name { font-family: 'Sansation', sans-serif; font-size: 28px; font-weight: 700; font-style: normal; letter-spacing: -0.01em; color: var(--text-primary); }
   .brand-accent { color: var(--accent); }
 
+  .header-actions { display: flex; align-items: center; gap: var(--sp-5); flex-wrap: wrap; }
   .theme-toggle { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-small); color: var(--text-secondary); }
+
+  .powerbi-link { display: inline-flex; align-items: center; gap: var(--sp-2); font-family: var(--font-sans); font-size: var(--fs-small); font-weight: var(--fw-small); color: var(--text-primary); background: var(--surface-2); border: var(--border-w) solid var(--border-strong); border-radius: var(--radius-pill); padding: 7px 14px 7px 8px; cursor: pointer; transition: var(--transition); }
+  .powerbi-link:hover { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-text); }
+  .powerbi-mark { width: 20px; height: 20px; flex-shrink: 0; }
 
   .toolbar-row { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin: var(--sp-5) 0 var(--sp-6); }
   .stripe-mark { width: 36px; height: 36px; object-fit: contain; flex-shrink: 0; }
@@ -84,6 +89,8 @@
     .brand-mark { width: 32px; height: 32px; }
     .brand-name { font-size: 22px; }
     .stripe-mark { width: 28px; height: 28px; }
+    .header-actions { width: 100%; justify-content: space-between; }
+    .powerbi-link { font-size: 12px; padding: 6px 10px 6px 6px; }
     .toolbar-row { margin: var(--sp-4) 0 var(--sp-5); }
     .cards { grid-template-columns: 1fr; }
     .tabs { gap: var(--sp-3); overflow-x: auto; }
@@ -112,10 +119,16 @@
       </svg>
       <span class="brand-name">metrics<span class="brand-accent">-</span>dash</span>
     </div>
-    <div class="theme-toggle">
-      <span>Clair</span>
-      <div class="switch" id="themeSwitch" role="button" aria-label="Changer de thème"><div class="switch-knob"></div></div>
-      <span>Sombre</span>
+    <div class="header-actions">
+      <button class="powerbi-link" id="powerBiLink" type="button">
+        <img class="powerbi-mark" src="icons8-power-bi-2021-96.png" alt="" aria-hidden="true">
+        Connecter à Power BI
+      </button>
+      <div class="theme-toggle">
+        <span>Clair</span>
+        <div class="switch" id="themeSwitch" role="button" aria-label="Changer de thème"><div class="switch-knob"></div></div>
+        <span>Sombre</span>
+      </div>
     </div>
   </div>
 
@@ -347,6 +360,11 @@ function applyTheme(theme) {
 document.getElementById('themeSwitch').addEventListener('click', () => {
   const current = document.documentElement.getAttribute('data-theme');
   applyTheme(current === 'light' ? 'dark' : 'light');
+});
+
+document.getElementById('powerBiLink').addEventListener('click', () => {
+  document.querySelector('.tab[data-tab="lexique"]').click();
+  document.getElementById('panel-lexique').scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 
 function isDemo() {
