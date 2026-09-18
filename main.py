@@ -172,11 +172,11 @@ def auth_callback(code: str = None, error: str = None):
     except stripe.oauth_error.OAuthError:
         return RedirectResponse("/?auth_error=oauth_failed")
     except Exception as exc:
-        return Response(
-            f"Erreur lors de l'échange du code OAuth :\n\n{type(exc).__name__}: {exc}",
-            status_code=500,
-            media_type="text/plain",
-        )
+        # Log côté serveur (stdout, visible via les logs du conteneur), mais
+        # jamais l'exception brute au visiteur — un utilisateur non technique
+        # ne doit pas voir une trace Python.
+        print(f"[metrics-dash] Échec de l'échange du code OAuth : {type(exc).__name__}: {exc}")
+        return RedirectResponse("/?auth_error=oauth_failed")
 
     stripe_user_id = token_response["stripe_user_id"]
     access_token = token_response["access_token"]
@@ -194,14 +194,8 @@ def auth_callback(code: str = None, error: str = None):
     try:
         user_id = db.upsert_user(stripe_user_id, access_token, account_name)
     except Exception as exc:
-        # Affiche l'erreur directement dans le navigateur plutôt qu'un 500
-        # générique : les logs du conteneur (stdout Python) ne remontent
-        # pas dans `wrangler tail`, qui ne couvre que le Worker routeur.
-        return Response(
-            f"Erreur lors de l'écriture en base D1 :\n\n{type(exc).__name__}: {exc}",
-            status_code=500,
-            media_type="text/plain",
-        )
+        print(f"[metrics-dash] Échec de l'écriture en base D1 : {type(exc).__name__}: {exc}")
+        return RedirectResponse("/?auth_error=db_failed")
 
     session_token = auth.create_session_token(user_id, SESSION_SECRET)
 
