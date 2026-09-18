@@ -11,12 +11,7 @@ from fastapi.staticfiles import StaticFiles
 
 import analytics
 import demo_data
-from stripe_metrics import (
-    charges_to_records,
-    compute_metrics,
-    compute_metrics_from_records,
-    fetch_recent_charges,
-)
+from stripe_metrics import charges_to_records, compute_metrics_from_records, fetch_recent_charges
 
 load_dotenv()
 
@@ -59,73 +54,77 @@ def status():
         return {"connected": False, "reason": "Invalid Stripe API key"}
 
 
-def get_records(demo: bool = False):
+def get_records(demo: bool = False, start: str = None, end: str = None):
+    """Fetches and normalizes records, then applies the date range picker's
+    filter (start/end, both optional "YYYY-MM-DD") if set."""
     if demo:
-        return demo_data.generate_demo_records(), "eur"
-    charges = get_charges()
-    currency = charges[0].currency if charges else "eur"
-    return charges_to_records(charges), currency
+        records, currency = demo_data.generate_demo_records(), "eur"
+    else:
+        charges = get_charges()
+        currency = charges[0].currency if charges else "eur"
+        records = charges_to_records(charges)
+
+    records = analytics.filter_by_date(records, start, end)
+    return records, currency
 
 
 @app.get("/api/metrics")
-def metrics(demo: bool = False):
-    if demo:
-        records, currency = get_records(demo=True)
-        return compute_metrics_from_records(records, currency)
-    return compute_metrics(get_charges())
+def metrics(demo: bool = False, start: str = None, end: str = None):
+    records, currency = get_records(demo, start, end)
+    return compute_metrics_from_records(records, currency)
 
 
 @app.get("/api/growth")
-def growth(demo: bool = False):
-    records, _ = get_records(demo)
+def growth(demo: bool = False, start: str = None, end: str = None):
+    records, _ = get_records(demo, start, end)
     return analytics.growth_metrics(records)
 
 
 @app.get("/api/rfm")
-def rfm(demo: bool = False):
-    records, _ = get_records(demo)
+def rfm(demo: bool = False, start: str = None, end: str = None):
+    records, _ = get_records(demo, start, end)
     return analytics.rfm_segments(records)
 
 
 @app.get("/api/cohorts")
-def cohorts(demo: bool = False):
-    records, _ = get_records(demo)
+def cohorts(demo: bool = False, start: str = None, end: str = None):
+    records, _ = get_records(demo, start, end)
     return analytics.cohort_retention(records)
 
 
 @app.get("/api/forecast")
-def forecast(periods: int = 3, demo: bool = False):
-    records, _ = get_records(demo)
+def forecast(periods: int = 3, demo: bool = False, start: str = None, end: str = None):
+    records, _ = get_records(demo, start, end)
     return analytics.forecast_revenue(records, periods_ahead=periods)
 
 
 @app.get("/api/weekday")
-def weekday(demo: bool = False):
-    records, _ = get_records(demo)
+def weekday(demo: bool = False, start: str = None, end: str = None):
+    records, _ = get_records(demo, start, end)
     return analytics.revenue_by_weekday(records)
 
 
 @app.get("/api/concentration")
-def concentration(demo: bool = False):
-    records, _ = get_records(demo)
+def concentration(demo: bool = False, start: str = None, end: str = None):
+    records, _ = get_records(demo, start, end)
     return analytics.revenue_concentration(records)
 
 
 @app.get("/api/newvsreturning")
-def new_vs_returning(demo: bool = False):
-    records, _ = get_records(demo)
+def new_vs_returning(demo: bool = False, start: str = None, end: str = None):
+    records, _ = get_records(demo, start, end)
     return analytics.new_vs_returning_by_month(records)
 
 
 @app.get("/api/loyalty")
-def loyalty(demo: bool = False):
-    records, _ = get_records(demo)
+def loyalty(demo: bool = False, start: str = None, end: str = None):
+    records, _ = get_records(demo, start, end)
     return analytics.loyalty_metrics(records)
 
 
 @app.get("/api/geo")
-def geo(demo: bool = False):
-    records, _ = get_records(demo)
+def geo(demo: bool = False, start: str = None, end: str = None):
+    records, _ = get_records(demo, start, end)
     return analytics.revenue_by_country(records)
 
 
@@ -146,26 +145,26 @@ def _csv_response(rows: list[dict], filename: str) -> Response:
 
 
 @app.get("/api/export/monthly.csv")
-def export_monthly_csv(demo: bool = False):
-    records, _ = get_records(demo)
+def export_monthly_csv(demo: bool = False, start: str = None, end: str = None):
+    records, _ = get_records(demo, start, end)
     return _csv_response(analytics.growth_metrics(records)["monthly"], "metrics-dash-monthly.csv")
 
 
 @app.get("/api/export/daily.csv")
-def export_daily_csv(demo: bool = False):
-    records, _ = get_records(demo)
+def export_daily_csv(demo: bool = False, start: str = None, end: str = None):
+    records, _ = get_records(demo, start, end)
     return _csv_response(analytics.growth_metrics(records)["daily"], "metrics-dash-daily.csv")
 
 
 @app.get("/api/export/rfm.csv")
-def export_rfm_csv(demo: bool = False):
-    records, _ = get_records(demo)
+def export_rfm_csv(demo: bool = False, start: str = None, end: str = None):
+    records, _ = get_records(demo, start, end)
     return _csv_response(analytics.rfm_segments(records), "metrics-dash-rfm.csv")
 
 
 @app.get("/api/export/cohorts.csv")
-def export_cohorts_csv(demo: bool = False):
-    records, _ = get_records(demo)
+def export_cohorts_csv(demo: bool = False, start: str = None, end: str = None):
+    records, _ = get_records(demo, start, end)
     rows = [
         {
             "cohort_month": cohort["cohort_month"],
