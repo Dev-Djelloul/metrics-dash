@@ -49,6 +49,18 @@
   .chart-box { padding: var(--sp-5); margin-bottom: var(--sp-8); }
   .chart-box h3 { margin: 0 0 var(--sp-2); font-size: var(--fs-h2); font-weight: var(--fw-h2); color: var(--text-primary); }
   .explainer { font-size: var(--fs-small); color: var(--text-secondary); margin: 0 0 var(--sp-4) 0; line-height: var(--fs-small-lh); }
+  .explainer .line { display: block; }
+  .explainer .line + .line { margin-top: 4px; }
+  .explainer .term { font-weight: 700; }
+  .term-mom { color: var(--chart-line-1); }
+  .term-yoy { color: var(--chart-line-2); }
+  .term-ma { color: var(--chart-line-3); }
+  .term-r { color: var(--accent-text); }
+  .term-f { color: var(--seg-new); }
+  .term-m { color: var(--warn-text); }
+  .term-cohort { color: var(--accent-text); }
+  .term-retention { color: var(--pos-text); }
+  .term-forecast { color: var(--chart-line-2); }
 
   .card, .kpi-card { transition: var(--transition); }
   .kpi-card:hover, .chart-box:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); border-color: var(--border-strong); }
@@ -129,7 +141,11 @@
   <div class="panel" id="panel-growth">
     <div class="card chart-box">
       <h3>CA mensuel & croissance</h3>
-      <p class="explainer">MoM (Month-over-Month) = variation vs le mois précédent. YoY (Year-over-Year) = variation vs le même mois l'année dernière. Ce sont les deux métriques de croissance les plus utilisées en BI.</p>
+      <p class="explainer">
+        <span class="line"><span class="term term-mom">MoM</span> (Month-over-Month) = variation vs le mois précédent.</span>
+        <span class="line"><span class="term term-yoy">YoY</span> (Year-over-Year) = variation vs le même mois l'année dernière.</span>
+        <span class="line">Ce sont les deux métriques de croissance les plus utilisées en BI.</span>
+      </p>
       <table class="data" id="monthlyTable">
         <thead><tr><th>Mois</th><th class="num">CA</th><th class="num">MoM</th><th class="num">YoY</th></tr></thead>
         <tbody></tbody>
@@ -137,7 +153,10 @@
     </div>
     <div class="card chart-box">
       <h3>CA quotidien + moyenne mobile 7 jours</h3>
-      <p class="explainer">La moyenne mobile lisse les pics/creux journaliers pour voir la vraie tendance — c'est la technique de base pour lire un graphique de série temporelle.</p>
+      <p class="explainer">
+        <span class="line">La <span class="term term-ma">moyenne mobile</span> lisse les pics/creux journaliers pour voir la vraie tendance.</span>
+        <span class="line">C'est la technique de base pour lire un graphique de série temporelle.</span>
+      </p>
       <canvas id="movingAvgChart" height="80"></canvas>
     </div>
   </div>
@@ -147,9 +166,9 @@
     <div class="card chart-box">
       <h3>Segmentation RFM (Récence / Fréquence / Montant)</h3>
       <p class="explainer">
-        Technique de segmentation client classique en marketing/data : chaque client reçoit un score 1-4 sur trois axes
-        — <b>R</b>écence (il a acheté récemment ?), <b>F</b>réquence (il achète souvent ?), <b>M</b>onétaire (il dépense beaucoup ?).
-        Les scores combinés donnent un segment actionnable (Champions, À risque, Perdus...).
+        <span class="line">Technique de segmentation client classique en marketing/data : chaque client reçoit un score 1-4 sur trois axes.</span>
+        <span class="line"><span class="term term-r">Récence</span> (il a acheté récemment ?) · <span class="term term-f">Fréquence</span> (il achète souvent ?) · <span class="term term-m">Montant</span> (il dépense beaucoup ?).</span>
+        <span class="line">Les scores combinés donnent un segment actionnable (Champions, À risque, Perdus...).</span>
       </p>
       <table class="data" id="rfmTable">
         <thead><tr><th>Client</th><th class="num">Récence (j)</th><th class="num">Fréquence</th><th class="num">Montant</th><th class="num">R</th><th class="num">F</th><th class="num">M</th><th>Segment</th></tr></thead>
@@ -163,9 +182,9 @@
     <div class="card chart-box">
       <h3>Analyse de cohortes (rétention)</h3>
       <p class="explainer">
-        Chaque ligne = un groupe de clients ayant acheté pour la première fois ce mois-là (la "cohorte").
-        Chaque colonne = combien de mois plus tard. La couleur montre le % de la cohorte encore active —
-        c'est l'outil de référence pour mesurer la fidélisation dans le temps.
+        <span class="line">Chaque ligne = un groupe de clients ayant acheté pour la première fois ce mois-là (la <span class="term term-cohort">cohorte</span>).</span>
+        <span class="line">Chaque colonne = combien de mois plus tard. La couleur montre le % de la cohorte encore active.</span>
+        <span class="line">C'est l'outil de référence pour mesurer la <span class="term term-retention">fidélisation</span> dans le temps.</span>
       </p>
       <div id="cohortTable" class="scroll" style="overflow-x:auto;"></div>
     </div>
@@ -176,8 +195,8 @@
     <div class="card chart-box">
       <h3>Prévision de CA (régression linéaire)</h3>
       <p class="explainer" id="forecastNote">
-        Projette les prochains mois à partir de la tendance historique (régression linéaire simple, sans librairie externe).
-        À prendre avec des pincettes sur peu de données — c'est surtout pour comprendre le principe du forecasting.
+        <span class="line">Projette les prochains mois à partir de la tendance historique (<span class="term term-forecast">régression linéaire simple</span>, sans librairie externe).</span>
+        <span class="line">À prendre avec des pincettes sur peu de données — c'est surtout pour comprendre le principe du forecasting.</span>
       </p>
       <canvas id="forecastChart" height="80"></canvas>
     </div>
@@ -394,12 +413,17 @@ async function loadForecast() {
   if (!res.ok) return;
   const f = await res.json();
 
-  const defaultNote = "Projette les prochains mois à partir de la tendance historique (régression linéaire simple, sans librairie externe). À prendre avec des pincettes sur peu de données — c'est surtout pour comprendre le principe du forecasting.";
-  document.getElementById('forecastNote').textContent = f.note || defaultNote;
+  const defaultNoteHtml = `
+    <span class="line">Projette les prochains mois à partir de la tendance historique (<span class="term term-forecast">régression linéaire simple</span>, sans librairie externe).</span>
+    <span class="line">À prendre avec des pincettes sur peu de données — c'est surtout pour comprendre le principe du forecasting.</span>
+  `;
+  const noteEl = document.getElementById('forecastNote');
   if (f.note) {
+    noteEl.textContent = f.note;
     destroyChart('forecast');
     return;
   }
+  noteEl.innerHTML = defaultNoteHtml;
 
   const labels = [...f.history.map(h => h.month), ...f.forecast.map(x => x.month)];
   const historyData = [...f.history.map(h => h.revenue), ...f.forecast.map(() => null)];
