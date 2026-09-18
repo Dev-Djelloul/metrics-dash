@@ -6,7 +6,7 @@ from urllib.parse import urlencode
 
 import stripe
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import Body, Depends, FastAPI, HTTPException, Request
 from fastapi.responses import RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 
@@ -30,6 +30,22 @@ app = FastAPI(title="metrics-dash")
 
 _cache: dict[int, dict] = {}  # user_id -> {"charges": [...], "fetched_at": float}
 CACHE_TTL_SECONDS = 60
+
+# Secteurs proposés à la connexion : Stripe ne fournit aucune info
+# d'activité par transaction (une charge = montant/client/date, rien de
+# plus), donc on la demande une fois, déclarativement, plutôt que de
+# dépendre du MCC du compte Stripe (souvent absent ou peu fiable).
+SECTORS = [
+    "E-commerce / vente au détail",
+    "SaaS / logiciel",
+    "Conseil / services professionnels",
+    "Formation / éducation",
+    "Restauration / hôtellerie",
+    "Santé / bien-être",
+    "Média / création de contenu",
+    "Association / non lucratif",
+    "Autre",
+]
 
 
 @app.on_event("startup")
@@ -61,12 +77,32 @@ def get_current_user(request: Request) -> dict | None:
 @app.get("/api/status")
 def status(user: dict | None = Depends(get_current_user)):
     if user:
-        return {"connected": True, "account": user.get("account_name") or user.get("stripe_user_id")}
+        return {
+            "connected": True,
+            "account": user.get("account_name") or user.get("stripe_user_id"),
+            "sector": user.get("sector"),
+        }
     return {
         "connected": False,
         "reason": "Non connecté",
         "connect_configured": bool(STRIPE_CONNECT_CLIENT_ID),
     }
+
+
+@app.get("/api/sectors")
+def sectors():
+    return {"sectors": SECTORS}
+
+
+@app.post("/api/sector")
+def set_sector(payload: dict = Body(...), user=Depends(get_current_user)):
+    sector = (payload or {}).get("sector", "").strip()
+    if not sector or sector not in SECTORS:
+        raise HTTPException(400, "Secteur invalide")
+    if not user:
+        raise HTTPException(401, "Non connecté")
+    db.set_user_sector(user["id"], sector)
+    return {"ok": True, "sector": sector}
 
 
 @app.get("/auth/login")

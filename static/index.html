@@ -124,8 +124,11 @@
   .glossary dd { margin: 4px 0 0; color: var(--text-secondary); font-size: var(--fs-small); line-height: var(--fs-body-lh); }
 
   .export-list { display: flex; flex-wrap: nowrap; gap: var(--sp-3); }
-  .export-link { display: inline-flex; align-items: center; justify-content: center; flex: 1; white-space: nowrap; font-family: var(--font-sans); font-size: var(--fs-small); font-weight: 700; padding: 8px 16px; border-radius: var(--radius-pill); border: var(--border-w) solid; text-decoration: none; transition: var(--transition); }
+  .export-link { display: inline-flex; align-items: center; justify-content: center; flex: 1; white-space: nowrap; font-family: var(--font-sans); font-size: var(--fs-small); font-weight: 700; padding: 8px 16px; border-radius: var(--radius-pill); border: var(--border-w) solid; text-decoration: none; transition: var(--transition); cursor: pointer; }
   .export-link:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .export-link.active { outline: 2px solid currentColor; outline-offset: 2px; }
+  #sectorList { flex-wrap: wrap; }
+  #sectorList .export-link { flex: 1 1 auto; }
   .export-link.c1 { background: var(--accent-soft); color: var(--accent-text); border-color: var(--accent); }
   .export-link.c2 { background: var(--pos-soft); color: var(--pos-text); border-color: var(--pos); }
   .export-link.c3 { background: var(--warn-soft); color: var(--warn-text); border-color: var(--warn); }
@@ -196,6 +199,10 @@
 
   <div class="toolbar-row">
     <div id="status" class="status-pill">Connexion à Stripe...</div>
+    <button class="demo-btn" id="sectorBadge" type="button" title="Secteur d'activité de ces données">
+      <span class="demo-dot"></span>
+      <span id="sectorBadgeLabel">Secteur non renseigné</span>
+    </button>
     <button class="demo-btn" id="demoToggle" data-on="false" type="button" aria-pressed="false" title="8 mois de données simulées, pour voir cohortes/tendances/prévision avec du volume">
       <span class="demo-dot"></span>
       Mode démo
@@ -472,6 +479,18 @@
     </div>
   </div>
 
+  <!-- Popup secteur d'activité -->
+  <div class="modal-overlay" id="sectorModal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="sectorModalTitle">
+      <button class="modal-close" id="sectorModalClose" type="button" aria-label="Fermer">&times;</button>
+      <h3 id="sectorModalTitle">Quel est ton secteur d'activité ?</h3>
+      <p class="explainer">
+        <span class="line">Stripe ne transmet aucune info sur ton activité (une transaction, c'est juste un montant, un client, une date) — cette info sert uniquement à situer tes métriques dans leur contexte.</span>
+      </p>
+      <div class="export-list" id="sectorList"></div>
+    </div>
+  </div>
+
 <script>
 const charts = {};
 
@@ -522,6 +541,72 @@ powerBiModal.addEventListener('click', (e) => {
 });
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && !powerBiModal.hidden) closePowerBiModal();
+});
+
+/* --- Secteur d'activité --- */
+// Stripe ne fournit rien sur l'activité derrière les transactions : on le
+// demande une fois, de façon déclarative. Stocké en base (D1) pour un
+// compte connecté, en localStorage pour le mode démo (pas d'utilisateur
+// réel à rattacher).
+const sectorModal = document.getElementById('sectorModal');
+const DEMO_SECTOR_KEY = 'metrics-dash-demo-sector';
+let sectorsCache = null;
+
+function openSectorModal() {
+  sectorModal.hidden = false;
+}
+function closeSectorModal() {
+  sectorModal.hidden = true;
+}
+document.getElementById('sectorModalClose').addEventListener('click', closeSectorModal);
+sectorModal.addEventListener('click', (e) => {
+  if (e.target === sectorModal) closeSectorModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !sectorModal.hidden) closeSectorModal();
+});
+
+async function getSectors() {
+  if (sectorsCache) return sectorsCache;
+  const res = await fetch('/api/sectors');
+  const data = await res.json();
+  sectorsCache = data.sectors;
+  return sectorsCache;
+}
+
+async function renderSectorList(currentSector) {
+  const sectors = await getSectors();
+  const list = document.getElementById('sectorList');
+  list.innerHTML = sectors.map((s, i) => {
+    const cls = 'export-link c' + ((i % 4) + 1) + (s === currentSector ? ' active' : '');
+    return `<button class="${cls}" type="button" data-sector="${s}">${s}</button>`;
+  }).join('');
+  list.querySelectorAll('[data-sector]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const sector = btn.dataset.sector;
+      if (isDemo()) {
+        localStorage.setItem(DEMO_SECTOR_KEY, sector);
+      } else {
+        await fetch('/api/sector', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sector }),
+        });
+      }
+      updateSectorBadge(sector);
+      closeSectorModal();
+    });
+  });
+}
+
+function updateSectorBadge(sector) {
+  document.getElementById('sectorBadgeLabel').textContent = sector || 'Secteur non renseigné';
+}
+
+document.getElementById('sectorBadge').addEventListener('click', async () => {
+  const current = document.getElementById('sectorBadgeLabel').textContent;
+  await renderSectorList(current === 'Secteur non renseigné' ? null : current);
+  openSectorModal();
 });
 
 // Zoom/pan de la carte géographique : géré nous-mêmes en CSS transform sur
@@ -638,6 +723,7 @@ async function loadStatus() {
     el.innerHTML = `${stripeIcon}<span class="status-dot"></span>Non connecté — utilise le mode démo`;
     el.className = 'status-pill error';
   }
+  updateSectorBadge(isDemo() ? localStorage.getItem(DEMO_SECTOR_KEY) : data.sector);
   return data.connected;
 }
 
