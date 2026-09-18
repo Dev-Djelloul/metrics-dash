@@ -24,6 +24,10 @@ from stripe_metrics import (
 
 load_dotenv()
 
+# Force un rebuild de l'image Docker (donc un vrai redémarrage du conteneur)
+# après une rotation de STRIPE_SECRET_KEY : un `wrangler secret put` seul ne
+# relit pas la variable dans un conteneur déjà démarré — même leçon que pour
+# les secrets D1 rencontrée plus tôt dans ce projet.
 # Cette clé identifie *ta plateforme* auprès de Stripe (nécessaire pour
 # échanger le code OAuth contre le jeton d'un utilisateur). Elle ne sert
 # plus à lire les charges de qui que ce soit directement — chaque
