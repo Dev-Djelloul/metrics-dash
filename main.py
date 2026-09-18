@@ -25,6 +25,10 @@ load_dotenv()
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_CONNECT_CLIENT_ID = os.getenv("STRIPE_CONNECT_CLIENT_ID")
 SESSION_SECRET = os.getenv("SESSION_SECRET")
+# Secret du endpoint webhook (distinct de la clé API) : Stripe le donne
+# quand on crée le endpoint dans le dashboard Connect, sert uniquement à
+# vérifier que les événements reçus viennent bien de Stripe.
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 
 app = FastAPI(title="metrics-dash")
 
@@ -222,7 +226,10 @@ def auth_logout():
 
 def get_charges_for_user(user: dict):
     """Fetches charges for one logged-in user, cached briefly per user to
-    avoid hammering Stripe every time that user reloads a tab."""
+    avoid hammering Stripe every time that user reloads a tab. Le webhook
+    Stripe invalide ce cache dès qu'un paiement arrive, donc ce TTL n'est
+    plus qu'un filet de sécurité (si le webhook n'est pas configuré ou rate
+    un événement), pas le seul mécanisme de fraîcheur."""
     now = time.time()
     cached = _cache.get(user["id"])
     if cached is not None and now - cached["fetched_at"] < CACHE_TTL_SECONDS:
@@ -235,6 +242,36 @@ def get_charges_for_user(user: dict):
 
     _cache[user["id"]] = {"charges": charges, "fetched_at": now}
     return charges
+
+
+@app.post("/webhooks/stripe")
+async def stripe_webhook(request: Request):
+    """Reçoit les événements Stripe Connect (un paiement chez un utilisateur
+    connecté) pour invalider son cache immédiatement, plutôt que d'attendre
+    jusqu'à CACHE_TTL_SECONDS — les métriques suivent le paiement en quasi
+    temps réel au lieu du polling toutes les 60s."""
+    if not STRIPE_WEBHOOK_SECRET:
+        raise HTTPException(500, "STRIPE_WEBHOOK_SECRET non configuré côté serveur")
+
+    payload = await request.body()
+    signature = request.headers.get("stripe-signature", "")
+    try:
+        event = stripe.Webhook.construct_event(payload, signature, STRIPE_WEBHOOK_SECRET)
+    except (ValueError, stripe.error.SignatureVerificationError):
+        raise HTTPException(400, "Signature webhook invalide")
+
+    # Les événements Stripe Connect portent l'id du compte connecté dans
+    # `event.account` (absent des événements sur le compte plateforme lui-même).
+    stripe_account_id = event.get("account")
+    if stripe_account_id:
+        try:
+            user = db.get_user_by_stripe_id(stripe_account_id)
+        except Exception:
+            user = None
+        if user:
+            _cache.pop(user["id"], None)
+
+    return {"received": True}
 
 
 def get_records(demo: bool, start: str, end: str, user: dict | None):
@@ -323,6 +360,41 @@ def new_vs_returning(demo: bool = False, start: str = None, end: str = None, use
 def loyalty(demo: bool = False, start: str = None, end: str = None, user=Depends(get_current_user)):
     records, _ = get_records(demo, start, end, user)
     return analytics.loyalty_metrics(records)
+
+
+@app.get("/api/alerts")
+def alerts(demo: bool = False, start: str = None, end: str = None, user=Depends(get_current_user)):
+    """Alertes simples calculées à la volée (pas de notif email — nécessiterait
+    un service d'envoi qu'on n'a pas encore) : un déclin marqué du CA d'un
+    mois sur l'autre, ou un nombre significatif de clients à risque/perdus."""
+    records, _ = get_records(demo, start, end, user)
+    result = []
+
+    monthly = analytics.growth_metrics(records)["monthly"]
+    if monthly:
+        last = monthly[-1]
+        if last["mom_growth_pct"] is not None and last["mom_growth_pct"] <= -20:
+            result.append(
+                {
+                    "type": "revenue_drop",
+                    "severity": "warning",
+                    "message": f"CA de {last['month']} en baisse de {abs(last['mom_growth_pct'])}% vs le mois précédent.",
+                }
+            )
+
+    rfm_rows = analytics.rfm_segments(records)
+    at_risk = [r for r in rfm_rows if "risque" in r["segment"] or "Perdus" in r["segment"]]
+    if rfm_rows and len(at_risk) / len(rfm_rows) >= 0.3:
+        pct = round(len(at_risk) / len(rfm_rows) * 100)
+        result.append(
+            {
+                "type": "churn_risk",
+                "severity": "warning",
+                "message": f"{pct}% des clients sont à risque ou perdus ({len(at_risk)}/{len(rfm_rows)}).",
+            }
+        )
+
+    return {"alerts": result}
 
 
 @app.get("/api/geo")
