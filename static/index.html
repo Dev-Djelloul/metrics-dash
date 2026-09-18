@@ -921,6 +921,12 @@ async function loadGeo() {
   const byIsoNumeric = {};
   geo.countries.forEach(c => { if (c.iso_numeric) byIsoNumeric[c.iso_numeric] = c.revenue; });
   const maxRevenue = Math.max(1, ...Object.values(byIsoNumeric));
+  // Terres sans donnée : volontairement à contre-sens du thème (blanc en
+  // sombre, noir en clair) pour un fort contraste avec le fond de page qui,
+  // lui, suit le thème normalement.
+  const isDarkTheme = document.documentElement.getAttribute('data-theme') !== 'light';
+  const landColor = isDarkTheme ? '#FFFFFF' : '#000000';
+  const pageBgColor = cssVar('--surface-1');
 
   // La carte dépend d'une librairie et de données externes (chartjs-chart-geo
   // + contours de pays) : si l'une des deux échoue à charger, on dégrade
@@ -936,7 +942,7 @@ async function loadGeo() {
           data: features.map(f => ({ feature: f, value: byIsoNumeric[f.id] || 0 })),
           backgroundColor: (ctx) => {
             const d = ctx.dataset && ctx.dataset.data && ctx.dataset.data[ctx.dataIndex];
-            if (!d || !d.value) return cssVar('--surface-3');
+            if (!d || !d.value) return landColor;
             const alpha = 0.25 + 0.75 * (d.value / maxRevenue);
             return hexToRgba(cssVar('--accent'), alpha);
           },
@@ -954,6 +960,12 @@ async function loadGeo() {
         devicePixelRatio: Math.max(4, window.devicePixelRatio * 2),
         showOutline: true,
         showGraticule: false,
+        // Contours du globe (l'"outline" derrière les pays) explicitement
+        // calés sur les couleurs du thème — sans ça, la librairie retombe
+        // sur ses couleurs par défaut (blanc/noir), ce qui donnait des
+        // continents à contre-sens du thème (blancs en sombre, noirs en clair).
+        outlineBackgroundColor: pageBgColor,
+        outlineBorderColor: cssVar('--border'),
         plugins: {
           legend: { display: false },
           tooltip: {
