@@ -73,6 +73,63 @@ def compute_metrics_from_records(records, currency="eur"):
     }
 
 
+def fetch_active_subscriptions(api_key: str, limit_pages: int = 5):
+    """Pulls active + trialing subscriptions, with their price expanded (on a
+    besoin de price.unit_amount et price.recurring pour calculer le MRR sans
+    un second aller-retour API par abonnement)."""
+    subscriptions = []
+    starting_after = None
+    for _ in range(limit_pages):
+        page = stripe.Subscription.list(
+            status="all",
+            limit=100,
+            starting_after=starting_after,
+            expand=["data.items.data.price"],
+            api_key=api_key,
+        )
+        subscriptions.extend(page.data)
+        if not page.has_more:
+            break
+        starting_after = page.data[-1].id
+    return [s for s in subscriptions if s.status in ("active", "trialing")]
+
+
+# Convertit n'importe quel intervalle de facturation Stripe (jour, semaine,
+# mois x N, année) en équivalent mensuel — c'est la définition même du MRR
+# (Monthly Recurring Revenue) : "si ce prix était facturé tous les mois,
+# combien ça representerait ?".
+_MONTHS_PER_INTERVAL = {"day": 1 / 30, "week": 1 / (52 / 12), "month": 1, "year": 12}
+
+
+def compute_mrr(subscriptions):
+    """Calcule le MRR à partir d'abonnements Stripe actifs/en essai.
+
+    Regroupé par devise plutôt que sommé globalement : un abonnement à 10 USD
+    et un à 10 EUR ne valent pas "20", ce sont deux montants dans deux
+    unités différentes (même logique que pour les paiements ponctuels)."""
+    by_currency = defaultdict(lambda: {"mrr": 0.0, "subscriptions": 0})
+
+    for sub in subscriptions:
+        for item in sub["items"]["data"]:
+            price = item["price"]
+            recurring = price.get("recurring") or {}
+            interval = recurring.get("interval", "month")
+            interval_count = recurring.get("interval_count", 1) or 1
+            months = _MONTHS_PER_INTERVAL.get(interval, 1) * interval_count
+
+            amount = (price.get("unit_amount") or 0) / 100 * item.get("quantity", 1)
+            monthly_amount = amount / months if months else 0
+
+            bucket = by_currency[price.get("currency", "eur")]
+            bucket["mrr"] += monthly_amount
+        by_currency[sub["items"]["data"][0]["price"].get("currency", "eur")]["subscriptions"] += 1
+
+    return [
+        {"currency": currency, "mrr": round(data["mrr"], 2), "active_subscriptions": data["subscriptions"]}
+        for currency, data in sorted(by_currency.items())
+    ]
+
+
 def charges_to_records(charges):
     """
     Normalizes raw Stripe Charge objects into plain dicts so the

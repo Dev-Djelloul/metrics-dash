@@ -14,7 +14,13 @@ import analytics
 import auth
 import db
 import demo_data
-from stripe_metrics import charges_to_records, compute_metrics_from_records, fetch_recent_charges
+from stripe_metrics import (
+    charges_to_records,
+    compute_metrics_from_records,
+    compute_mrr,
+    fetch_active_subscriptions,
+    fetch_recent_charges,
+)
 
 load_dotenv()
 
@@ -415,6 +421,27 @@ def alerts(demo: bool = False, start: str = None, end: str = None, currency: str
 def geo(demo: bool = False, start: str = None, end: str = None, currency: str = None, user=Depends(get_current_user)):
     records, _ = get_records(demo, start, end, user, currency)
     return analytics.revenue_by_country(records)
+
+
+@app.get("/api/mrr")
+def mrr(demo: bool = False, user=Depends(get_current_user)):
+    """MRR (Monthly Recurring Revenue) : n'a de sens que pour de vrais
+    abonnements Stripe (objets Subscription), pas pour les paiements
+    ponctuels analysés partout ailleurs dans l'app. Le mode démo simule
+    des achats ponctuels, donc pas d'abonnements à agréger ici."""
+    if demo:
+        return {"available": False, "reason": "demo", "by_currency": []}
+    if not user:
+        raise HTTPException(401, "Non connecté — connecte-toi avec Stripe ou utilise le mode démo.")
+
+    try:
+        subscriptions = fetch_active_subscriptions(api_key=user["stripe_access_token"])
+    except stripe.error.AuthenticationError:
+        raise HTTPException(401, "Jeton Stripe invalide ou révoqué — reconnecte-toi.")
+    if not subscriptions:
+        return {"available": False, "reason": "no_subscriptions", "by_currency": []}
+
+    return {"available": True, "by_currency": compute_mrr(subscriptions)}
 
 
 def _csv_response(rows: list[dict], filename: str) -> Response:
