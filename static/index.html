@@ -85,8 +85,8 @@
   .glossary dt:first-child { margin-top: 0; }
   .glossary dd { margin: 4px 0 0; color: var(--text-secondary); font-size: var(--fs-small); line-height: var(--fs-body-lh); }
 
-  .export-list { display: flex; flex-wrap: wrap; gap: var(--sp-3); }
-  .export-link { display: inline-flex; align-items: center; font-family: var(--font-sans); font-size: var(--fs-small); font-weight: 700; padding: 8px 16px; border-radius: var(--radius-pill); border: var(--border-w) solid; text-decoration: none; transition: var(--transition); }
+  .export-list { display: flex; flex-wrap: nowrap; gap: var(--sp-3); }
+  .export-link { display: inline-flex; align-items: center; justify-content: center; flex: 1; white-space: nowrap; font-family: var(--font-sans); font-size: var(--fs-small); font-weight: 700; padding: 8px 16px; border-radius: var(--radius-pill); border: var(--border-w) solid; text-decoration: none; transition: var(--transition); }
   .export-link:hover { filter: brightness(1.1); transform: translateY(-1px); }
   .export-link.c1 { background: var(--accent-soft); color: var(--accent-text); border-color: var(--accent); }
   .export-link.c2 { background: var(--pos-soft); color: var(--pos-text); border-color: var(--pos); }
@@ -96,7 +96,7 @@
   /* Popup Power BI */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; padding: var(--sp-4); z-index: 100; }
   .modal-overlay[hidden] { display: none; }
-  .modal-card { position: relative; background: var(--surface-1); border: var(--border-w) solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-pop); padding: var(--sp-6); max-width: 540px; width: 100%; }
+  .modal-card { position: relative; background: var(--surface-1); border: var(--border-w) solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-pop); padding: var(--sp-6); max-width: 900px; width: 100%; }
   .modal-card h3 { margin: 0 0 var(--sp-3); font-size: var(--fs-h2); font-weight: var(--fw-h2); color: var(--text-primary); }
   .modal-close { position: absolute; top: var(--sp-3); right: var(--sp-3); width: 28px; height: 28px; border-radius: 50%; border: none; background: var(--surface-2); color: var(--text-secondary); font-size: 20px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: var(--transition); }
   .modal-close:hover { background: var(--surface-3); color: var(--text-primary); }
@@ -118,6 +118,8 @@
     .tab { padding: 8px 2px; white-space: nowrap; }
     .chart-box { padding: var(--sp-4); }
     .chart-row, .chart-row-wide { grid-template-columns: 1fr; }
+    .export-list { flex-wrap: wrap; }
+    .export-link { flex: 1 1 auto; }
     table.data { display: block; overflow-x: auto; white-space: nowrap; }
     .kpi-card:hover, .chart-box:hover { transform: none; }
   }
