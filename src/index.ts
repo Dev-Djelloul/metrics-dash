@@ -3,6 +3,11 @@ import { Container, getContainer } from "@cloudflare/containers";
 interface Env {
   METRICS_DASH_CONTAINER: DurableObjectNamespace<MetricsDashContainer>;
   STRIPE_SECRET_KEY: string;
+  STRIPE_CONNECT_CLIENT_ID: string;
+  SESSION_SECRET: string;
+  CF_ACCOUNT_ID: string;
+  CF_API_TOKEN: string;
+  CF_D1_DATABASE_ID: string;
 }
 
 // Le Worker ne fait que router les requêtes vers le conteneur Docker
@@ -13,6 +18,11 @@ export class MetricsDashContainer extends Container<Env> {
 
   envVars = {
     STRIPE_SECRET_KEY: this.env.STRIPE_SECRET_KEY ?? "",
+    STRIPE_CONNECT_CLIENT_ID: this.env.STRIPE_CONNECT_CLIENT_ID ?? "",
+    SESSION_SECRET: this.env.SESSION_SECRET ?? "",
+    CF_ACCOUNT_ID: this.env.CF_ACCOUNT_ID ?? "",
+    CF_API_TOKEN: this.env.CF_API_TOKEN ?? "",
+    CF_D1_DATABASE_ID: this.env.CF_D1_DATABASE_ID ?? "",
   };
 }
 
