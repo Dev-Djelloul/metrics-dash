@@ -57,10 +57,18 @@ def ensure_schema():
             stripe_user_id TEXT UNIQUE NOT NULL,
             stripe_access_token TEXT NOT NULL,
             account_name TEXT,
+            sector TEXT,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
         """
     )
+    # ALTER TABLE ... ADD COLUMN échoue si la colonne existe déjà : on
+    # l'ignore pour rester idempotent sur une base créée avant l'ajout du
+    # secteur d'activité.
+    try:
+        query("ALTER TABLE users ADD COLUMN sector TEXT")
+    except Exception:
+        pass
 
 
 def upsert_user(stripe_user_id: str, access_token: str, account_name: str | None) -> int:
@@ -84,3 +92,7 @@ def upsert_user(stripe_user_id: str, access_token: str, account_name: str | None
 def get_user(user_id: int) -> dict | None:
     rows = query("SELECT * FROM users WHERE id = ?", [user_id])
     return rows[0] if rows else None
+
+
+def set_user_sector(user_id: int, sector: str) -> None:
+    query("UPDATE users SET sector = ? WHERE id = ?", [sector, user_id])
