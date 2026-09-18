@@ -13,7 +13,8 @@
   .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-2); }
   .brand { display: flex; align-items: center; gap: var(--sp-3); }
   .brand-mark { width: 28px; height: 28px; color: var(--accent); flex-shrink: 0; }
-  .brand-name { font-size: var(--fs-h1); font-weight: var(--fw-h1); line-height: var(--fs-h1-lh); margin: 0; }
+  .brand-name { font-family: 'Inter Tight', sans-serif; font-size: 20px; font-weight: 800; letter-spacing: -0.02em; color: var(--text-primary); }
+  .brand-accent { color: var(--accent); }
 
   .theme-toggle { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-small); color: var(--text-secondary); }
 
@@ -33,12 +34,19 @@
 <body>
   <div class="page-header">
     <div class="brand">
-      <svg class="brand-mark" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <rect x="3" y="12" width="4" height="9" rx="1" fill="currentColor"/>
-        <rect x="10" y="7" width="4" height="14" rx="1" fill="currentColor"/>
-        <rect x="17" y="3" width="4" height="18" rx="1" fill="currentColor"/>
+      <svg class="brand-mark" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="24" height="24" aria-hidden="true">
+        <rect width="24" height="24" rx="7" fill="url(#mdGradient)"/>
+        <path d="M3 18 L3 12 L7 12 L7 18" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M9.5 18 L9.5 8 L13.5 8 L13.5 18" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M16 18 L16 4 L20 4 L20 18" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <defs>
+          <linearGradient id="mdGradient" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#7C6CF6"/>
+            <stop offset="1" stop-color="#38BDF8"/>
+          </linearGradient>
+        </defs>
       </svg>
-      <h1 class="brand-name">metrics-dash</h1>
+      <span class="brand-name">metrics<span class="brand-accent">-</span>dash</span>
     </div>
     <div class="theme-toggle">
       <span>Clair</span>
