@@ -47,6 +47,22 @@ SECTORS = [
     "Autre",
 ]
 
+# Repères sectoriels indicatifs (ordres de grandeur généralement admis pour
+# ces types d'activité), PAS calculés depuis les données des utilisateurs
+# de metrics-dash — trop peu nombreux pour une moyenne significative. Servent
+# de point de comparaison approximatif, pas une vérité statistique.
+SECTOR_BENCHMARKS = {
+    "E-commerce / vente au détail": {"repeat_customer_pct": 30, "avg_days_between_purchases": 45, "top_share_pct": 65},
+    "SaaS / logiciel": {"repeat_customer_pct": 75, "avg_days_between_purchases": 30, "top_share_pct": 70},
+    "Conseil / services professionnels": {"repeat_customer_pct": 40, "avg_days_between_purchases": 60, "top_share_pct": 75},
+    "Formation / éducation": {"repeat_customer_pct": 25, "avg_days_between_purchases": 90, "top_share_pct": 60},
+    "Restauration / hôtellerie": {"repeat_customer_pct": 35, "avg_days_between_purchases": 20, "top_share_pct": 55},
+    "Santé / bien-être": {"repeat_customer_pct": 45, "avg_days_between_purchases": 35, "top_share_pct": 60},
+    "Média / création de contenu": {"repeat_customer_pct": 50, "avg_days_between_purchases": 30, "top_share_pct": 65},
+    "Association / non lucratif": {"repeat_customer_pct": 20, "avg_days_between_purchases": 120, "top_share_pct": 70},
+    "Autre": {"repeat_customer_pct": 35, "avg_days_between_purchases": 45, "top_share_pct": 65},
+}
+
 
 @app.on_event("startup")
 def on_startup():
@@ -92,6 +108,11 @@ def status(user: dict | None = Depends(get_current_user)):
 @app.get("/api/sectors")
 def sectors():
     return {"sectors": SECTORS}
+
+
+@app.get("/api/benchmarks")
+def benchmarks(sector: str = None):
+    return SECTOR_BENCHMARKS.get(sector, SECTOR_BENCHMARKS["Autre"])
 
 
 @app.post("/api/sector")
