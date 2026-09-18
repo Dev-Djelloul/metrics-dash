@@ -323,16 +323,33 @@ function card(label, value, sub) {
   return `<div class="card kpi-card"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div>${subHtml}</div>`;
 }
 
+// Devise résolue une fois par /api/metrics (seule route qui la renvoie),
+// puis réutilisée partout ailleurs (tableaux + info-bulles des graphiques)
+// pour ne pas afficher un montant sans son unité.
+const CURRENCY_SYMBOL = { EUR: '€', USD: '$', GBP: '£' };
+let currentCurrency = 'EUR';
+
+function fmtMoney(value) {
+  const symbol = CURRENCY_SYMBOL[currentCurrency];
+  return symbol ? `${value.toFixed(2)} ${symbol}` : `${value.toFixed(2)} ${currentCurrency}`;
+}
+
+function moneyTooltip(ctx) {
+  const label = ctx.dataset.label || ctx.label || '';
+  const value = ctx.parsed?.y ?? ctx.parsed;
+  return value === null || value === undefined ? label : `${label}: ${fmtMoney(value)}`;
+}
+
 async function loadOverview() {
   const res = await fetch(apiUrl('/api/metrics'));
   if (!res.ok) return;
   const m = await res.json();
-  const currency = m.currency.toUpperCase();
+  currentCurrency = m.currency.toUpperCase();
 
   document.getElementById('cards').innerHTML =
-    card('Chiffre d\'affaires', `${m.total_revenue.toFixed(2)} ${currency}`) +
+    card('Chiffre d\'affaires', fmtMoney(m.total_revenue)) +
     card('Commandes', m.order_count) +
-    card('Panier moyen', `${m.avg_order_value.toFixed(2)} ${currency}`);
+    card('Panier moyen', fmtMoney(m.avg_order_value));
 
   destroyChart('revenue');
   charts.revenue = new Chart(document.getElementById('revenueChart'), {
@@ -345,16 +362,16 @@ async function loadOverview() {
       }]
     },
     options: {
-      plugins: { legend: { display: false } },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: moneyTooltip } } },
       scales: {
         x: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary') } },
-        y: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary') } },
+        y: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary'), callback: fmtMoney } },
       },
     }
   });
 
   document.querySelector('#customersTable tbody').innerHTML = m.top_customers.map(c =>
-    `<tr><td>${c.name}</td><td class="num">${c.amount.toFixed(2)} ${currency}</td></tr>`
+    `<tr><td>${c.name}</td><td class="num">${fmtMoney(c.amount)}</td></tr>`
   ).join('');
 }
 
@@ -374,10 +391,10 @@ async function loadWeekday() {
       }]
     },
     options: {
-      plugins: { legend: { display: false } },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: moneyTooltip } } },
       scales: {
         x: { grid: { display: false }, ticks: { color: cssVar('--text-secondary') } },
-        y: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary') } },
+        y: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary'), callback: fmtMoney } },
       },
     }
   });
@@ -401,7 +418,10 @@ async function loadConcentration() {
       }]
     },
     options: {
-      plugins: { legend: { position: 'bottom', labels: { color: cssVar('--text-secondary') } } },
+      plugins: {
+        legend: { position: 'bottom', labels: { color: cssVar('--text-secondary') } },
+        tooltip: { callbacks: { label: moneyTooltip } },
+      },
     }
   });
 }
@@ -419,7 +439,7 @@ async function loadGrowth() {
   const g = await res.json();
 
   document.querySelector('#monthlyTable tbody').innerHTML = g.monthly.map(m =>
-    `<tr><td>${m.month}</td><td class="num">${m.revenue.toFixed(2)}</td><td class="num">${growthArrow(m.mom_growth_pct)}</td><td class="num">${growthArrow(m.yoy_growth_pct)}</td></tr>`
+    `<tr><td>${m.month}</td><td class="num">${fmtMoney(m.revenue)}</td><td class="num">${growthArrow(m.mom_growth_pct)}</td><td class="num">${growthArrow(m.yoy_growth_pct)}</td></tr>`
   ).join('');
 
   destroyChart('movingAvg');
@@ -433,10 +453,10 @@ async function loadGrowth() {
       ]
     },
     options: {
-      plugins: { legend: { labels: { color: cssVar('--text-secondary') } } },
+      plugins: { legend: { labels: { color: cssVar('--text-secondary') } }, tooltip: { callbacks: { label: moneyTooltip } } },
       scales: {
         x: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary') } },
-        y: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary') } },
+        y: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary'), callback: fmtMoney } },
       },
     }
   });
@@ -465,7 +485,7 @@ async function loadRfm() {
 
   document.querySelector('#rfmTable tbody').innerHTML = rows.map(r =>
     `<tr>
-      <td>${r.customer}</td><td class="num">${r.recency_days}</td><td class="num">${r.frequency}</td><td class="num">${r.monetary.toFixed(2)}</td>
+      <td>${r.customer}</td><td class="num">${r.recency_days}</td><td class="num">${r.frequency}</td><td class="num">${fmtMoney(r.monetary)}</td>
       <td class="num">${r.r_score}</td><td class="num">${r.f_score}</td><td class="num">${r.m_score}</td>
       <td><span class="badge ${SEGMENT_CLASS[r.segment] || 'loyal'}">${r.segment}</span></td>
     </tr>`
@@ -560,17 +580,20 @@ async function loadForecast() {
       ]
     },
     options: {
-      plugins: { legend: { labels: { color: cssVar('--text-secondary') } } },
+      plugins: { legend: { labels: { color: cssVar('--text-secondary') } }, tooltip: { callbacks: { label: moneyTooltip } } },
       scales: {
         x: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary') } },
-        y: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary') } },
+        y: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary'), callback: fmtMoney } },
       },
     }
   });
 }
 
 async function loadAll() {
-  await Promise.all([loadOverview(), loadGrowth(), loadRfm(), loadCohorts(), loadForecast(), loadWeekday(), loadConcentration()]);
+  // loadOverview() en premier : c'est la seule route qui renvoie la devise
+  // (currentCurrency), utilisée par fmtMoney() dans tous les autres onglets.
+  await loadOverview();
+  await Promise.all([loadGrowth(), loadRfm(), loadCohorts(), loadForecast(), loadWeekday(), loadConcentration()]);
 }
 
 (async () => {
