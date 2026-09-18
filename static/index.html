@@ -18,7 +18,18 @@
      badges, labels KPI...) en héritent automatiquement.
      Attention : Electrolize n'a qu'un poids (400) — le gras est un
      "faux gras" simulé par le navigateur, à vérifier visuellement. */
-  :root { --font-sans: 'Electrolize', sans-serif; }
+  :root {
+    --font-sans: 'Electrolize', sans-serif;
+    /* Police globale agrandie d'~15-20% vs les valeurs par défaut du
+       design system (toute la page en hérite, une seule variable par
+       niveau à changer). */
+    --fs-h1: 32px;
+    --fs-h2: 23px;
+    --fs-body: 16px;
+    --fs-small: 15px;
+    --fs-caption: 13px;
+    --fs-kpi: 38px;
+  }
 
   body { padding: var(--sp-8); }
 
