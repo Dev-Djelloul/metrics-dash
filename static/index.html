@@ -2,8 +2,14 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>metrics-dash</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#0A0B0F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="metrics-dash">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-geo@4"></script>
 <link rel="stylesheet" href="design-system.css">
@@ -1223,6 +1229,15 @@ async function loadAll() {
   if (!connected && !isDemo()) return;
   await loadAll();
 })();
+
+// PWA : enregistre le service worker (app shell en cache, jamais l'API).
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch((err) => {
+      console.error('Échec de l\'enregistrement du service worker :', err);
+    });
+  });
+}
 </script>
 </body>
 </html>
