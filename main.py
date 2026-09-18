@@ -74,12 +74,19 @@ def auth_login(request: Request):
     if not STRIPE_CONNECT_CLIENT_ID:
         raise HTTPException(500, "STRIPE_CONNECT_CLIENT_ID non configuré côté serveur")
 
+    # Cloudflare termine le HTTPS à la périphérie et transmet au conteneur
+    # en clair : request.url_for() voit donc un schéma "http" et générerait
+    # une redirect_uri qui ne correspond pas à celle enregistrée sur Stripe
+    # (toujours en https). On force le schéma plutôt que de le déduire de
+    # la requête interne.
+    redirect_uri = str(request.url_for("auth_callback")).replace("http://", "https://", 1)
+
     params = urlencode(
         {
             "response_type": "code",
             "client_id": STRIPE_CONNECT_CLIENT_ID,
             "scope": "read_only",
-            "redirect_uri": str(request.url_for("auth_callback")),
+            "redirect_uri": redirect_uri,
         }
     )
     return RedirectResponse(f"https://connect.stripe.com/oauth/authorize?{params}")
