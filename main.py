@@ -179,14 +179,15 @@ def auth_callback(code: str = None, error: str = None):
 
     try:
         token_response = stripe.OAuth.token(grant_type="authorization_code", code=code)
-    except stripe.oauth_error.OAuthError:
-        return RedirectResponse("/?auth_error=oauth_failed")
     except Exception as exc:
-        # Log côté serveur (stdout, visible via les logs du conteneur), mais
-        # jamais l'exception brute au visiteur — un utilisateur non technique
-        # ne doit pas voir une trace Python.
+        # Diagnostic temporaire : wrangler tail ne remonte pas stdout du
+        # conteneur Python (seulement les logs du Worker JS), donc on met
+        # exceptionnellement le détail dans l'URL de redirection, le temps
+        # d'identifier la cause d'un échec OAuth récurrent. À retirer une
+        # fois stabilisé.
+        detail = urlencode({"detail": f"{type(exc).__name__}: {exc}"})
         print(f"[metrics-dash] Échec de l'échange du code OAuth : {type(exc).__name__}: {exc}")
-        return RedirectResponse("/?auth_error=oauth_failed")
+        return RedirectResponse(f"/?auth_error=oauth_failed&{detail}")
 
     stripe_user_id = token_response["stripe_user_id"]
     access_token = token_response["access_token"]
