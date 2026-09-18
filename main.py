@@ -81,11 +81,16 @@ def auth_login(request: Request):
     # la requête interne.
     redirect_uri = str(request.url_for("auth_callback")).replace("http://", "https://", 1)
 
+    # Stripe réserve le scope "read_only" aux comptes plateforme activés
+    # spécifiquement pour ça (sur demande à leur support) — indisponible
+    # par défaut. "read_write" est donc la seule option immédiatement
+    # utilisable ; le code de l'app n'appelle que des endpoints Stripe en
+    # lecture (Charge.list, Account.retrieve), jamais d'écriture.
     params = urlencode(
         {
             "response_type": "code",
             "client_id": STRIPE_CONNECT_CLIENT_ID,
-            "scope": "read_only",
+            "scope": "read_write",
             "redirect_uri": redirect_uri,
         }
     )
