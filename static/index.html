@@ -921,10 +921,11 @@ async function loadGeo() {
   const byIsoNumeric = {};
   geo.countries.forEach(c => { if (c.iso_numeric) byIsoNumeric[c.iso_numeric] = c.revenue; });
   const maxRevenue = Math.max(1, ...Object.values(byIsoNumeric));
-  // Terres sans donnée : un gris neutre du thème (pas de blanc/noir figé,
-  // qui donnait des continents à contre-sens du thème). Océan/fond du
-  // globe calé sur le fond de page, pour qu'il se fonde avec le reste du dashboard.
-  const landColor = cssVar('--surface-3');
+  // Terres sans donnée : volontairement à contre-sens du thème (blanc en
+  // sombre, noir en clair) pour un fort contraste avec le fond de page qui,
+  // lui, suit le thème normalement.
+  const isDarkTheme = document.documentElement.getAttribute('data-theme') !== 'light';
+  const landColor = isDarkTheme ? '#FFFFFF' : '#000000';
   const pageBgColor = cssVar('--surface-1');
 
   // La carte dépend d'une librairie et de données externes (chartjs-chart-geo
