@@ -13,6 +13,28 @@ def _month_key(dt: datetime) -> str:
     return dt.strftime("%Y-%m")
 
 
+def filter_by_date(records, start: str = None, end: str = None):
+    """Filtre les enregistrements sur une période (dates "YYYY-MM-DD",
+    bornes incluses). Utilisé par le date range picker du dashboard —
+    None de chaque côté laisse la période ouverte dans ce sens."""
+    if not start and not end:
+        return records
+
+    start_dt = datetime.strptime(start, "%Y-%m-%d").replace(tzinfo=timezone.utc) if start else None
+    end_dt = (
+        datetime.strptime(end, "%Y-%m-%d").replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+        if end
+        else None
+    )
+
+    return [
+        r
+        for r in records
+        if (start_dt is None or r["created"] >= start_dt)
+        and (end_dt is None or r["created"] <= end_dt)
+    ]
+
+
 # ---------------------------------------------------------------------------
 # 1. Growth & trends: monthly revenue, MoM growth, YoY growth, 7-day moving avg
 # ---------------------------------------------------------------------------

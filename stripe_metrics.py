@@ -25,63 +25,9 @@ def fetch_recent_charges(limit_pages: int = 5):
     return [c for c in charges if c.status == "succeeded" and not c.refunded]
 
 
-def compute_metrics(charges):
-    if not charges:
-        return {
-            "total_revenue": 0,
-            "order_count": 0,
-            "avg_order_value": 0,
-            "currency": "usd",
-            "revenue_by_day": [],
-            "top_customers": [],
-        }
-
-    currency = charges[0].currency
-    total_cents = sum(c.amount for c in charges)
-    order_count = len(charges)
-
-    revenue_per_day = defaultdict(int)
-    revenue_per_customer = defaultdict(int)
-
-    for c in charges:
-        day = datetime.fromtimestamp(c.created, tz=timezone.utc).strftime("%Y-%m-%d")
-        revenue_per_day[day] += c.amount
-
-        label = (
-            c.billing_details.name
-            or c.billing_details.email
-            or c.customer
-            or "Unknown"
-        )
-        revenue_per_customer[label] += c.amount
-
-    revenue_by_day = [
-        {"date": day, "amount": cents / 100}
-        for day, cents in sorted(revenue_per_day.items())
-    ]
-
-    top_customers = sorted(
-        (
-            {"name": name, "amount": cents / 100}
-            for name, cents in revenue_per_customer.items()
-        ),
-        key=lambda x: x["amount"],
-        reverse=True,
-    )[:5]
-
-    return {
-        "total_revenue": total_cents / 100,
-        "order_count": order_count,
-        "avg_order_value": (total_cents / order_count) / 100,
-        "currency": currency,
-        "revenue_by_day": revenue_by_day,
-        "top_customers": top_customers,
-    }
-
-
 def compute_metrics_from_records(records, currency="eur"):
-    """Same output shape as compute_metrics(), but works on the normalized
-    record format shared with the analytics module (used by demo mode)."""
+    """Computes the Overview tab's headline metrics from the normalized
+    record format shared with the analytics module."""
     if not records:
         return {
             "total_revenue": 0,

@@ -57,6 +57,10 @@
   .demo-btn .demo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-tertiary); transition: var(--transition); }
   .demo-btn[data-on="true"] .demo-dot { background: var(--accent); }
 
+  .date-range { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-small); color: var(--text-secondary); }
+  .date-range input[type="date"] { font-family: var(--font-sans); font-size: var(--fs-small); color: var(--text-primary); background: var(--surface-2); border: var(--border-w) solid var(--border-strong); border-radius: var(--radius-sm); padding: 6px 10px; color-scheme: dark; }
+  [data-theme="light"] .date-range input[type="date"] { color-scheme: light; }
+
   .tabs { display: flex; gap: var(--sp-5); margin-bottom: var(--sp-6); border-bottom: 1px solid var(--border); }
   .panel { display: none; }
   .panel.active { display: block; animation: panel-in 200ms ease; }
@@ -129,6 +133,7 @@
     .header-actions { width: 100%; justify-content: space-between; }
     .powerbi-link { font-size: 12px; padding: 6px 10px 6px 6px; }
     .toolbar-row { margin: var(--sp-4) 0 var(--sp-5); }
+    .date-range { flex-wrap: wrap; }
     .cards { grid-template-columns: 1fr; }
     .tabs { gap: var(--sp-3); overflow-x: auto; }
     .tab { padding: 8px 2px; white-space: nowrap; }
@@ -177,6 +182,13 @@
       <span class="demo-dot"></span>
       Mode démo (8 mois de données simulées, pour voir cohortes/tendances/prévision avec du volume)
     </button>
+    <div class="date-range">
+      <label for="dateStart">Du</label>
+      <input type="date" id="dateStart">
+      <label for="dateEnd">au</label>
+      <input type="date" id="dateEnd">
+      <button class="btn" id="dateReset" type="button">Réinitialiser</button>
+    </div>
   </div>
 
   <div class="tabs">
@@ -459,8 +471,23 @@ function isDemo() {
 }
 
 function apiUrl(path) {
-  return isDemo() ? `${path}?demo=true` : path;
+  const params = new URLSearchParams();
+  if (isDemo()) params.set('demo', 'true');
+  const start = document.getElementById('dateStart').value;
+  const end = document.getElementById('dateEnd').value;
+  if (start) params.set('start', start);
+  if (end) params.set('end', end);
+  const qs = params.toString();
+  return qs ? `${path}?${qs}` : path;
 }
+
+document.getElementById('dateStart').addEventListener('change', loadAll);
+document.getElementById('dateEnd').addEventListener('change', loadAll);
+document.getElementById('dateReset').addEventListener('click', () => {
+  document.getElementById('dateStart').value = '';
+  document.getElementById('dateEnd').value = '';
+  loadAll();
+});
 
 document.getElementById('demoToggle').addEventListener('click', async (e) => {
   const btn = e.currentTarget;
