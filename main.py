@@ -1,9 +1,12 @@
+import csv
+import io
 import os
 import time
 
 import stripe
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 
 import analytics
@@ -106,6 +109,69 @@ def weekday(demo: bool = False):
 def concentration(demo: bool = False):
     records, _ = get_records(demo)
     return analytics.revenue_concentration(records)
+
+
+@app.get("/api/newvsreturning")
+def new_vs_returning(demo: bool = False):
+    records, _ = get_records(demo)
+    return analytics.new_vs_returning_by_month(records)
+
+
+@app.get("/api/loyalty")
+def loyalty(demo: bool = False):
+    records, _ = get_records(demo)
+    return analytics.loyalty_metrics(records)
+
+
+def _csv_response(rows: list[dict], filename: str) -> Response:
+    """Turns a list of flat dicts into a downloadable CSV, the format
+    Power BI's "Get Data > Web" connector reads with zero extra setup
+    (unlike nested JSON, which needs a bit of M code to flatten)."""
+    buffer = io.StringIO()
+    if rows:
+        writer = csv.DictWriter(buffer, fieldnames=list(rows[0].keys()))
+        writer.writeheader()
+        writer.writerows(rows)
+    return Response(
+        content=buffer.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@app.get("/api/export/monthly.csv")
+def export_monthly_csv(demo: bool = False):
+    records, _ = get_records(demo)
+    return _csv_response(analytics.growth_metrics(records)["monthly"], "metrics-dash-monthly.csv")
+
+
+@app.get("/api/export/daily.csv")
+def export_daily_csv(demo: bool = False):
+    records, _ = get_records(demo)
+    return _csv_response(analytics.growth_metrics(records)["daily"], "metrics-dash-daily.csv")
+
+
+@app.get("/api/export/rfm.csv")
+def export_rfm_csv(demo: bool = False):
+    records, _ = get_records(demo)
+    return _csv_response(analytics.rfm_segments(records), "metrics-dash-rfm.csv")
+
+
+@app.get("/api/export/cohorts.csv")
+def export_cohorts_csv(demo: bool = False):
+    records, _ = get_records(demo)
+    rows = [
+        {
+            "cohort_month": cohort["cohort_month"],
+            "cohort_size": cohort["cohort_size"],
+            "month_offset": r["month_offset"],
+            "active": r["active"],
+            "pct": r["pct"],
+        }
+        for cohort in analytics.cohort_retention(records)
+        for r in cohort["retention"]
+    ]
+    return _csv_response(rows, "metrics-dash-cohorts.csv")
 
 
 app.mount("/", StaticFiles(directory="static", html=True), name="static")

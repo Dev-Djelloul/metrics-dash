@@ -291,3 +291,72 @@ def revenue_concentration(records, top_share: float = 0.2):
             {"label": "Autres clients", "amount": round(rest_revenue, 2)},
         ],
     }
+
+
+# ---------------------------------------------------------------------------
+# 7. Nouveaux vs clients récurrents : pour chaque mois, quelle part du CA
+#    vient de clients qui achètent pour la première fois vs qui reviennent.
+# ---------------------------------------------------------------------------
+def new_vs_returning_by_month(records):
+    first_purchase_month = {}
+    for r in records:
+        month = _month_key(r["created"])
+        cust = r["customer"]
+        if cust not in first_purchase_month or month < first_purchase_month[cust]:
+            first_purchase_month[cust] = month
+
+    new_revenue = defaultdict(float)
+    returning_revenue = defaultdict(float)
+    for r in records:
+        month = _month_key(r["created"])
+        cust = r["customer"]
+        if first_purchase_month[cust] == month:
+            new_revenue[month] += r["amount"]
+        else:
+            returning_revenue[month] += r["amount"]
+
+    months = sorted(set(new_revenue) | set(returning_revenue))
+    return [
+        {
+            "month": m,
+            "new_revenue": round(new_revenue.get(m, 0), 2),
+            "returning_revenue": round(returning_revenue.get(m, 0), 2),
+        }
+        for m in months
+    ]
+
+
+# ---------------------------------------------------------------------------
+# 8. Fidélité & valeur client : LTV moyen (revenu total / nombre de clients)
+#    et délai moyen entre deux achats pour les clients qui reviennent.
+# ---------------------------------------------------------------------------
+def loyalty_metrics(records):
+    totals_by_customer = defaultdict(float)
+    dates_by_customer = defaultdict(list)
+    for r in records:
+        totals_by_customer[r["customer"]] += r["amount"]
+        dates_by_customer[r["customer"]].append(r["created"])
+
+    customer_count = len(totals_by_customer)
+    avg_ltv = round(sum(totals_by_customer.values()) / customer_count, 2) if customer_count else 0
+
+    per_customer_avg_gaps = []
+    for dates in dates_by_customer.values():
+        dates = sorted(dates)
+        if len(dates) < 2:
+            continue
+        gaps = [(dates[i + 1] - dates[i]).days for i in range(len(dates) - 1)]
+        per_customer_avg_gaps.append(sum(gaps) / len(gaps))
+
+    avg_days_between_purchases = (
+        round(sum(per_customer_avg_gaps) / len(per_customer_avg_gaps), 1)
+        if per_customer_avg_gaps
+        else None
+    )
+
+    return {
+        "avg_ltv": avg_ltv,
+        "customer_count": customer_count,
+        "avg_days_between_purchases": avg_days_between_purchases,
+        "repeat_customer_count": len(per_customer_avg_gaps),
+    }
