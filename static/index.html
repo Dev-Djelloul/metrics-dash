@@ -18,17 +18,41 @@
 
   .theme-toggle { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-small); color: var(--text-secondary); }
 
-  .demo-toggle-row { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-small); color: var(--text-secondary); margin: var(--sp-4) 0 var(--sp-6); cursor: pointer; }
+  .toolbar-row { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin: var(--sp-5) 0 var(--sp-6); }
+  .stripe-mark { width: 18px; height: 18px; border-radius: 4px; flex-shrink: 0; }
+
+  .demo-btn { display: inline-flex; align-items: center; gap: var(--sp-2); font-family: var(--font-sans); font-size: var(--fs-small); font-weight: var(--fw-small); color: var(--text-secondary); background: var(--surface-2); border: var(--border-w) solid var(--border-strong); border-radius: var(--radius-pill); padding: 7px 14px 7px 8px; cursor: pointer; transition: var(--transition); }
+  .demo-btn:hover { border-color: var(--accent); color: var(--text-primary); }
+  .demo-btn[data-on="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-text); }
+  .demo-btn .demo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-tertiary); transition: var(--transition); }
+  .demo-btn[data-on="true"] .demo-dot { background: var(--accent); }
 
   .tabs { display: flex; gap: var(--sp-5); margin-bottom: var(--sp-6); border-bottom: 1px solid var(--border); }
   .panel { display: none; }
-  .panel.active { display: block; }
+  .panel.active { display: block; animation: panel-in 200ms ease; }
+  @keyframes panel-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
   .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--sp-4); margin-bottom: var(--sp-8); }
 
   .chart-box { padding: var(--sp-5); margin-bottom: var(--sp-8); }
   .chart-box h3 { margin: 0 0 var(--sp-2); font-size: var(--fs-h2); font-weight: var(--fw-h2); color: var(--text-primary); }
   .explainer { font-size: var(--fs-small); color: var(--text-secondary); margin: 0 0 var(--sp-4) 0; line-height: var(--fs-small-lh); }
+
+  .card, .kpi-card { transition: var(--transition); }
+  .kpi-card:hover, .chart-box:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); border-color: var(--border-strong); }
+
+  @media (max-width: 640px) {
+    body { padding: var(--sp-4); }
+    .page-header { flex-wrap: wrap; gap: var(--sp-3); }
+    .brand-name { font-size: 17px; }
+    .toolbar-row { margin: var(--sp-4) 0 var(--sp-5); }
+    .cards { grid-template-columns: 1fr; }
+    .tabs { gap: var(--sp-3); overflow-x: auto; }
+    .tab { padding: 8px 2px; white-space: nowrap; }
+    .chart-box { padding: var(--sp-4); }
+    table.data { display: block; overflow-x: auto; white-space: nowrap; }
+    .kpi-card:hover, .chart-box:hover { transform: none; }
+  }
 </style>
 </head>
 <body>
@@ -55,11 +79,13 @@
     </div>
   </div>
 
-  <div id="status" class="status-pill">Connexion à Stripe...</div>
-  <label class="demo-toggle-row">
-    <input type="checkbox" id="demoToggle">
-    Mode démo (données simulées sur 8 mois, pour voir cohortes/tendances/prévision avec du volume)
-  </label>
+  <div class="toolbar-row">
+    <div id="status" class="status-pill">Connexion à Stripe...</div>
+    <button class="demo-btn" id="demoToggle" data-on="false" type="button" aria-pressed="false">
+      <span class="demo-dot"></span>
+      Mode démo (8 mois de données simulées, pour voir cohortes/tendances/prévision avec du volume)
+    </button>
+  </div>
 
   <div class="tabs">
     <button class="tab" data-tab="overview" data-active="true">Vue d'ensemble</button>
@@ -177,15 +203,20 @@ document.getElementById('themeSwitch').addEventListener('click', () => {
 });
 
 function isDemo() {
-  return document.getElementById('demoToggle').checked;
+  return document.getElementById('demoToggle').getAttribute('data-on') === 'true';
 }
 
 function apiUrl(path) {
   return isDemo() ? `${path}?demo=true` : path;
 }
 
-document.getElementById('demoToggle').addEventListener('change', () => {
-  loadAll();
+document.getElementById('demoToggle').addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  const next = btn.getAttribute('data-on') !== 'true';
+  btn.setAttribute('data-on', String(next));
+  btn.setAttribute('aria-pressed', String(next));
+  const connected = await loadStatus();
+  if (connected || next) await loadAll();
 });
 
 document.querySelectorAll('.tab').forEach(tab => {
@@ -201,11 +232,12 @@ async function loadStatus() {
   const res = await fetch('/api/status');
   const data = await res.json();
   const el = document.getElementById('status');
+  const stripeIcon = '<img class="stripe-mark" src="icons8-stripe-100.png" alt="" aria-hidden="true">';
   if (data.connected) {
-    el.innerHTML = `<span class="status-dot"></span>Connecté à Stripe (compte ${data.account})`;
+    el.innerHTML = `${stripeIcon}<span class="status-dot"></span>Connecté à Stripe (compte ${data.account})`;
     el.className = 'status-pill';
   } else {
-    el.innerHTML = `<span class="status-dot"></span>Non connecté — ${data.reason}`;
+    el.innerHTML = `${stripeIcon}<span class="status-dot"></span>Non connecté — ${data.reason}`;
     el.className = 'status-pill error';
   }
   return data.connected;
