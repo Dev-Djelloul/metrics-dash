@@ -61,6 +61,12 @@
   .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); margin-bottom: var(--sp-8); align-items: start; }
   .chart-row .chart-box { margin-bottom: 0; }
   .chart-row-wide { grid-template-columns: 2fr 1fr; }
+
+  /* Hauteur fixe pour tous les graphiques Chart.js : évite qu'un camembert
+     (ratio carré par défaut) ne s'étire à la largeur de sa carte et devienne
+     énorme sur un écran large. maintainAspectRatio:false (côté JS) fait que
+     chaque chart remplit exactement ce conteneur, quelle que soit sa largeur. */
+  .canvas-wrap { position: relative; width: 100%; height: 260px; }
   .explainer { font-size: var(--fs-small); color: var(--text-secondary); margin: 0 0 var(--sp-4) 0; line-height: var(--fs-small-lh); }
   .explainer .line { display: block; }
   .explainer .line + .line { margin-top: 4px; }
@@ -157,7 +163,7 @@
     <div class="chart-row">
       <div class="card chart-box">
         <h3>CA par jour</h3>
-        <canvas id="revenueChart" height="80"></canvas>
+        <div class="canvas-wrap"><canvas id="revenueChart"></canvas></div>
       </div>
       <div class="card chart-box">
         <h3>CA par jour de la semaine</h3>
@@ -165,7 +171,7 @@
           <span class="line">Regroupe toutes les commandes par <span class="term term-mom">jour de la semaine</span>, toutes semaines confondues.</span>
           <span class="line">Utile pour repérer un jour fort ou faible (ex : plus de ventes le vendredi).</span>
         </p>
-        <canvas id="weekdayChart" height="80"></canvas>
+        <div class="canvas-wrap"><canvas id="weekdayChart"></canvas></div>
       </div>
     </div>
 
@@ -183,7 +189,7 @@
           <span class="line">Illustre le <span class="term term-forecast">principe de Pareto</span> (souvent "80/20") : une petite part de tes clients fait-elle une grande part du CA ?</span>
           <span class="line">Ici : part du CA venant des 20% de clients qui dépensent le plus, vs tous les autres.</span>
         </p>
-        <canvas id="concentrationChart" height="80"></canvas>
+        <div class="canvas-wrap"><canvas id="concentrationChart"></canvas></div>
       </div>
     </div>
 
@@ -194,7 +200,7 @@
           <span class="line">Carte colorée selon le CA généré par pays de facturation.</span>
           <span class="line">Plus la couleur est intense, plus ce pays représente une part importante du chiffre d'affaires.</span>
         </p>
-        <div id="geoMapWrap" style="position:relative; height:280px;">
+        <div id="geoMapWrap" class="canvas-wrap">
           <canvas id="geoChart"></canvas>
         </div>
       </div>
@@ -223,21 +229,23 @@
         <tbody></tbody>
       </table>
     </div>
-    <div class="card chart-box">
-      <h3>CA quotidien + moyenne mobile 7 jours</h3>
-      <p class="explainer">
-        <span class="line">La <span class="term term-ma">moyenne mobile</span> lisse les pics/creux journaliers pour voir la vraie tendance.</span>
-        <span class="line">C'est la technique de base pour lire un graphique de série temporelle.</span>
-      </p>
-      <canvas id="movingAvgChart" height="80"></canvas>
-    </div>
-    <div class="card chart-box">
-      <h3>Nouveaux vs clients récurrents</h3>
-      <p class="explainer">
-        <span class="line">Chaque mois, quelle part du CA vient de <span class="term term-yoy">nouveaux clients</span> (1er achat ce mois-là) vs de <span class="term term-ma">clients qui reviennent</span> ?</span>
-        <span class="line">Beaucoup de "nouveaux" = tu acquiers. Beaucoup de "récurrents" = tu fidélises. Les deux comptent, mais pas pour les mêmes raisons.</span>
-      </p>
-      <canvas id="newVsReturningChart" height="80"></canvas>
+    <div class="chart-row">
+      <div class="card chart-box">
+        <h3>CA quotidien + moyenne mobile 7 jours</h3>
+        <p class="explainer">
+          <span class="line">La <span class="term term-ma">moyenne mobile</span> lisse les pics/creux journaliers pour voir la vraie tendance.</span>
+          <span class="line">C'est la technique de base pour lire un graphique de série temporelle.</span>
+        </p>
+        <div class="canvas-wrap"><canvas id="movingAvgChart"></canvas></div>
+      </div>
+      <div class="card chart-box">
+        <h3>Nouveaux vs clients récurrents</h3>
+        <p class="explainer">
+          <span class="line">Chaque mois, quelle part du CA vient de <span class="term term-yoy">nouveaux clients</span> (1er achat ce mois-là) vs de <span class="term term-ma">clients qui reviennent</span> ?</span>
+          <span class="line">Beaucoup de "nouveaux" = tu acquiers. Beaucoup de "récurrents" = tu fidélises. Les deux comptent, mais pas pour les mêmes raisons.</span>
+        </p>
+        <div class="canvas-wrap"><canvas id="newVsReturningChart"></canvas></div>
+      </div>
     </div>
   </div>
 
@@ -265,7 +273,7 @@
           <span class="line">Combien de clients dans chaque segment RFM, en proportion.</span>
           <span class="line">Un camembert convient bien ici : peu de catégories, on regarde une part d'un tout.</span>
         </p>
-        <canvas id="segmentChart" height="80"></canvas>
+        <div class="canvas-wrap"><canvas id="segmentChart"></canvas></div>
       </div>
     </div>
   </div>
@@ -291,7 +299,7 @@
         <span class="line">Projette les prochains mois à partir de la tendance historique (<span class="term term-forecast">régression linéaire simple</span>, sans librairie externe).</span>
         <span class="line">À prendre avec des pincettes sur peu de données — c'est surtout pour comprendre le principe du forecasting.</span>
       </p>
-      <canvas id="forecastChart" height="80"></canvas>
+      <div class="canvas-wrap"><canvas id="forecastChart"></canvas></div>
     </div>
   </div>
 
@@ -474,6 +482,7 @@ async function loadOverview() {
       }]
     },
     options: {
+      maintainAspectRatio: false,
       plugins: { legend: { display: false }, tooltip: { callbacks: { label: moneyTooltip } } },
       scales: {
         x: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary') } },
@@ -503,6 +512,7 @@ async function loadWeekday() {
       }]
     },
     options: {
+      maintainAspectRatio: false,
       plugins: { legend: { display: false }, tooltip: { callbacks: { label: moneyTooltip } } },
       scales: {
         x: { grid: { display: false }, ticks: { color: cssVar('--text-secondary') } },
@@ -530,6 +540,7 @@ async function loadConcentration() {
       }]
     },
     options: {
+      maintainAspectRatio: false,
       plugins: {
         legend: { position: 'bottom', labels: { color: cssVar('--text-secondary') } },
         tooltip: { callbacks: { label: moneyTooltip } },
@@ -600,6 +611,7 @@ async function loadGeo() {
         }],
       },
       options: {
+        maintainAspectRatio: false,
         showOutline: true,
         showGraticule: false,
         plugins: {
@@ -642,6 +654,7 @@ async function loadNewVsReturning() {
       ]
     },
     options: {
+      maintainAspectRatio: false,
       plugins: { legend: { labels: { color: cssVar('--text-secondary') } }, tooltip: { callbacks: { label: moneyTooltip } } },
       scales: {
         x: { stacked: true, grid: { display: false }, ticks: { color: cssVar('--text-secondary') } },
@@ -711,6 +724,7 @@ async function loadGrowth() {
       ]
     },
     options: {
+      maintainAspectRatio: false,
       plugins: { legend: { labels: { color: cssVar('--text-secondary') } }, tooltip: { callbacks: { label: moneyTooltip } } },
       scales: {
         x: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary') } },
@@ -765,6 +779,7 @@ async function loadRfm() {
       }]
     },
     options: {
+      maintainAspectRatio: false,
       plugins: { legend: { position: 'bottom', labels: { color: cssVar('--text-secondary') } } },
     }
   });
@@ -838,6 +853,7 @@ async function loadForecast() {
       ]
     },
     options: {
+      maintainAspectRatio: false,
       plugins: { legend: { labels: { color: cssVar('--text-secondary') } }, tooltip: { callbacks: { label: moneyTooltip } } },
       scales: {
         x: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary') } },
