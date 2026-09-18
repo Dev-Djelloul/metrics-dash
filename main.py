@@ -110,6 +110,12 @@ def auth_callback(code: str = None, error: str = None):
         token_response = stripe.OAuth.token(grant_type="authorization_code", code=code)
     except stripe.oauth_error.OAuthError:
         return RedirectResponse("/?auth_error=oauth_failed")
+    except Exception as exc:
+        return Response(
+            f"Erreur lors de l'échange du code OAuth :\n\n{type(exc).__name__}: {exc}",
+            status_code=500,
+            media_type="text/plain",
+        )
 
     stripe_user_id = token_response["stripe_user_id"]
     access_token = token_response["access_token"]
@@ -124,7 +130,18 @@ def auth_callback(code: str = None, error: str = None):
     except Exception:
         account_name = stripe_user_id
 
-    user_id = db.upsert_user(stripe_user_id, access_token, account_name)
+    try:
+        user_id = db.upsert_user(stripe_user_id, access_token, account_name)
+    except Exception as exc:
+        # Affiche l'erreur directement dans le navigateur plutôt qu'un 500
+        # générique : les logs du conteneur (stdout Python) ne remontent
+        # pas dans `wrangler tail`, qui ne couvre que le Worker routeur.
+        return Response(
+            f"Erreur lors de l'écriture en base D1 :\n\n{type(exc).__name__}: {exc}",
+            status_code=500,
+            media_type="text/plain",
+        )
+
     session_token = auth.create_session_token(user_id, SESSION_SECRET)
 
     response = RedirectResponse("/")
