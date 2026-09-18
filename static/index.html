@@ -4,72 +4,74 @@
 <meta charset="UTF-8">
 <title>metrics-dash</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<link rel="stylesheet" href="design-system.css">
 <style>
-  :root { color-scheme: dark; }
-  body { font-family: -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; padding: 2rem; }
-  h1 { font-weight: 600; margin-bottom: 0.25rem; }
-  .status { font-size: 0.9rem; margin-bottom: 1.5rem; }
-  .status.ok { color: #4ade80; }
-  .status.error { color: #f87171; }
+  /* Styles propres à cette page, non couverts par le design system
+     (layout de page, panneaux d'onglets, header). */
+  body { padding: var(--sp-8); }
 
-  .tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid #334155; }
-  .tab { padding: 0.6rem 1rem; cursor: pointer; color: #94a3b8; border-bottom: 2px solid transparent; font-size: 0.9rem; }
-  .tab.active { color: #e2e8f0; border-bottom-color: #60a5fa; }
+  .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-2); }
+  .brand { display: flex; align-items: center; gap: var(--sp-3); }
+  .brand-mark { width: 28px; height: 28px; color: var(--accent); flex-shrink: 0; }
+  .brand-name { font-size: var(--fs-h1); font-weight: var(--fw-h1); line-height: var(--fs-h1-lh); margin: 0; }
+
+  .theme-toggle { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-small); color: var(--text-secondary); }
+
+  .demo-toggle-row { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-small); color: var(--text-secondary); margin: var(--sp-4) 0 var(--sp-6); cursor: pointer; }
+
+  .tabs { display: flex; gap: var(--sp-5); margin-bottom: var(--sp-6); border-bottom: 1px solid var(--border); }
   .panel { display: none; }
   .panel.active { display: block; }
 
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-  .card { background: #1e293b; border-radius: 10px; padding: 1.25rem; }
-  .card .label { font-size: 0.8rem; color: #94a3b8; }
-  .card .value { font-size: 1.6rem; font-weight: 700; margin-top: 0.25rem; }
-  .card .sub { font-size: 0.8rem; margin-top: 0.35rem; }
-  .sub.up { color: #4ade80; }
-  .sub.down { color: #f87171; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--sp-4); margin-bottom: var(--sp-8); }
 
-  .chart-box { background: #1e293b; border-radius: 10px; padding: 1.25rem; margin-bottom: 2rem; }
-  .chart-box h3 { margin-top: 0; font-size: 1rem; color: #cbd5e1; }
-  .explainer { font-size: 0.82rem; color: #94a3b8; margin: 0 0 1rem 0; line-height: 1.4; }
-
-  table { width: 100%; border-collapse: collapse; }
-  th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid #334155; font-size: 0.88rem; }
-  th { color: #94a3b8; font-weight: 500; }
-
-  .badge { padding: 0.15rem 0.55rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
-  .badge.Champions, .badge.Clients.fidèles { background: #14532d; color: #4ade80; }
-  .badge.Nouveaux.clients { background: #1e3a8a; color: #93c5fd; }
-  .badge.À.risque, .badge.Perdus { background: #7f1d1d; color: #fca5a5; }
-  .badge.default { background: #334155; color: #cbd5e1; }
-
-  .heatcell { text-align: center; border-radius: 4px; padding: 0.4rem; font-size: 0.8rem; }
+  .chart-box { padding: var(--sp-5); margin-bottom: var(--sp-8); }
+  .chart-box h3 { margin: 0 0 var(--sp-2); font-size: var(--fs-h2); font-weight: var(--fw-h2); color: var(--text-primary); }
+  .explainer { font-size: var(--fs-small); color: var(--text-secondary); margin: 0 0 var(--sp-4) 0; line-height: var(--fs-small-lh); }
 </style>
 </head>
 <body>
-  <h1>📊 metrics-dash</h1>
-  <div id="status" class="status">Connexion à Stripe...</div>
-  <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.85rem; color:#94a3b8; margin-bottom:1rem; cursor:pointer;">
+  <div class="page-header">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect x="3" y="12" width="4" height="9" rx="1" fill="currentColor"/>
+        <rect x="10" y="7" width="4" height="14" rx="1" fill="currentColor"/>
+        <rect x="17" y="3" width="4" height="18" rx="1" fill="currentColor"/>
+      </svg>
+      <h1 class="brand-name">metrics-dash</h1>
+    </div>
+    <div class="theme-toggle">
+      <span>Clair</span>
+      <div class="switch" id="themeSwitch" role="button" aria-label="Changer de thème"><div class="switch-knob"></div></div>
+      <span>Sombre</span>
+    </div>
+  </div>
+
+  <div id="status" class="status-pill">Connexion à Stripe...</div>
+  <label class="demo-toggle-row">
     <input type="checkbox" id="demoToggle">
     Mode démo (données simulées sur 8 mois, pour voir cohortes/tendances/prévision avec du volume)
   </label>
 
   <div class="tabs">
-    <div class="tab active" data-tab="overview">Vue d'ensemble</div>
-    <div class="tab" data-tab="growth">Croissance</div>
-    <div class="tab" data-tab="rfm">Clients (RFM)</div>
-    <div class="tab" data-tab="cohorts">Rétention (cohortes)</div>
-    <div class="tab" data-tab="forecast">Prévision</div>
+    <button class="tab" data-tab="overview" data-active="true">Vue d'ensemble</button>
+    <button class="tab" data-tab="growth" data-active="false">Croissance</button>
+    <button class="tab" data-tab="rfm" data-active="false">Clients (RFM)</button>
+    <button class="tab" data-tab="cohorts" data-active="false">Rétention (cohortes)</button>
+    <button class="tab" data-tab="forecast" data-active="false">Prévision</button>
   </div>
 
   <!-- Overview -->
   <div class="panel active" id="panel-overview">
     <div class="cards" id="cards"></div>
-    <div class="chart-box">
+    <div class="card chart-box">
       <h3>CA par jour</h3>
       <canvas id="revenueChart" height="80"></canvas>
     </div>
-    <div class="chart-box">
+    <div class="card chart-box">
       <h3>Top clients</h3>
-      <table id="customersTable">
-        <thead><tr><th>Client</th><th>Montant</th></tr></thead>
+      <table class="data" id="customersTable">
+        <thead><tr><th>Client</th><th class="num">Montant</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -77,15 +79,15 @@
 
   <!-- Growth -->
   <div class="panel" id="panel-growth">
-    <div class="chart-box">
+    <div class="card chart-box">
       <h3>CA mensuel & croissance</h3>
       <p class="explainer">MoM (Month-over-Month) = variation vs le mois précédent. YoY (Year-over-Year) = variation vs le même mois l'année dernière. Ce sont les deux métriques de croissance les plus utilisées en BI.</p>
-      <table id="monthlyTable">
-        <thead><tr><th>Mois</th><th>CA</th><th>MoM</th><th>YoY</th></tr></thead>
+      <table class="data" id="monthlyTable">
+        <thead><tr><th>Mois</th><th class="num">CA</th><th class="num">MoM</th><th class="num">YoY</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
-    <div class="chart-box">
+    <div class="card chart-box">
       <h3>CA quotidien + moyenne mobile 7 jours</h3>
       <p class="explainer">La moyenne mobile lisse les pics/creux journaliers pour voir la vraie tendance — c'est la technique de base pour lire un graphique de série temporelle.</p>
       <canvas id="movingAvgChart" height="80"></canvas>
@@ -94,15 +96,15 @@
 
   <!-- RFM -->
   <div class="panel" id="panel-rfm">
-    <div class="chart-box">
+    <div class="card chart-box">
       <h3>Segmentation RFM (Récence / Fréquence / Montant)</h3>
       <p class="explainer">
         Technique de segmentation client classique en marketing/data : chaque client reçoit un score 1-4 sur trois axes
         — <b>R</b>écence (il a acheté récemment ?), <b>F</b>réquence (il achète souvent ?), <b>M</b>onétaire (il dépense beaucoup ?).
         Les scores combinés donnent un segment actionnable (Champions, À risque, Perdus...).
       </p>
-      <table id="rfmTable">
-        <thead><tr><th>Client</th><th>Récence (j)</th><th>Fréquence</th><th>Montant</th><th>R</th><th>F</th><th>M</th><th>Segment</th></tr></thead>
+      <table class="data" id="rfmTable">
+        <thead><tr><th>Client</th><th class="num">Récence (j)</th><th class="num">Fréquence</th><th class="num">Montant</th><th class="num">R</th><th class="num">F</th><th class="num">M</th><th>Segment</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -110,20 +112,20 @@
 
   <!-- Cohorts -->
   <div class="panel" id="panel-cohorts">
-    <div class="chart-box">
+    <div class="card chart-box">
       <h3>Analyse de cohortes (rétention)</h3>
       <p class="explainer">
         Chaque ligne = un groupe de clients ayant acheté pour la première fois ce mois-là (la "cohorte").
         Chaque colonne = combien de mois plus tard. La couleur montre le % de la cohorte encore active —
         c'est l'outil de référence pour mesurer la fidélisation dans le temps.
       </p>
-      <div id="cohortTable"></div>
+      <div id="cohortTable" class="scroll" style="overflow-x:auto;"></div>
     </div>
   </div>
 
   <!-- Forecast -->
   <div class="panel" id="panel-forecast">
-    <div class="chart-box">
+    <div class="card chart-box">
       <h3>Prévision de CA (régression linéaire)</h3>
       <p class="explainer" id="forecastNote">
         Projette les prochains mois à partir de la tendance historique (régression linéaire simple, sans librairie externe).
@@ -140,6 +142,32 @@ function destroyChart(id) {
   if (charts[id]) { charts[id].destroy(); delete charts[id]; }
 }
 
+/* --- Thème clair/sombre --- */
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('themeSwitch').setAttribute('data-on', theme === 'light' ? 'true' : 'false');
+  localStorage.setItem('theme', theme);
+  // Chart.js lit les couleurs au moment de la création : il faut tout
+  // détruire et recréer pour qu'un graphique déjà affiché change de couleurs.
+  loadAll();
+}
+
+(function initTheme() {
+  const saved = localStorage.getItem('theme');
+  const theme = saved === 'light' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('themeSwitch') && document.getElementById('themeSwitch').setAttribute('data-on', theme === 'light' ? 'true' : 'false');
+})();
+
+document.getElementById('themeSwitch').addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme');
+  applyTheme(current === 'light' ? 'dark' : 'light');
+});
+
 function isDemo() {
   return document.getElementById('demoToggle').checked;
 }
@@ -154,9 +182,9 @@ document.getElementById('demoToggle').addEventListener('change', () => {
 
 document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.setAttribute('data-active', 'false'));
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    tab.classList.add('active');
+    tab.setAttribute('data-active', 'true');
     document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
   });
 });
@@ -166,18 +194,18 @@ async function loadStatus() {
   const data = await res.json();
   const el = document.getElementById('status');
   if (data.connected) {
-    el.textContent = `✅ Connecté à Stripe (compte ${data.account})`;
-    el.className = 'status ok';
+    el.innerHTML = `<span class="status-dot"></span>Connecté à Stripe (compte ${data.account})`;
+    el.className = 'status-pill';
   } else {
-    el.textContent = `⚠️ Non connecté — ${data.reason}`;
-    el.className = 'status error';
+    el.innerHTML = `<span class="status-dot"></span>Non connecté — ${data.reason}`;
+    el.className = 'status-pill error';
   }
   return data.connected;
 }
 
 function card(label, value, sub) {
-  const subHtml = sub ? `<div class="sub ${sub.cls}">${sub.text}</div>` : '';
-  return `<div class="card"><div class="label">${label}</div><div class="value">${value}</div>${subHtml}</div>`;
+  const subHtml = sub ? `<div class="kpi-delta ${sub.cls}">${sub.text}</div>` : '';
+  return `<div class="card kpi-card"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div>${subHtml}</div>`;
 }
 
 async function loadOverview() {
@@ -198,22 +226,28 @@ async function loadOverview() {
       labels: m.revenue_by_day.map(d => d.date),
       datasets: [{
         label: 'CA par jour', data: m.revenue_by_day.map(d => d.amount),
-        borderColor: '#60a5fa', backgroundColor: 'rgba(96,165,250,0.15)', fill: true, tension: 0.3,
+        borderColor: cssVar('--chart-line-1'), backgroundColor: cssVar('--accent-soft'), fill: true, tension: 0.3,
       }]
     },
-    options: { plugins: { legend: { display: false } } }
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary') } },
+        y: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary') } },
+      },
+    }
   });
 
   document.querySelector('#customersTable tbody').innerHTML = m.top_customers.map(c =>
-    `<tr><td>${c.name}</td><td>${c.amount.toFixed(2)} ${currency}</td></tr>`
+    `<tr><td>${c.name}</td><td class="num">${c.amount.toFixed(2)} ${currency}</td></tr>`
   ).join('');
 }
 
 function growthArrow(pct) {
-  if (pct === null || pct === undefined) return '<span style="color:#64748b">—</span>';
-  const cls = pct >= 0 ? 'up' : 'down';
+  if (pct === null || pct === undefined) return '<span style="color:var(--text-tertiary)">—</span>';
+  const cls = pct >= 0 ? 'pos' : 'neg';
   const arrow = pct >= 0 ? '▲' : '▼';
-  return `<span class="sub ${cls}">${arrow} ${pct.toFixed(1)}%</span>`;
+  return `<span class="pill-delta ${cls}">${arrow} ${pct.toFixed(1)}%</span>`;
 }
 
 async function loadGrowth() {
@@ -222,7 +256,7 @@ async function loadGrowth() {
   const g = await res.json();
 
   document.querySelector('#monthlyTable tbody').innerHTML = g.monthly.map(m =>
-    `<tr><td>${m.month}</td><td>${m.revenue.toFixed(2)}</td><td>${growthArrow(m.mom_growth_pct)}</td><td>${growthArrow(m.yoy_growth_pct)}</td></tr>`
+    `<tr><td>${m.month}</td><td class="num">${m.revenue.toFixed(2)}</td><td class="num">${growthArrow(m.mom_growth_pct)}</td><td class="num">${growthArrow(m.yoy_growth_pct)}</td></tr>`
   ).join('');
 
   destroyChart('movingAvg');
@@ -231,13 +265,27 @@ async function loadGrowth() {
     data: {
       labels: g.daily.map(d => d.date),
       datasets: [
-        { label: 'CA quotidien', data: g.daily.map(d => d.revenue), borderColor: '#475569', borderDash: [4,4], pointRadius: 2 },
-        { label: 'Moyenne mobile 7j', data: g.daily.map(d => d.moving_avg_7d), borderColor: '#fbbf24', borderWidth: 2, tension: 0.3 },
+        { label: 'CA quotidien', data: g.daily.map(d => d.revenue), borderColor: cssVar('--border-strong'), borderDash: [4,4], pointRadius: 2 },
+        { label: 'Moyenne mobile 7j', data: g.daily.map(d => d.moving_avg_7d), borderColor: cssVar('--chart-line-3'), borderWidth: 2, tension: 0.3 },
       ]
     },
-    options: { plugins: { legend: { labels: { color: '#cbd5e1' } } } }
+    options: {
+      plugins: { legend: { labels: { color: cssVar('--text-secondary') } } },
+      scales: {
+        x: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary') } },
+        y: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary') } },
+      },
+    }
   });
 }
+
+const SEGMENT_CLASS = {
+  'Champions': 'champions',
+  'Clients fidèles': 'loyal',
+  'Nouveaux clients': 'new',
+  'À risque': 'atrisk',
+  'Perdus': 'lost',
+};
 
 async function loadRfm() {
   const res = await fetch(apiUrl('/api/rfm'));
@@ -246,18 +294,16 @@ async function loadRfm() {
 
   document.querySelector('#rfmTable tbody').innerHTML = rows.map(r =>
     `<tr>
-      <td>${r.customer}</td><td>${r.recency_days}</td><td>${r.frequency}</td><td>${r.monetary.toFixed(2)}</td>
-      <td>${r.r_score}</td><td>${r.f_score}</td><td>${r.m_score}</td>
-      <td><span class="badge default">${r.segment}</span></td>
+      <td>${r.customer}</td><td class="num">${r.recency_days}</td><td class="num">${r.frequency}</td><td class="num">${r.monetary.toFixed(2)}</td>
+      <td class="num">${r.r_score}</td><td class="num">${r.f_score}</td><td class="num">${r.m_score}</td>
+      <td><span class="badge ${SEGMENT_CLASS[r.segment] || 'loyal'}">${r.segment}</span></td>
     </tr>`
   ).join('');
 }
 
-function heatColor(pct) {
-  // green (100%) fading to dark red (0%)
-  const g = Math.round((pct / 100) * 160) + 40;
-  const r = Math.round(((100 - pct) / 100) * 160) + 40;
-  return `rgb(${r},${g},70)`;
+function heatBucket(pct) {
+  // 0-8 : mappe le % de rétention sur les 9 nuances --heat-0..8 du design system
+  return Math.min(8, Math.max(0, Math.round((pct / 100) * 8)));
 }
 
 async function loadCohorts() {
@@ -266,17 +312,19 @@ async function loadCohorts() {
   const cohorts = await res.json();
 
   const maxOffset = Math.max(0, ...cohorts.flatMap(c => c.retention.map(r => r.month_offset)));
-  let html = '<table><thead><tr><th>Cohorte</th><th>Taille</th>';
-  for (let i = 0; i <= maxOffset; i++) html += `<th>M+${i}</th>`;
+  let html = '<table class="data"><thead><tr><th>Cohorte</th><th class="num">Taille</th>';
+  for (let i = 0; i <= maxOffset; i++) html += `<th class="num">M+${i}</th>`;
   html += '</tr></thead><tbody>';
 
   for (const c of cohorts) {
-    html += `<tr><td>${c.cohort_month}</td><td>${c.cohort_size}</td>`;
+    html += `<tr><td>${c.cohort_month}</td><td class="num">${c.cohort_size}</td>`;
     const byOffset = Object.fromEntries(c.retention.map(r => [r.month_offset, r]));
     for (let i = 0; i <= maxOffset; i++) {
       const cell = byOffset[i];
       if (cell) {
-        html += `<td><div class="heatcell" style="background:${heatColor(cell.pct)}">${cell.pct}%</div></td>`;
+        const bucket = heatBucket(cell.pct);
+        const textColor = bucket >= 6 ? '#14161D' : '#F2F3F5';
+        html += `<td><div class="heat-cell" style="background:var(--heat-${bucket}); color:${textColor}">${cell.pct}%</div></td>`;
       } else {
         html += '<td></td>';
       }
@@ -311,11 +359,17 @@ async function loadForecast() {
     data: {
       labels,
       datasets: [
-        { label: 'Historique', data: historyData, borderColor: '#60a5fa', tension: 0.2 },
-        { label: 'Prévision', data: forecastData, borderColor: '#f472b6', borderDash: [6,4], tension: 0.2 },
+        { label: 'Historique', data: historyData, borderColor: cssVar('--chart-line-1'), tension: 0.2 },
+        { label: 'Prévision', data: forecastData, borderColor: cssVar('--chart-line-2'), borderDash: [6,4], tension: 0.2 },
       ]
     },
-    options: { plugins: { legend: { labels: { color: '#cbd5e1' } } } }
+    options: {
+      plugins: { legend: { labels: { color: cssVar('--text-secondary') } } },
+      scales: {
+        x: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary') } },
+        y: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary') } },
+      },
+    }
   });
 }
 
