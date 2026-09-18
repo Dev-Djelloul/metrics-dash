@@ -263,28 +263,27 @@
   <!-- RFM -->
   <div class="panel" id="panel-rfm">
     <div class="cards" id="loyaltyCards"></div>
-    <div class="chart-row chart-row-wide">
-      <div class="card chart-box">
-        <h3>Segmentation RFM (Récence / Fréquence / Montant)</h3>
-        <p class="explainer">
-          <span class="line">Technique de segmentation client classique en marketing/data : chaque client reçoit un score 1-4 sur trois axes.</span>
-          <span class="line"><span class="term term-r">Récence</span> (il a acheté récemment ?) · <span class="term term-f">Fréquence</span> (il achète souvent ?) · <span class="term term-m">Montant</span> (il dépense beaucoup ?).</span>
-          <span class="line">Les scores combinés donnent un segment actionnable (Champions, À risque, Perdus...).</span>
-        </p>
-        <div class="scroll" style="overflow-x:auto;">
-          <table class="data" id="rfmTable">
-            <thead><tr><th>Client</th><th class="num">Récence (j)</th><th class="num">Fréquence</th><th class="num">Montant</th><th class="num">R</th><th class="num">F</th><th class="num">M</th><th>Segment</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
-      <div class="card chart-box">
-        <h3>Répartition des clients par segment</h3>
-        <p class="explainer">
-          <span class="line">Combien de clients dans chaque segment RFM, en proportion.</span>
-          <span class="line">Un camembert convient bien ici : peu de catégories, on regarde une part d'un tout.</span>
-        </p>
-        <div class="canvas-wrap"><canvas id="segmentChart"></canvas></div>
+
+    <div class="card chart-box">
+      <h3>Répartition des clients par segment</h3>
+      <p class="explainer">
+        <span class="line">Combien de clients dans chaque segment RFM, en proportion.</span>
+      </p>
+      <div class="canvas-wrap"><canvas id="segmentChart"></canvas></div>
+    </div>
+
+    <div class="card chart-box">
+      <h3>Segmentation RFM (Récence / Fréquence / Montant)</h3>
+      <p class="explainer">
+        <span class="line">Technique de segmentation client classique en marketing/data : chaque client reçoit un score 1-4 sur trois axes.</span>
+        <span class="line"><span class="term term-r">Récence</span> (il a acheté récemment ?) · <span class="term term-f">Fréquence</span> (il achète souvent ?) · <span class="term term-m">Montant</span> (il dépense beaucoup ?).</span>
+        <span class="line">Les scores combinés donnent un segment actionnable (Champions, À risque, Perdus...).</span>
+      </p>
+      <div class="scroll" style="overflow-x:auto;">
+        <table class="data" id="rfmTable">
+          <thead><tr><th>Client</th><th class="num">Récence (j)</th><th class="num">Fréquence</th><th class="num">Montant</th><th class="num">R</th><th class="num">F</th><th class="num">M</th><th>Segment</th></tr></thead>
+          <tbody></tbody>
+        </table>
       </div>
     </div>
   </div>
