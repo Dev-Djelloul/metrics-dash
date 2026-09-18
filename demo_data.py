@@ -21,6 +21,24 @@ CUSTOMER_NAMES = [
 ]
 
 
+# Pays de facturation simulés, pondérés pour ressembler à une clientèle
+# majoritairement française avec un peu d'international.
+COUNTRY_WEIGHTS = [
+    ("FR", 0.45), ("BE", 0.10), ("CH", 0.08), ("DE", 0.08), ("ES", 0.06),
+    ("US", 0.06), ("GB", 0.05), ("CA", 0.04), ("IT", 0.04), ("NL", 0.04),
+]
+
+
+def _pick_country():
+    r = random.random()
+    cumulative = 0
+    for code, weight in COUNTRY_WEIGHTS:
+        cumulative += weight
+        if r < cumulative:
+            return code
+    return COUNTRY_WEIGHTS[-1][0]
+
+
 def _customer_profile(name):
     """Assigns each customer a behavior archetype so the dataset produces
     realistic segments once RFM/cohorts run on it."""
@@ -41,6 +59,7 @@ def generate_demo_records(months=MONTHS_OF_HISTORY):
     records = []
     for name in CUSTOMER_NAMES:
         profile = _customer_profile(name)
+        country = _pick_country()
         first_active_offset = random.randint(0, months - 2)
 
         if profile["type"] == "churned":
@@ -61,7 +80,7 @@ def generate_demo_records(months=MONTHS_OF_HISTORY):
                 if created > now:
                     continue
                 amount = round(random.uniform(*profile["amount_range"]), 2)
-                records.append({"customer": name, "amount": amount, "created": created})
+                records.append({"customer": name, "amount": amount, "created": created, "country": country})
 
     return sorted(records, key=lambda r: r["created"])
 

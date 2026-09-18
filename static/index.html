@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>metrics-dash</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-geo@4"></script>
 <link rel="stylesheet" href="design-system.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,7 +28,12 @@
   .brand-name { font-family: 'Sansation', sans-serif; font-size: 28px; font-weight: 700; font-style: normal; letter-spacing: -0.01em; color: var(--text-primary); }
   .brand-accent { color: var(--accent); }
 
+  .header-actions { display: flex; align-items: center; gap: var(--sp-5); flex-wrap: wrap; }
   .theme-toggle { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-small); color: var(--text-secondary); }
+
+  .powerbi-link { display: inline-flex; align-items: center; gap: var(--sp-2); font-family: var(--font-sans); font-size: var(--fs-small); font-weight: var(--fw-small); color: var(--text-primary); background: var(--surface-2); border: var(--border-w) solid var(--border-strong); border-radius: var(--radius-pill); padding: 7px 14px 7px 8px; cursor: pointer; transition: var(--transition); }
+  .powerbi-link:hover { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-text); }
+  .powerbi-mark { width: 20px; height: 20px; flex-shrink: 0; }
 
   .toolbar-row { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin: var(--sp-5) 0 var(--sp-6); }
   .stripe-mark { width: 36px; height: 36px; object-fit: contain; flex-shrink: 0; }
@@ -84,6 +90,8 @@
     .brand-mark { width: 32px; height: 32px; }
     .brand-name { font-size: 22px; }
     .stripe-mark { width: 28px; height: 28px; }
+    .header-actions { width: 100%; justify-content: space-between; }
+    .powerbi-link { font-size: 12px; padding: 6px 10px 6px 6px; }
     .toolbar-row { margin: var(--sp-4) 0 var(--sp-5); }
     .cards { grid-template-columns: 1fr; }
     .tabs { gap: var(--sp-3); overflow-x: auto; }
@@ -112,10 +120,16 @@
       </svg>
       <span class="brand-name">metrics<span class="brand-accent">-</span>dash</span>
     </div>
-    <div class="theme-toggle">
-      <span>Clair</span>
-      <div class="switch" id="themeSwitch" role="button" aria-label="Changer de thème"><div class="switch-knob"></div></div>
-      <span>Sombre</span>
+    <div class="header-actions">
+      <button class="powerbi-link" id="powerBiLink" type="button">
+        <img class="powerbi-mark" src="icons8-power-bi-2021-96.png" alt="" aria-hidden="true">
+        Connecter à Power BI
+      </button>
+      <div class="theme-toggle">
+        <span>Clair</span>
+        <div class="switch" id="themeSwitch" role="button" aria-label="Changer de thème"><div class="switch-knob"></div></div>
+        <span>Sombre</span>
+      </div>
     </div>
   </div>
 
@@ -170,6 +184,27 @@
           <span class="line">Ici : part du CA venant des 20% de clients qui dépensent le plus, vs tous les autres.</span>
         </p>
         <canvas id="concentrationChart" height="80"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-row chart-row-wide">
+      <div class="card chart-box">
+        <h3>CA par pays</h3>
+        <p class="explainer">
+          <span class="line">Carte colorée selon le CA généré par pays de facturation.</span>
+          <span class="line">Plus la couleur est intense, plus ce pays représente une part importante du chiffre d'affaires.</span>
+        </p>
+        <div id="geoMapWrap" style="position:relative; height:280px;">
+          <canvas id="geoChart"></canvas>
+        </div>
+      </div>
+      <div class="card chart-box">
+        <h3>Détail par pays</h3>
+        <table class="data" id="geoTable">
+          <thead><tr><th>Pays</th><th class="num">Clients</th><th class="num">CA</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p class="explainer" id="geoUnknownNote" style="display:none; margin: var(--sp-4) 0 0;"></p>
       </div>
     </div>
   </div>
@@ -349,6 +384,11 @@ document.getElementById('themeSwitch').addEventListener('click', () => {
   applyTheme(current === 'light' ? 'dark' : 'light');
 });
 
+document.getElementById('powerBiLink').addEventListener('click', () => {
+  document.querySelector('.tab[data-tab="lexique"]').click();
+  document.getElementById('panel-lexique').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
 function isDemo() {
   return document.getElementById('demoToggle').getAttribute('data-on') === 'true';
 }
@@ -496,6 +536,94 @@ async function loadConcentration() {
       },
     }
   });
+}
+
+function hexToRgba(hex, alpha) {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.substring(0, 2), 16);
+  const g = parseInt(h.substring(2, 4), 16);
+  const b = parseInt(h.substring(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+let worldFeaturesCache = null;
+
+async function getWorldFeatures() {
+  if (worldFeaturesCache) return worldFeaturesCache;
+  const res = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json');
+  const topology = await res.json();
+  worldFeaturesCache = ChartGeo.topojson.feature(topology, topology.objects.countries).features;
+  return worldFeaturesCache;
+}
+
+async function loadGeo() {
+  const res = await fetch(apiUrl('/api/geo'));
+  if (!res.ok) return;
+  const geo = await res.json();
+
+  document.querySelector('#geoTable tbody').innerHTML = geo.countries.map(c =>
+    `<tr><td>${c.country}</td><td class="num">${c.customer_count}</td><td class="num">${fmtMoney(c.revenue)}</td></tr>`
+  ).join('');
+
+  const noteEl = document.getElementById('geoUnknownNote');
+  if (geo.unknown_count > 0) {
+    noteEl.style.display = 'block';
+    noteEl.innerHTML = `<span class="line">${geo.unknown_count} commande(s) sans pays de facturation connu, non comptabilisée(s) sur la carte.</span>`;
+  } else {
+    noteEl.style.display = 'none';
+  }
+
+  const byIsoNumeric = {};
+  geo.countries.forEach(c => { if (c.iso_numeric) byIsoNumeric[c.iso_numeric] = c.revenue; });
+  const maxRevenue = Math.max(1, ...Object.values(byIsoNumeric));
+
+  // La carte dépend d'une librairie et de données externes (chartjs-chart-geo
+  // + contours de pays) : si l'une des deux échoue à charger, on dégrade
+  // proprement plutôt que de casser le reste de la page.
+  try {
+    const features = await getWorldFeatures();
+    destroyChart('geo');
+    charts.geo = new ChartGeo.ChoroplethChart(document.getElementById('geoChart'), {
+      data: {
+        labels: features.map(f => f.properties.name),
+        datasets: [{
+          label: 'CA par pays',
+          data: features.map(f => ({ feature: f, value: byIsoNumeric[f.id] || 0 })),
+          backgroundColor: (ctx) => {
+            const d = ctx.dataset && ctx.dataset.data && ctx.dataset.data[ctx.dataIndex];
+            if (!d || !d.value) return cssVar('--surface-3');
+            const alpha = 0.25 + 0.75 * (d.value / maxRevenue);
+            return hexToRgba(cssVar('--accent'), alpha);
+          },
+          borderColor: cssVar('--border'),
+          borderWidth: 0.5,
+        }],
+      },
+      options: {
+        showOutline: true,
+        showGraticule: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const d = ctx.raw;
+                const name = d.feature.properties.name;
+                return d.value ? `${name}: ${fmtMoney(d.value)}` : name;
+              },
+            },
+          },
+        },
+        scales: {
+          projection: { axis: 'x', projection: 'equalEarth' },
+        },
+      },
+    });
+  } catch (err) {
+    console.error('Carte géographique indisponible :', err);
+    const wrap = document.getElementById('geoMapWrap');
+    if (wrap) wrap.innerHTML = '<p class="explainer">Carte indisponible pour le moment. Le détail par pays reste affiché à côté.</p>';
+  }
 }
 
 async function loadNewVsReturning() {
@@ -726,7 +854,7 @@ async function loadAll() {
   renderExportLinks();
   await Promise.all([
     loadGrowth(), loadRfm(), loadCohorts(), loadForecast(), loadWeekday(),
-    loadConcentration(), loadNewVsReturning(), loadLoyaltyCards(),
+    loadConcentration(), loadNewVsReturning(), loadLoyaltyCards(), loadGeo(),
   ]);
 }
 

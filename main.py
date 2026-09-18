@@ -123,6 +123,12 @@ def loyalty(demo: bool = False):
     return analytics.loyalty_metrics(records)
 
 
+@app.get("/api/geo")
+def geo(demo: bool = False):
+    records, _ = get_records(demo)
+    return analytics.revenue_by_country(records)
+
+
 def _csv_response(rows: list[dict], filename: str) -> Response:
     """Turns a list of flat dicts into a downloadable CSV, the format
     Power BI's "Get Data > Web" connector reads with zero extra setup
