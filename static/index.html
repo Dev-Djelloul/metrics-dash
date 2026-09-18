@@ -319,6 +319,14 @@
 
   <!-- Growth -->
   <div class="panel" id="panel-growth">
+    <div class="card chart-box" id="mrrCard" style="display:none;">
+      <h3>MRR (revenu récurrent mensuel)</h3>
+      <p class="explainer">
+        <span class="line">Basé sur tes <span class="term term-mom">abonnements Stripe actifs</span> (pas les paiements ponctuels analysés ailleurs) : combien ça représenterait si chaque abonnement était facturé tous les mois, quel que soit son cycle réel (annuel, hebdomadaire...).</span>
+      </p>
+      <div class="cards" id="mrrCards"></div>
+    </div>
+
     <div class="card chart-box">
       <h3>CA mensuel & croissance</h3>
       <p class="explainer">
@@ -1156,6 +1164,23 @@ async function loadAlerts() {
   banner.innerHTML = messages.map(m => `<div class="alert-item">${m}</div>`).join('');
 }
 
+async function loadMrr() {
+  const mrrCard = document.getElementById('mrrCard');
+  if (isDemo()) { mrrCard.style.display = 'none'; return; } // pas d'abonnements simulés en mode démo
+
+  const res = await fetch('/api/mrr');
+  if (!res.ok) { mrrCard.style.display = 'none'; return; }
+  const data = await res.json();
+  if (!data.available || !data.by_currency.length) { mrrCard.style.display = 'none'; return; }
+
+  mrrCard.style.display = 'block';
+  document.getElementById('mrrCards').innerHTML = data.by_currency.map(c => {
+    const symbol = CURRENCY_SYMBOL[c.currency.toUpperCase()] || c.currency.toUpperCase();
+    return card(`MRR (${c.currency.toUpperCase()})`, `${c.mrr.toFixed(2)} ${symbol}`) +
+      card(`Abonnements actifs (${c.currency.toUpperCase()})`, c.active_subscriptions);
+  }).join('');
+}
+
 function renderExportLinks() {
   const links = [
     { label: 'CA mensuel', path: '/api/export/monthly.csv', color: 'c1' },
@@ -1468,7 +1493,7 @@ async function loadAll() {
   await Promise.all([
     loadGrowth(), loadRfm(), loadCohorts(), loadForecast(), loadWeekday(),
     loadConcentration(), loadNewVsReturning(), loadLoyaltyCards(), loadGeo(),
-    loadForecastOrders(), loadForecastNewCustomers(), loadAlerts(),
+    loadForecastOrders(), loadForecastNewCustomers(), loadAlerts(), loadMrr(),
   ]);
 }
 
