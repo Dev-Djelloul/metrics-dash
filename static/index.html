@@ -710,13 +710,21 @@ async function getWorldFeatures() {
   return worldFeaturesCache;
 }
 
+// Convertit un code ISO alpha-2 ("FR") en nom de pays complet ("France"),
+// via l'API navigateur standard Intl.DisplayNames — pas de table à
+// maintenir à la main, couvre tous les pays automatiquement.
+const countryNameFormatter = new Intl.DisplayNames(['fr'], { type: 'region' });
+function countryName(code) {
+  try { return countryNameFormatter.of(code); } catch { return code; }
+}
+
 async function loadGeo() {
   const res = await fetch(apiUrl('/api/geo'));
   if (!res.ok) return;
   const geo = await res.json();
 
   document.querySelector('#geoTable tbody').innerHTML = geo.countries.map(c =>
-    `<tr><td>${c.country}</td><td class="num">${c.customer_count}</td><td class="num">${fmtMoney(c.revenue)}</td></tr>`
+    `<tr><td title="${countryName(c.country)}">${c.country}</td><td class="num">${c.customer_count}</td><td class="num">${fmtMoney(c.revenue)}</td></tr>`
   ).join('');
 
   const noteEl = document.getElementById('geoUnknownNote');
