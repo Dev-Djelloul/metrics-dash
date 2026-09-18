@@ -133,6 +133,8 @@
   .export-link.c1 { background: var(--accent-soft); color: var(--accent-text); border-color: var(--accent); }
   .export-link.c2 { background: var(--pos-soft); color: var(--pos-text); border-color: var(--pos); }
   .export-link.c3 { background: var(--warn-soft); color: var(--warn-text); border-color: var(--warn); }
+  #alertsBanner { display: flex; flex-direction: column; gap: var(--sp-2); margin: 0 0 var(--sp-5); }
+  .alert-item { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: var(--radius-sm); background: var(--warn-soft); color: var(--warn-text); border: var(--border-w) solid var(--warn); font-size: var(--fs-small); font-weight: var(--fw-small); }
   .export-link.c4 { background: var(--seg-new-soft); color: var(--seg-new); border-color: var(--seg-new); }
 
   /* Popup Power BI */
@@ -216,6 +218,8 @@
       <button class="btn" id="dateReset" type="button">Réinitialiser</button>
     </div>
   </div>
+
+  <div id="alertsBanner" style="display:none;"></div>
 
   <div class="tabs">
     <button class="tab" data-tab="overview" data-active="true">Vue d'ensemble</button>
@@ -1062,6 +1066,16 @@ async function loadLoyaltyCards() {
   }
 }
 
+async function loadAlerts() {
+  const res = await fetch(apiUrl('/api/alerts'));
+  const banner = document.getElementById('alertsBanner');
+  if (!res.ok) { banner.style.display = 'none'; return; }
+  const { alerts } = await res.json();
+  if (!alerts.length) { banner.style.display = 'none'; banner.innerHTML = ''; return; }
+  banner.style.display = 'flex';
+  banner.innerHTML = alerts.map(a => `<div class="alert-item">${a.message}</div>`).join('');
+}
+
 function renderExportLinks() {
   const links = [
     { label: 'CA mensuel', path: '/api/export/monthly.csv', color: 'c1' },
@@ -1371,7 +1385,7 @@ async function loadAll() {
   await Promise.all([
     loadGrowth(), loadRfm(), loadCohorts(), loadForecast(), loadWeekday(),
     loadConcentration(), loadNewVsReturning(), loadLoyaltyCards(), loadGeo(),
-    loadForecastOrders(), loadForecastNewCustomers(),
+    loadForecastOrders(), loadForecastNewCustomers(), loadAlerts(),
   ]);
 }
 

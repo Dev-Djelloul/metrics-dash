@@ -96,3 +96,10 @@ def get_user(user_id: int) -> dict | None:
 
 def set_user_sector(user_id: int, sector: str) -> None:
     query("UPDATE users SET sector = ? WHERE id = ?", [sector, user_id])
+
+
+def get_user_by_stripe_id(stripe_user_id: str) -> dict | None:
+    """Utilisé par le webhook Stripe : les événements portent l'id du compte
+    connecté (`event.account`), pas notre id interne."""
+    rows = query("SELECT * FROM users WHERE stripe_user_id = ?", [stripe_user_id])
+    return rows[0] if rows else None
