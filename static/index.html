@@ -326,7 +326,7 @@
       </p>
       <div class="scroll" style="overflow-x:auto;">
         <table class="data" id="rfmTable">
-          <thead><tr><th>Client</th><th class="num">Récence (j)</th><th class="num">Fréquence</th><th class="num">Montant</th><th class="num">R</th><th class="num">F</th><th class="num">M</th><th>Segment</th></tr></thead>
+          <thead><tr><th>Client</th><th class="num">Récence (j)</th><th class="num">Fréquence</th><th class="num">Montant</th><th class="num">R</th><th class="num">F</th><th class="num">M</th><th>Action marketing suggérée</th><th>Segment</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -376,7 +376,18 @@
         <dd>Moyenne calculée sur une fenêtre glissante (ex : les 7 derniers jours), qui lisse le bruit journalier pour voir la vraie tendance.</dd>
 
         <dt>RFM (<span class="term term-r">Récence</span> / <span class="term term-f">Fréquence</span> / <span class="term term-m">Montant</span>)</dt>
-        <dd>Technique de segmentation client : chaque client reçoit un score 1-4 sur ces trois axes, combinés en un segment actionnable (Champions, À risque, Perdus...).</dd>
+        <dd>
+          Méthode CRM qui segmente les clients sur 3 dimensions comportementales : <b>quand</b> ils ont acheté pour la dernière fois (Récence), <b>à quelle fréquence</b> ils achètent, et <b>combien</b> ils dépensent (Montant). Chaque client reçoit un score 1-4 sur chaque axe, combinés en un segment actionnable.
+          <br><br>
+          L'intérêt pratique : relier chaque segment à une action marketing concrète (visible dans la colonne dédiée de l'onglet RFM) — <i>segment → intention → action</i> :
+          <ul style="margin:8px 0 0; padding-left:20px;">
+            <li><b>Champions</b> : fidéliser → programme VIP, avantages exclusifs</li>
+            <li><b>Clients fidèles</b> : entretenir → offres régulières</li>
+            <li><b>Nouveaux clients</b> : accompagner → email de bienvenue</li>
+            <li><b>À risque</b> : prévenir le désengagement → offre personnalisée ou rappel</li>
+            <li><b>Perdus</b> : récupérer → campagne de réactivation</li>
+          </ul>
+        </dd>
 
         <dt><span class="term term-cohort">Cohorte</span></dt>
         <dd>Groupe de clients qui partagent un point de départ commun — ici, le mois de leur tout premier achat — suivi dans le temps.</dd>
@@ -913,6 +924,20 @@ const SEGMENT_COLOR_VAR = {
   'Perdus': '--seg-lost',
 };
 
+// Segment RFM -> action marketing suggérée : le lien entre la donnée
+// (le segment calculé) et la décision (quoi faire pour ce client), le
+// cœur de l'intérêt pratique de la RFM en CRM.
+const SEGMENT_ACTION = {
+  'Champions': 'Programme VIP, avant-première, avantages exclusifs',
+  'Clients fidèles': 'Email/SMS de fidélisation, offres régulières',
+  'Nouveaux clients': 'Email de bienvenue, accompagnement des premiers achats',
+  'À risque (gros clients)': 'Contact prioritaire + offre personnalisée (forte valeur à ne pas perdre)',
+  'À risque': 'Offre personnalisée ou rappel pour prévenir le désengagement',
+  'Clients occasionnels': 'Offre incitative pour encourager la récurrence',
+  'À risque / Perdus': 'Campagne de réactivation (email marketing)',
+  'Perdus': 'Campagne de réactivation (email marketing)',
+};
+
 async function loadRfm() {
   const res = await fetch(apiUrl('/api/rfm'));
   if (!res.ok) return;
@@ -922,6 +947,7 @@ async function loadRfm() {
     `<tr>
       <td>${r.customer}</td><td class="num">${r.recency_days}</td><td class="num">${r.frequency}</td><td class="num">${fmtMoney(r.monetary)}</td>
       <td class="num">${r.r_score}</td><td class="num">${r.f_score}</td><td class="num">${r.m_score}</td>
+      <td class="explainer" style="margin:0;">${SEGMENT_ACTION[r.segment] || '—'}</td>
       <td><span class="badge ${SEGMENT_CLASS[r.segment] || 'loyal'}">${r.segment}</span></td>
     </tr>`
   ).join('');
