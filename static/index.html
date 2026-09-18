@@ -237,6 +237,10 @@
       <input type="date" id="dateEnd">
       <button class="btn" id="dateReset" type="button">Réinitialiser</button>
     </div>
+    <div class="date-range" id="currencyPicker" style="display:none;">
+      <label for="currencySelect">Devise</label>
+      <select id="currencySelect"></select>
+    </div>
   </div>
 
   <div id="alertsBanner" style="display:none;"></div>
@@ -757,8 +761,33 @@ function apiUrl(path) {
   const end = document.getElementById('dateEnd').value;
   if (start) params.set('start', start);
   if (end) params.set('end', end);
+  const currencySelect = document.getElementById('currencySelect');
+  if (currencySelect && currencySelect.value) params.set('currency', currencySelect.value);
   const qs = params.toString();
   return qs ? `${path}?${qs}` : path;
+}
+
+// Un compte peut encaisser dans plusieurs devises (EUR, USD, ...) : on ne
+// les mélange jamais (additionner des unités différentes fausserait
+// silencieusement le CA), donc chaque devise a son propre jeu de métriques,
+// et ce sélecteur bascule de l'une à l'autre. Masqué s'il n'y en a qu'une.
+async function loadCurrencyPicker() {
+  const res = await fetch(apiUrl('/api/currencies'));
+  const picker = document.getElementById('currencyPicker');
+  if (!res.ok) { picker.style.display = 'none'; return; }
+  const { currencies } = await res.json();
+  const select = document.getElementById('currencySelect');
+  const previous = select.value;
+
+  if (currencies.length <= 1) {
+    picker.style.display = 'none';
+    select.innerHTML = '';
+    return;
+  }
+
+  picker.style.display = 'flex';
+  select.innerHTML = currencies.map(c => `<option value="${c}">${c.toUpperCase()}</option>`).join('');
+  select.value = currencies.includes(previous) ? previous : currencies[0];
 }
 
 document.getElementById('dateStart').addEventListener('change', loadAll);
@@ -768,6 +797,7 @@ document.getElementById('dateReset').addEventListener('click', () => {
   document.getElementById('dateEnd').value = '';
   loadAll();
 });
+document.getElementById('currencySelect').addEventListener('change', loadAll);
 
 document.getElementById('demoToggle').addEventListener('click', async (e) => {
   const btn = e.currentTarget;
@@ -1428,7 +1458,10 @@ async function loadForecastNewCustomers() {
 }
 
 async function loadAll() {
-  // loadOverview() en premier : c'est la seule route qui renvoie la devise
+  // loadCurrencyPicker() en tout premier : apiUrl() lit sa sélection pour
+  // filtrer chaque requête suivante sur une seule devise à la fois.
+  await loadCurrencyPicker();
+  // loadOverview() ensuite : c'est la seule route qui renvoie la devise
   // (currentCurrency), utilisée par fmtMoney() dans tous les autres onglets.
   await loadOverview();
   renderExportLinks();

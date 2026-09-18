@@ -268,100 +268,120 @@ async def stripe_webhook(request: Request):
     return {"received": True}
 
 
-def get_records(demo: bool, start: str, end: str, user: dict | None):
-    """Fetches and normalizes records, then applies the date range picker's
-    filter (start/end, both optional "YYYY-MM-DD") if set."""
+def get_all_records(demo: bool, user: dict | None) -> list[dict]:
+    """Fetches and normalizes every record for this user/demo, toutes devises
+    confondues, sans filtre de date — utilisé pour lister les devises
+    disponibles et comme base avant filtrage par get_records()."""
     if demo:
-        records, currency = demo_data.generate_demo_records(), "eur"
-    elif user:
-        charges = get_charges_for_user(user)
-        currency = charges[0].currency if charges else "eur"
-        records = charges_to_records(charges)
-    else:
-        raise HTTPException(401, "Non connecté — connecte-toi avec Stripe ou utilise le mode démo.")
+        return demo_data.generate_demo_records()
+    if user:
+        return charges_to_records(get_charges_for_user(user))
+    raise HTTPException(401, "Non connecté — connecte-toi avec Stripe ou utilise le mode démo.")
 
+
+def get_records(demo: bool, start: str, end: str, user: dict | None, currency: str = None):
+    """Fetches and normalizes records, then filters by currency and by the
+    date range picker's filter (start/end, both optional "YYYY-MM-DD").
+
+    Un compte peut encaisser dans plusieurs devises (ex: EUR et USD) — les
+    additionner reviendrait à sommer des unités différentes comme si
+    c'était la même, donc on isole toujours une seule devise à la fois
+    plutôt que de les mélanger ou de les convertir (pas de taux de change
+    fiable disponible ici)."""
+    records = get_all_records(demo, user)
+
+    available = sorted({r.get("currency", "eur") for r in records}) or ["eur"]
+    selected = currency if currency in available else available[0]
+
+    records = [r for r in records if r.get("currency", "eur") == selected]
     records = analytics.filter_by_date(records, start, end)
-    return records, currency
+    return records, selected
+
+
+@app.get("/api/currencies")
+def currencies(demo: bool = False, user=Depends(get_current_user)):
+    records = get_all_records(demo, user)
+    return {"currencies": sorted({r.get("currency", "eur") for r in records}) or ["eur"]}
 
 
 @app.get("/api/metrics")
-def metrics(demo: bool = False, start: str = None, end: str = None, user=Depends(get_current_user)):
-    records, currency = get_records(demo, start, end, user)
+def metrics(demo: bool = False, start: str = None, end: str = None, currency: str = None, user=Depends(get_current_user)):
+    records, currency = get_records(demo, start, end, user, currency)
     return compute_metrics_from_records(records, currency)
 
 
 @app.get("/api/growth")
-def growth(demo: bool = False, start: str = None, end: str = None, user=Depends(get_current_user)):
-    records, _ = get_records(demo, start, end, user)
+def growth(demo: bool = False, start: str = None, end: str = None, currency: str = None, user=Depends(get_current_user)):
+    records, _ = get_records(demo, start, end, user, currency)
     return analytics.growth_metrics(records)
 
 
 @app.get("/api/rfm")
-def rfm(demo: bool = False, start: str = None, end: str = None, user=Depends(get_current_user)):
-    records, _ = get_records(demo, start, end, user)
+def rfm(demo: bool = False, start: str = None, end: str = None, currency: str = None, user=Depends(get_current_user)):
+    records, _ = get_records(demo, start, end, user, currency)
     return analytics.rfm_segments(records)
 
 
 @app.get("/api/cohorts")
-def cohorts(demo: bool = False, start: str = None, end: str = None, user=Depends(get_current_user)):
-    records, _ = get_records(demo, start, end, user)
+def cohorts(demo: bool = False, start: str = None, end: str = None, currency: str = None, user=Depends(get_current_user)):
+    records, _ = get_records(demo, start, end, user, currency)
     return analytics.cohort_retention(records)
 
 
 @app.get("/api/forecast")
 def forecast(
-    periods: int = 3, demo: bool = False, start: str = None, end: str = None, user=Depends(get_current_user)
+    periods: int = 3, demo: bool = False, start: str = None, end: str = None, currency: str = None, user=Depends(get_current_user)
 ):
-    records, _ = get_records(demo, start, end, user)
+    records, _ = get_records(demo, start, end, user, currency)
     return analytics.forecast_revenue(records, periods_ahead=periods)
 
 
 @app.get("/api/forecast/orders")
 def forecast_orders(
-    periods: int = 3, demo: bool = False, start: str = None, end: str = None, user=Depends(get_current_user)
+    periods: int = 3, demo: bool = False, start: str = None, end: str = None, currency: str = None, user=Depends(get_current_user)
 ):
-    records, _ = get_records(demo, start, end, user)
+    records, _ = get_records(demo, start, end, user, currency)
     return analytics.forecast_order_count(records, periods_ahead=periods)
 
 
 @app.get("/api/forecast/newcustomers")
 def forecast_new_customers(
-    periods: int = 3, demo: bool = False, start: str = None, end: str = None, user=Depends(get_current_user)
+    periods: int = 3, demo: bool = False, start: str = None, end: str = None, currency: str = None, user=Depends(get_current_user)
 ):
-    records, _ = get_records(demo, start, end, user)
+    records, _ = get_records(demo, start, end, user, currency)
     return analytics.forecast_new_customers(records, periods_ahead=periods)
 
 
 @app.get("/api/weekday")
-def weekday(demo: bool = False, start: str = None, end: str = None, user=Depends(get_current_user)):
-    records, _ = get_records(demo, start, end, user)
+def weekday(demo: bool = False, start: str = None, end: str = None, currency: str = None, user=Depends(get_current_user)):
+    records, _ = get_records(demo, start, end, user, currency)
     return analytics.revenue_by_weekday(records)
 
 
 @app.get("/api/concentration")
-def concentration(demo: bool = False, start: str = None, end: str = None, user=Depends(get_current_user)):
-    records, _ = get_records(demo, start, end, user)
+def concentration(demo: bool = False, start: str = None, end: str = None, currency: str = None, user=Depends(get_current_user)):
+    records, _ = get_records(demo, start, end, user, currency)
     return analytics.revenue_concentration(records)
 
 
 @app.get("/api/newvsreturning")
-def new_vs_returning(demo: bool = False, start: str = None, end: str = None, user=Depends(get_current_user)):
-    records, _ = get_records(demo, start, end, user)
+def new_vs_returning(demo: bool = False, start: str = None, end: str = None, currency: str = None, user=Depends(get_current_user)):
+    records, _ = get_records(demo, start, end, user, currency)
     return analytics.new_vs_returning_by_month(records)
 
 
 @app.get("/api/loyalty")
-def loyalty(demo: bool = False, start: str = None, end: str = None, user=Depends(get_current_user)):
-    records, _ = get_records(demo, start, end, user)
+def loyalty(demo: bool = False, start: str = None, end: str = None, currency: str = None, user=Depends(get_current_user)):
+    records, _ = get_records(demo, start, end, user, currency)
     return analytics.loyalty_metrics(records)
 
 
 @app.get("/api/alerts")
-def alerts(demo: bool = False, start: str = None, end: str = None, user=Depends(get_current_user)):
+def alerts(demo: bool = False, start: str = None, end: str = None, currency: str = None, user=Depends(get_current_user)):
     """Alertes simples calculées à la volée (pas de notif email — nécessiterait
     un service d'envoi qu'on n'a pas encore) : un déclin marqué du CA d'un
     mois sur l'autre, ou un nombre significatif de clients à risque/perdus."""
-    records, _ = get_records(demo, start, end, user)
+    records, _ = get_records(demo, start, end, user, currency)
     result = []
 
     monthly = analytics.growth_metrics(records)["monthly"]
@@ -392,8 +412,8 @@ def alerts(demo: bool = False, start: str = None, end: str = None, user=Depends(
 
 
 @app.get("/api/geo")
-def geo(demo: bool = False, start: str = None, end: str = None, user=Depends(get_current_user)):
-    records, _ = get_records(demo, start, end, user)
+def geo(demo: bool = False, start: str = None, end: str = None, currency: str = None, user=Depends(get_current_user)):
+    records, _ = get_records(demo, start, end, user, currency)
     return analytics.revenue_by_country(records)
 
 
@@ -414,26 +434,26 @@ def _csv_response(rows: list[dict], filename: str) -> Response:
 
 
 @app.get("/api/export/monthly.csv")
-def export_monthly_csv(demo: bool = False, start: str = None, end: str = None, user=Depends(get_current_user)):
-    records, _ = get_records(demo, start, end, user)
+def export_monthly_csv(demo: bool = False, start: str = None, end: str = None, currency: str = None, user=Depends(get_current_user)):
+    records, _ = get_records(demo, start, end, user, currency)
     return _csv_response(analytics.growth_metrics(records)["monthly"], "metrics-dash-monthly.csv")
 
 
 @app.get("/api/export/daily.csv")
-def export_daily_csv(demo: bool = False, start: str = None, end: str = None, user=Depends(get_current_user)):
-    records, _ = get_records(demo, start, end, user)
+def export_daily_csv(demo: bool = False, start: str = None, end: str = None, currency: str = None, user=Depends(get_current_user)):
+    records, _ = get_records(demo, start, end, user, currency)
     return _csv_response(analytics.growth_metrics(records)["daily"], "metrics-dash-daily.csv")
 
 
 @app.get("/api/export/rfm.csv")
-def export_rfm_csv(demo: bool = False, start: str = None, end: str = None, user=Depends(get_current_user)):
-    records, _ = get_records(demo, start, end, user)
+def export_rfm_csv(demo: bool = False, start: str = None, end: str = None, currency: str = None, user=Depends(get_current_user)):
+    records, _ = get_records(demo, start, end, user, currency)
     return _csv_response(analytics.rfm_segments(records), "metrics-dash-rfm.csv")
 
 
 @app.get("/api/export/cohorts.csv")
-def export_cohorts_csv(demo: bool = False, start: str = None, end: str = None, user=Depends(get_current_user)):
-    records, _ = get_records(demo, start, end, user)
+def export_cohorts_csv(demo: bool = False, start: str = None, end: str = None, currency: str = None, user=Depends(get_current_user)):
+    records, _ = get_records(demo, start, end, user, currency)
     rows = [
         {
             "cohort_month": cohort["cohort_month"],

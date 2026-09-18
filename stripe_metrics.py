@@ -99,6 +99,7 @@ def charges_to_records(charges):
                 "amount": c.amount / 100,
                 "created": datetime.fromtimestamp(c.created, tz=timezone.utc),
                 "country": country,
+                "currency": c.currency,
             }
         )
     return records

@@ -80,7 +80,9 @@ def generate_demo_records(months=MONTHS_OF_HISTORY):
                 if created > now:
                     continue
                 amount = round(random.uniform(*profile["amount_range"]), 2)
-                records.append({"customer": name, "amount": amount, "created": created, "country": country})
+                records.append(
+                    {"customer": name, "amount": amount, "created": created, "country": country, "currency": "eur"}
+                )
 
     return sorted(records, key=lambda r: r["created"])
 
