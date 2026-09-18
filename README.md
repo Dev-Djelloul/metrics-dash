@@ -81,6 +81,52 @@ brancher les deux sources sur les mêmes analyses.
 | Cohort retention | `analytics.cohort_retention` | Mes clients reviennent-ils acheter dans le temps ? |
 | Régression linéaire | `analytics.forecast_revenue` | À quoi peut ressembler le CA des prochains mois ? |
 
+## Déploiement sur Cloudflare (Containers)
+
+L'app tourne sur [Cloudflare Containers](https://developers.cloudflare.com/containers/) :
+un petit Worker (`src/index.ts`) route toutes les requêtes vers un conteneur
+Docker qui fait tourner `main.py` tel quel — aucune réécriture du backend
+Python n'est nécessaire.
+
+```
+static/index.html ──┐
+main.py (FastAPI)  ──┼── Dockerfile ──► Cloudflare Container ◄── src/index.ts (Worker, routeur)
+analytics.py, etc. ──┘
+```
+
+**Prérequis** : un compte Cloudflare, Node.js, et `npm install` à la racine
+du repo (installe `wrangler` et `@cloudflare/containers`).
+
+```bash
+npm install
+npx wrangler login
+
+# clé Stripe stockée comme secret Cloudflare, jamais commitée
+npx wrangler secret put STRIPE_SECRET_KEY
+
+npx wrangler deploy
+```
+
+`wrangler deploy` construit l'image Docker à partir du `Dockerfile` à la
+racine, la pousse sur le registre de conteneurs de Cloudflare, et déploie
+le Worker qui route vers elle.
+
+Pour tester en local avant de déployer :
+
+```bash
+npx wrangler dev
+```
+
+**Points à surveiller** (Cloudflare Containers est une fonctionnalité
+encore jeune, sortie en 2025) :
+- `sleepAfter = "10m"` dans `src/index.ts` éteint le conteneur après 10 min
+  d'inactivité pour limiter les coûts — le premier appel après une pause
+  aura un temps de démarrage ("cold start") plus long.
+- `max_instances = 1` dans `wrangler.toml` : une seule instance de conteneur,
+  cohérent avec un usage perso/démo (pas de montée en charge prévue).
+- Le cache mémoire des appels Stripe (`_cache` dans `main.py`, 60s) est
+  perdu à chaque redémarrage du conteneur — normal, ce n'est qu'un cache.
+
 ## Pour aller plus loin
 
 - Ajouter d'autres métriques (MRR/churn si tu passes à Stripe Subscriptions)
