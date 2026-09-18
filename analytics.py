@@ -467,11 +467,15 @@ def loyalty_metrics(records):
         else None
     )
 
+    repeat_customer_count = len(per_customer_avg_gaps)
+    repeat_customer_pct = round(repeat_customer_count / customer_count * 100, 1) if customer_count else 0
+
     return {
         "avg_ltv": avg_ltv,
         "customer_count": customer_count,
         "avg_days_between_purchases": avg_days_between_purchases,
-        "repeat_customer_count": len(per_customer_avg_gaps),
+        "repeat_customer_count": repeat_customer_count,
+        "repeat_customer_pct": repeat_customer_pct,
     }
 
 

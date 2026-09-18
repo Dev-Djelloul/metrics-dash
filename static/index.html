@@ -77,6 +77,7 @@
   @keyframes panel-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
   .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--sp-4); margin-bottom: var(--sp-8); }
+  .cards .full-width { grid-column: 1 / -1; }
 
   .chart-box { padding: var(--sp-5); margin-bottom: var(--sp-8); }
   .chart-box h3 { margin: 0 0 var(--sp-2); font-size: var(--fs-h2); font-weight: var(--fw-h2); color: var(--text-primary); }
@@ -276,6 +277,7 @@
         <span class="line">Ici : part du CA venant des 20% de clients qui dépensent le plus, vs tous les autres.</span>
       </p>
       <div class="canvas-wrap"><canvas id="concentrationChart"></canvas></div>
+      <p class="explainer" id="concentrationBenchmark" style="display:none;"></p>
     </div>
 
     <div class="card chart-box">
@@ -595,12 +597,36 @@ async function renderSectorList(currentSector) {
       }
       updateSectorBadge(sector);
       closeSectorModal();
+      await loadAll();
     });
   });
 }
 
+let currentSector = null;
+
 function updateSectorBadge(sector) {
+  currentSector = sector || null;
   document.getElementById('sectorBadgeLabel').textContent = sector || 'Secteur non renseigné';
+}
+
+let benchmarksCache = {};
+
+async function getBenchmarks() {
+  if (!currentSector) return null;
+  if (benchmarksCache[currentSector]) return benchmarksCache[currentSector];
+  const res = await fetch('/api/benchmarks?sector=' + encodeURIComponent(currentSector));
+  if (!res.ok) return null;
+  const data = await res.json();
+  benchmarksCache[currentSector] = data;
+  return data;
+}
+
+function benchmarkLine(label, yours, sectorValue, unit) {
+  if (sectorValue == null) return '';
+  const delta = yours - sectorValue;
+  const cls = delta >= 0 ? 'kpi-delta pos' : 'kpi-delta neg';
+  const sign = delta >= 0 ? '+' : '';
+  return `<div class="${cls}">${label} secteur : ${sectorValue}${unit} (${sign}${delta.toFixed(1)}${unit} vs toi)</div>`;
 }
 
 document.getElementById('sectorBadge').addEventListener('click', async () => {
@@ -812,10 +838,21 @@ async function loadWeekday() {
 }
 
 async function loadConcentration() {
-  const res = await fetch(apiUrl('/api/concentration'));
+  const [res, benchmark] = await Promise.all([fetch(apiUrl('/api/concentration')), getBenchmarks()]);
   if (!res.ok) return;
   const c = await res.json();
   if (!c.segments || !c.segments.length) return;
+
+  const noteEl = document.getElementById('concentrationBenchmark');
+  if (noteEl) {
+    if (benchmark && c.segments[0]) {
+      const observedPct = Math.round((c.segments[0].amount / (c.segments[0].amount + c.segments[1].amount)) * 100);
+      noteEl.style.display = 'block';
+      noteEl.textContent = `Repère secteur : le top ${c.top_share_pct}% des clients y pèse en général ${benchmark.top_share_pct}% du CA (toi : ${observedPct}%).`;
+    } else {
+      noteEl.style.display = 'none';
+    }
+  }
 
   destroyChart('concentration');
   charts.concentration = new Chart(document.getElementById('concentrationChart'), {
@@ -977,9 +1014,10 @@ async function loadNewVsReturning() {
 }
 
 async function loadLoyaltyCards() {
-  const [loyaltyRes, rfmRes] = await Promise.all([
+  const [loyaltyRes, rfmRes, benchmark] = await Promise.all([
     fetch(apiUrl('/api/loyalty')),
     fetch(apiUrl('/api/rfm')),
+    getBenchmarks(),
   ]);
   if (!loyaltyRes.ok || !rfmRes.ok) return;
   const loyalty = await loyaltyRes.json();
@@ -991,10 +1029,25 @@ async function loadLoyaltyCards() {
     ? 'Pas assez de données'
     : `${loyalty.avg_days_between_purchases} jours`;
 
+  const delaySub = (benchmark && loyalty.avg_days_between_purchases !== null)
+    ? { cls: loyalty.avg_days_between_purchases <= benchmark.avg_days_between_purchases ? 'pos' : 'neg',
+        text: `Secteur : ${benchmark.avg_days_between_purchases} j` }
+    : null;
+  const repeatSub = benchmark
+    ? { cls: loyalty.repeat_customer_pct >= benchmark.repeat_customer_pct ? 'pos' : 'neg',
+        text: `Secteur : ${benchmark.repeat_customer_pct}%` }
+    : null;
+
   document.getElementById('loyaltyCards').innerHTML =
     card('LTV moyen (valeur vie client)', fmtMoney(loyalty.avg_ltv)) +
-    card('Délai moyen entre 2 achats', delayText) +
-    card('Clients à risque / perdus', `${atRiskPct}%`);
+    card('Délai moyen entre 2 achats', delayText, delaySub) +
+    card('Clients à risque / perdus', `${atRiskPct}%`) +
+    card('Taux de clients récurrents', `${loyalty.repeat_customer_pct}%`, repeatSub);
+
+  if (!benchmark) {
+    document.getElementById('loyaltyCards').insertAdjacentHTML('beforeend',
+      '<p class="explainer full-width"><span class="line">Renseigne ton secteur d\'activité (badge en haut) pour comparer ces chiffres à des repères sectoriels.</span></p>');
+  }
 }
 
 function renderExportLinks() {
