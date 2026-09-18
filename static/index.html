@@ -86,6 +86,20 @@
   .glossary dd { margin: 4px 0 0; color: var(--text-secondary); font-size: var(--fs-small); line-height: var(--fs-body-lh); }
 
   .export-list { display: flex; flex-wrap: wrap; gap: var(--sp-3); }
+  .export-link { display: inline-flex; align-items: center; font-family: var(--font-sans); font-size: var(--fs-small); font-weight: 700; padding: 8px 16px; border-radius: var(--radius-pill); border: var(--border-w) solid; text-decoration: none; transition: var(--transition); }
+  .export-link:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .export-link.c1 { background: var(--accent-soft); color: var(--accent-text); border-color: var(--accent); }
+  .export-link.c2 { background: var(--pos-soft); color: var(--pos-text); border-color: var(--pos); }
+  .export-link.c3 { background: var(--warn-soft); color: var(--warn-text); border-color: var(--warn); }
+  .export-link.c4 { background: var(--seg-new-soft); color: var(--seg-new); border-color: var(--seg-new); }
+
+  /* Popup Power BI */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; padding: var(--sp-4); z-index: 100; }
+  .modal-overlay[hidden] { display: none; }
+  .modal-card { position: relative; background: var(--surface-1); border: var(--border-w) solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-pop); padding: var(--sp-6); max-width: 540px; width: 100%; }
+  .modal-card h3 { margin: 0 0 var(--sp-3); font-size: var(--fs-h2); font-weight: var(--fw-h2); color: var(--text-primary); }
+  .modal-close { position: absolute; top: var(--sp-3); right: var(--sp-3); width: 28px; height: 28px; border-radius: 50%; border: none; background: var(--surface-2); color: var(--text-secondary); font-size: 20px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: var(--transition); }
+  .modal-close:hover { background: var(--surface-3); color: var(--text-primary); }
 
   .card, .kpi-card { transition: var(--transition); }
   .kpi-card:hover, .chart-box:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); border-color: var(--border-strong); }
@@ -348,9 +362,13 @@
         <dd>Fichier texte tabulaire (Comma-Separated Values) : le format le plus simple pour faire passer des données d'un outil à un autre — ex : vers Excel ou Power BI.</dd>
       </dl>
     </div>
+  </div>
 
-    <div class="card chart-box">
-      <h3>Connecter tes données à Power BI</h3>
+  <!-- Popup Power BI -->
+  <div class="modal-overlay" id="powerBiModal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="powerBiModalTitle">
+      <button class="modal-close" id="powerBiModalClose" type="button" aria-label="Fermer">&times;</button>
+      <h3 id="powerBiModalTitle">Connecter tes données à Power BI</h3>
       <p class="explainer">
         <span class="line">Power BI n'a pas besoin d'un connecteur spécial : sa fonction native « Obtenir les données &gt; Web » lit un fichier CSV en ligne directement, sans code.</span>
         <span class="line">Dans Power BI Desktop : <b>Accueil → Obtenir les données → Web</b>, colle l'une des URL ci-dessous, valide — la table apparaît, prête à être mise en forme.</span>
@@ -392,9 +410,23 @@ document.getElementById('themeSwitch').addEventListener('click', () => {
   applyTheme(current === 'light' ? 'dark' : 'light');
 });
 
-document.getElementById('powerBiLink').addEventListener('click', () => {
-  document.querySelector('.tab[data-tab="lexique"]').click();
-  document.getElementById('panel-lexique').scrollIntoView({ behavior: 'smooth', block: 'start' });
+const powerBiModal = document.getElementById('powerBiModal');
+
+function openPowerBiModal() {
+  powerBiModal.hidden = false;
+}
+
+function closePowerBiModal() {
+  powerBiModal.hidden = true;
+}
+
+document.getElementById('powerBiLink').addEventListener('click', openPowerBiModal);
+document.getElementById('powerBiModalClose').addEventListener('click', closePowerBiModal);
+powerBiModal.addEventListener('click', (e) => {
+  if (e.target === powerBiModal) closePowerBiModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !powerBiModal.hidden) closePowerBiModal();
 });
 
 function isDemo() {
@@ -687,13 +719,13 @@ async function loadLoyaltyCards() {
 
 function renderExportLinks() {
   const links = [
-    { label: 'CA mensuel', path: '/api/export/monthly.csv' },
-    { label: 'CA quotidien', path: '/api/export/daily.csv' },
-    { label: 'Segmentation RFM', path: '/api/export/rfm.csv' },
-    { label: 'Cohortes de rétention', path: '/api/export/cohorts.csv' },
+    { label: 'CA mensuel', path: '/api/export/monthly.csv', color: 'c1' },
+    { label: 'CA quotidien', path: '/api/export/daily.csv', color: 'c2' },
+    { label: 'Segmentation RFM', path: '/api/export/rfm.csv', color: 'c3' },
+    { label: 'Cohortes de rétention', path: '/api/export/cohorts.csv', color: 'c4' },
   ];
   document.getElementById('exportList').innerHTML = links.map(l =>
-    `<a class="btn" href="${apiUrl(l.path)}" download>${l.label} (.csv)</a>`
+    `<a class="export-link ${l.color}" href="${apiUrl(l.path)}" download>${l.label} (.csv)</a>`
   ).join('');
 }
 
