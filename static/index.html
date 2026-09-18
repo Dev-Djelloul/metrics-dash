@@ -474,7 +474,7 @@ document.addEventListener('keydown', (e) => {
 const geoMapWrap = document.getElementById('geoMapWrap');
 const geoCanvas = document.getElementById('geoChart');
 const GEO_ZOOM_MIN = 1;
-const GEO_ZOOM_MAX = 5;
+const GEO_ZOOM_MAX = 3;
 let geoZoomLevel = 1;
 let geoPanX = 0;
 let geoPanY = 0;
@@ -755,6 +755,12 @@ async function loadGeo() {
       },
       options: {
         maintainAspectRatio: false,
+        // Sur-échantillonne le canvas (bitmap interne plus grand que sa
+        // taille CSS affichée) pour que le zoom CSS (scale()) étire une
+        // image déjà plus détaillée au lieu de pixels grossiers — sans ça,
+        // zoomer un canvas rendu à sa taille d'affichage normale devient
+        // flou très vite.
+        devicePixelRatio: Math.max(4, window.devicePixelRatio * 2),
         showOutline: true,
         showGraticule: false,
         plugins: {
