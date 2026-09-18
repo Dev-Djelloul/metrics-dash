@@ -135,11 +135,18 @@ def charges_to_records(charges):
             or c.customer
             or "unknown"
         )
+        # Pays de facturation (ISO 3166-1 alpha-2, ex: "FR"). Absent si le
+        # client n'a pas renseigné d'adresse complète à l'achat — pas toujours
+        # garanti selon comment le checkout Stripe est configuré.
+        country = None
+        if c.billing_details.address:
+            country = c.billing_details.address.country
         records.append(
             {
                 "customer": customer_key,
                 "amount": c.amount / 100,
                 "created": datetime.fromtimestamp(c.created, tz=timezone.utc),
+                "country": country,
             }
         )
     return records

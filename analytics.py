@@ -360,3 +360,49 @@ def loyalty_metrics(records):
         "avg_days_between_purchases": avg_days_between_purchases,
         "repeat_customer_count": len(per_customer_avg_gaps),
     }
+
+
+# ---------------------------------------------------------------------------
+# 9. Répartition géographique : CA par pays de facturation.
+# ---------------------------------------------------------------------------
+# ISO 3166-1 numérique pour les pays qu'on est susceptible de voir : la
+# carte du monde (world-atlas, côté frontend) identifie ses pays par ce
+# code numérique, pas par le code alpha-2 ("FR") que Stripe nous donne.
+# Un pays absent de cette table n'apparaîtra pas sur la carte, mais reste
+# compté dans le CA total et dans le tableau texte à côté.
+ISO_NUMERIC = {
+    "FR": "250", "BE": "056", "CH": "756", "DE": "276", "ES": "724",
+    "US": "840", "GB": "826", "CA": "124", "IT": "380", "NL": "528",
+    "PT": "620", "LU": "442", "AT": "040", "SE": "752", "NO": "578",
+    "DK": "208", "FI": "246", "PL": "616", "IE": "372", "GR": "300",
+    "AU": "036", "JP": "392", "BR": "076", "MX": "484", "IN": "356",
+    "CN": "156", "KR": "410", "SG": "702", "AE": "784", "ZA": "710",
+    "NZ": "554", "CZ": "203", "RO": "642", "HU": "348", "MA": "504",
+    "TN": "788", "TR": "792", "IL": "376", "RU": "643", "UA": "804",
+}
+
+
+def revenue_by_country(records):
+    revenue = defaultdict(float)
+    customers = defaultdict(set)
+    unknown_count = 0
+
+    for r in records:
+        country = r.get("country")
+        if not country:
+            unknown_count += 1
+            continue
+        revenue[country] += r["amount"]
+        customers[country].add(r["customer"])
+
+    countries = [
+        {
+            "country": code,
+            "iso_numeric": ISO_NUMERIC.get(code),
+            "revenue": round(amount, 2),
+            "customer_count": len(customers[code]),
+        }
+        for code, amount in sorted(revenue.items(), key=lambda kv: kv[1], reverse=True)
+    ]
+
+    return {"countries": countries, "unknown_count": unknown_count}

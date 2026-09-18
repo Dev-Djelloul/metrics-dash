@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>metrics-dash</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-geo@4"></script>
 <link rel="stylesheet" href="design-system.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -183,6 +184,27 @@
           <span class="line">Ici : part du CA venant des 20% de clients qui dépensent le plus, vs tous les autres.</span>
         </p>
         <canvas id="concentrationChart" height="80"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-row chart-row-wide">
+      <div class="card chart-box">
+        <h3>CA par pays</h3>
+        <p class="explainer">
+          <span class="line">Carte colorée selon le CA généré par pays de facturation.</span>
+          <span class="line">Plus la couleur est intense, plus ce pays représente une part importante du chiffre d'affaires.</span>
+        </p>
+        <div id="geoMapWrap" style="position:relative; height:280px;">
+          <canvas id="geoChart"></canvas>
+        </div>
+      </div>
+      <div class="card chart-box">
+        <h3>Détail par pays</h3>
+        <table class="data" id="geoTable">
+          <thead><tr><th>Pays</th><th class="num">Clients</th><th class="num">CA</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p class="explainer" id="geoUnknownNote" style="display:none; margin: var(--sp-4) 0 0;"></p>
       </div>
     </div>
   </div>
@@ -516,6 +538,94 @@ async function loadConcentration() {
   });
 }
 
+function hexToRgba(hex, alpha) {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.substring(0, 2), 16);
+  const g = parseInt(h.substring(2, 4), 16);
+  const b = parseInt(h.substring(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+let worldFeaturesCache = null;
+
+async function getWorldFeatures() {
+  if (worldFeaturesCache) return worldFeaturesCache;
+  const res = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json');
+  const topology = await res.json();
+  worldFeaturesCache = ChartGeo.topojson.feature(topology, topology.objects.countries).features;
+  return worldFeaturesCache;
+}
+
+async function loadGeo() {
+  const res = await fetch(apiUrl('/api/geo'));
+  if (!res.ok) return;
+  const geo = await res.json();
+
+  document.querySelector('#geoTable tbody').innerHTML = geo.countries.map(c =>
+    `<tr><td>${c.country}</td><td class="num">${c.customer_count}</td><td class="num">${fmtMoney(c.revenue)}</td></tr>`
+  ).join('');
+
+  const noteEl = document.getElementById('geoUnknownNote');
+  if (geo.unknown_count > 0) {
+    noteEl.style.display = 'block';
+    noteEl.innerHTML = `<span class="line">${geo.unknown_count} commande(s) sans pays de facturation connu, non comptabilisée(s) sur la carte.</span>`;
+  } else {
+    noteEl.style.display = 'none';
+  }
+
+  const byIsoNumeric = {};
+  geo.countries.forEach(c => { if (c.iso_numeric) byIsoNumeric[c.iso_numeric] = c.revenue; });
+  const maxRevenue = Math.max(1, ...Object.values(byIsoNumeric));
+
+  // La carte dépend d'une librairie et de données externes (chartjs-chart-geo
+  // + contours de pays) : si l'une des deux échoue à charger, on dégrade
+  // proprement plutôt que de casser le reste de la page.
+  try {
+    const features = await getWorldFeatures();
+    destroyChart('geo');
+    charts.geo = new ChartGeo.ChoroplethChart(document.getElementById('geoChart'), {
+      data: {
+        labels: features.map(f => f.properties.name),
+        datasets: [{
+          label: 'CA par pays',
+          data: features.map(f => ({ feature: f, value: byIsoNumeric[f.id] || 0 })),
+          backgroundColor: (ctx) => {
+            const d = ctx.dataset && ctx.dataset.data && ctx.dataset.data[ctx.dataIndex];
+            if (!d || !d.value) return cssVar('--surface-3');
+            const alpha = 0.25 + 0.75 * (d.value / maxRevenue);
+            return hexToRgba(cssVar('--accent'), alpha);
+          },
+          borderColor: cssVar('--border'),
+          borderWidth: 0.5,
+        }],
+      },
+      options: {
+        showOutline: true,
+        showGraticule: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const d = ctx.raw;
+                const name = d.feature.properties.name;
+                return d.value ? `${name}: ${fmtMoney(d.value)}` : name;
+              },
+            },
+          },
+        },
+        scales: {
+          projection: { axis: 'x', projection: 'equalEarth' },
+        },
+      },
+    });
+  } catch (err) {
+    console.error('Carte géographique indisponible :', err);
+    const wrap = document.getElementById('geoMapWrap');
+    if (wrap) wrap.innerHTML = '<p class="explainer">Carte indisponible pour le moment. Le détail par pays reste affiché à côté.</p>';
+  }
+}
+
 async function loadNewVsReturning() {
   const res = await fetch(apiUrl('/api/newvsreturning'));
   if (!res.ok) return;
@@ -744,7 +854,7 @@ async function loadAll() {
   renderExportLinks();
   await Promise.all([
     loadGrowth(), loadRfm(), loadCohorts(), loadForecast(), loadWeekday(),
-    loadConcentration(), loadNewVsReturning(), loadLoyaltyCards(),
+    loadConcentration(), loadNewVsReturning(), loadLoyaltyCards(), loadGeo(),
   ]);
 }
 
