@@ -46,6 +46,8 @@ STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 # Connexion Google : sert uniquement à identifier la personne (qui es-tu ?),
 # séparément de la connexion Stripe (à quelles données as-tu accès ?) — les
 # deux étaient confondues dans un seul bouton avant l'ajout de Google.
+# (Changement trivial pour forcer un rebuild du container et lui faire
+# relire GOOGLE_CLIENT_ID/SECRET désormais relayés par src/index.ts.)
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 
