@@ -162,13 +162,22 @@ def link_stripe_connection(
     user_id: int, stripe_user_id: str, access_token: str, account_name: str | None
 ) -> None:
     """Relie un compte Stripe à un utilisateur déjà identifié (typiquement
-    via Google). Un utilisateur n'a qu'une seule connexion Stripe à la fois."""
+    via Google). Un utilisateur n'a qu'une seule connexion Stripe à la fois,
+    et réciproquement un compte Stripe n'est relié qu'à un seul utilisateur
+    à la fois — deux contraintes UNIQUE (user_id, stripe_user_id), donc deux
+    clauses ON CONFLICT : sans la seconde, reconnecter un compte Stripe déjà
+    lié à un ancien utilisateur (ex: un test standalone antérieur) violait
+    la contrainte sur stripe_user_id et faisait échouer l'écriture."""
     query(
         """
         INSERT INTO stripe_connections (user_id, stripe_user_id, stripe_access_token, account_name)
         VALUES (?, ?, ?, ?)
         ON CONFLICT(user_id) DO UPDATE SET
             stripe_user_id = excluded.stripe_user_id,
+            stripe_access_token = excluded.stripe_access_token,
+            account_name = excluded.account_name
+        ON CONFLICT(stripe_user_id) DO UPDATE SET
+            user_id = excluded.user_id,
             stripe_access_token = excluded.stripe_access_token,
             account_name = excluded.account_name
         """,
