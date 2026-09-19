@@ -473,8 +473,20 @@ def mrr(demo: bool = False, user=Depends(get_current_user)):
         subscriptions = fetch_active_subscriptions(api_key=user["stripe_access_token"])
     except stripe.error.AuthenticationError:
         raise HTTPException(401, "Jeton Stripe invalide ou révoqué — reconnecte-toi.")
+
     if not subscriptions:
-        return {"available": False, "reason": "no_subscriptions", "by_currency": []}
+        # Diagnostic temporaire : wrangler tail ne remonte pas stdout Python,
+        # donc on expose directement dans la réponse ce que Stripe renvoie
+        # réellement (tous statuts confondus), pour comprendre pourquoi aucun
+        # abonnement actif n'est détecté. À retirer une fois stabilisé.
+        debug_all = stripe.Subscription.list(status="all", limit=10, api_key=user["stripe_access_token"])
+        return {
+            "available": False,
+            "reason": "no_subscriptions",
+            "by_currency": [],
+            "debug_all_statuses": [s.status for s in debug_all.data],
+            "debug_count": len(debug_all.data),
+        }
 
     return {"available": True, "by_currency": compute_mrr(subscriptions)}
 
