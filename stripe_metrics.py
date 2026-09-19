@@ -49,16 +49,34 @@ def compute_metrics_from_records(records, currency="eur"):
 
     revenue_per_day = defaultdict(float)
     revenue_per_customer = defaultdict(float)
+    orders_per_customer = defaultdict(int)
+    last_purchase_per_customer = {}
     for r in records:
         revenue_per_day[r["created"].strftime("%Y-%m-%d")] += r["amount"]
         revenue_per_customer[r["customer"]] += r["amount"]
+        orders_per_customer[r["customer"]] += 1
+        prev = last_purchase_per_customer.get(r["customer"])
+        if prev is None or r["created"] > prev:
+            last_purchase_per_customer[r["customer"]] = r["created"]
 
     revenue_by_day = [
         {"date": day, "amount": round(amount, 2)}
         for day, amount in sorted(revenue_per_day.items())
     ]
+    # order_count/last_purchase/share_pct viennent des mêmes records déjà
+    # normalisés (Stripe + Shopify + démo) que le montant — pas d'appel API
+    # supplémentaire, ça alimente la carte de détail au survol du tableau.
     top_customers = sorted(
-        ({"name": name, "amount": round(amount, 2)} for name, amount in revenue_per_customer.items()),
+        (
+            {
+                "name": name,
+                "amount": round(amount, 2),
+                "order_count": orders_per_customer[name],
+                "last_purchase": last_purchase_per_customer[name].strftime("%Y-%m-%d"),
+                "share_pct": round((amount / total) * 100, 1) if total else 0,
+            }
+            for name, amount in revenue_per_customer.items()
+        ),
         key=lambda x: x["amount"],
         reverse=True,
     )[:5]

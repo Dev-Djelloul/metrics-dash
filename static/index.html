@@ -274,6 +274,27 @@
     min-height: 100%;
   }
   .profile-modal-content { flex: 1 1 45%; padding: var(--sp-5); min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+
+  /* Carte de détail client (survol de "Top clients") : même effet verre
+     dépoli que la modale de profil, mais positionnée près du curseur
+     plutôt qu'au centre — pensée comme une info-bulle enrichie, pas une
+     vraie modale (pas d'overlay, pas de focus trap, disparaît au mouseleave). */
+  .customer-hover-card {
+    position: fixed; z-index: 60; width: 260px; padding: var(--sp-4);
+    border-radius: var(--radius-lg, 16px); border: var(--border-w) solid var(--border-strong);
+    background: rgba(20, 20, 28, 0.85);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    box-shadow: var(--shadow-pop); pointer-events: none;
+    opacity: 0; transform: translateY(4px); transition: opacity .12s ease, transform .12s ease;
+  }
+  .customer-hover-card.visible { opacity: 1; transform: translateY(0); }
+  [data-theme="light"] .customer-hover-card { background: rgba(255, 255, 255, 0.9); }
+  .customer-hover-card .chc-name { font-size: var(--fs-body); font-weight: 700; color: var(--text-primary); margin-bottom: var(--sp-3); }
+  .customer-hover-card .chc-row { display: flex; justify-content: space-between; align-items: center; font-size: var(--fs-small); color: var(--text-secondary); padding: 4px 0; }
+  .customer-hover-card .chc-row + .chc-row { border-top: var(--border-w) solid var(--border); }
+  .customer-hover-card .chc-row b { color: var(--text-primary); font-weight: 700; }
+  #customersTable .hoverable-row { cursor: pointer; }
+
   @media (max-width: 640px) {
     .modal-card-profile { flex-direction: column; max-height: 90vh; overflow-y: auto; }
     .profile-modal-banner { flex-basis: 140px; }
@@ -699,6 +720,10 @@
       </div>
     </div>
   </div>
+
+  <!-- Carte de détail au survol d'un client (Top clients) : positionnée en
+       JS près du curseur, remplie/affichée par customer-hover.js ci-dessous. -->
+  <div id="customerHoverCard" class="customer-hover-card" hidden></div>
   </div>
 
 <script>
@@ -771,6 +796,7 @@ const I18N = {
     th_country: 'Pays', th_customers: 'Clients', th_revenue: 'CA', th_customer: 'Client',
     th_amount: 'Montant', th_month: 'Mois', th_recency: 'Récence (j)', th_frequency: 'Fréquence',
     th_action: 'Action marketing suggérée', th_segment: 'Segment', th_cohort: 'Cohorte', th_size: 'Taille',
+    hover_share: 'Part du CA', hover_orders: 'Commandes', hover_last_purchase: 'Dernier achat', hover_no_segment: 'Segment non calculé',
     alert_revenue_drop: 'CA de {month} en baisse de {pct}% vs le mois précédent.',
     alert_churn_risk: '{pct}% des clients sont à risque ou perdus ({count}/{total}).',
     auth_err_oauth_failed: 'La connexion à Stripe a échoué (code refusé ou expiré). Réessaie.',
@@ -844,6 +870,7 @@ const I18N = {
     th_country: 'Country', th_customers: 'Customers', th_revenue: 'Revenue', th_customer: 'Customer',
     th_amount: 'Amount', th_month: 'Month', th_recency: 'Recency (d)', th_frequency: 'Frequency',
     th_action: 'Suggested marketing action', th_segment: 'Segment', th_cohort: 'Cohort', th_size: 'Size',
+    hover_share: 'Share of revenue', hover_orders: 'Orders', hover_last_purchase: 'Last purchase', hover_no_segment: 'Segment not computed',
     alert_revenue_drop: 'Revenue for {month} dropped {pct}% vs the previous month.',
     alert_churn_risk: '{pct}% of customers are at risk or lost ({count}/{total}).',
     auth_err_oauth_failed: 'The connection to Stripe failed (code rejected or expired). Please try again.',
@@ -1068,6 +1095,20 @@ async function renderSectorList(currentSector) {
 }
 
 let currentSector = null;
+
+// Alimente la carte de détail au survol de "Top clients" (customer-hover
+// juste plus bas) : topCustomersCache vient de loadOverview() (montant,
+// commandes, dernier achat, part du CA), rfmByCustomer de loadRfm() (segment).
+// Deux caches séparés plutôt qu'un fetch combiné : les deux endpoints existent
+// déjà indépendamment (/api/metrics, /api/rfm) et se chargent en parallèle
+// dans loadAll() — le survol lit juste l'état le plus à jour de chacun,
+// peu importe lequel a fini en premier.
+let topCustomersCache = {};
+let rfmByCustomer = {};
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
 
 // Même cycle de 4 couleurs que la popup de sélection (renderSectorList),
 // pour que le secteur soit reconnaissable à sa couleur partout où il est
@@ -1400,10 +1441,65 @@ async function loadOverview() {
     }
   });
 
+  topCustomersCache = {};
+  m.top_customers.forEach(c => { topCustomersCache[c.name] = c; });
   document.querySelector('#customersTable tbody').innerHTML = m.top_customers.map(c =>
-    `<tr><td>${c.name}</td><td class="num">${fmtMoney(c.amount)}</td></tr>`
+    `<tr class="hoverable-row" data-customer="${escapeHtml(c.name)}"><td>${c.name}</td><td class="num">${fmtMoney(c.amount)}</td></tr>`
   ).join('');
 }
+
+// Carte de détail au survol d'une ligne "Top clients" : lit les deux caches
+// remplis par loadOverview() (montant/commandes/dernier achat) et loadRfm()
+// (segment) — dès que les deux ont fini de charger, peu importe l'ordre,
+// le survol affiche l'ensemble ; avant que loadRfm() ait répondu, le badge
+// segment retombe sur hover_no_segment plutôt que de bloquer l'affichage.
+const customerHoverCard = document.getElementById('customerHoverCard');
+
+function showCustomerHoverCard(row) {
+  const name = row.dataset.customer;
+  const c = topCustomersCache[name];
+  if (!c) return;
+  const rfm = rfmByCustomer[name];
+  const dateLang = localStorage.getItem('lang') === 'en' ? 'en-US' : 'fr-FR';
+  const lastPurchase = new Date(c.last_purchase + 'T00:00:00Z').toLocaleDateString(dateLang, { year: 'numeric', month: 'short', day: 'numeric' });
+  const segmentHtml = rfm
+    ? `<span class="badge ${SEGMENT_CLASS[rfm.segment] || 'loyal'}">${segmentDisplay(rfm.segment)}</span>`
+    : `<span style="color:var(--text-tertiary)">${t('hover_no_segment')}</span>`;
+
+  customerHoverCard.innerHTML = `
+    <div class="chc-name">${escapeHtml(name)}</div>
+    <div class="chc-row"><span>${t('kpi_revenue')}</span><b>${fmtMoney(c.amount)}</b></div>
+    <div class="chc-row"><span>${t('hover_share')}</span><b>${c.share_pct}%</b></div>
+    <div class="chc-row"><span>${t('hover_orders')}</span><b>${c.order_count}</b></div>
+    <div class="chc-row"><span>${t('hover_last_purchase')}</span><b>${lastPurchase}</b></div>
+    <div class="chc-row">${segmentHtml}</div>
+  `;
+
+  const rect = row.getBoundingClientRect();
+  customerHoverCard.hidden = false;
+  // Décalée à droite de la ligne, mais repliée à gauche si ça déborderait
+  // du viewport (table souvent proche du bord droit sur petit écran).
+  const cardWidth = 260;
+  let left = rect.right + 12;
+  if (left + cardWidth > window.innerWidth - 8) left = rect.left - cardWidth - 12;
+  const top = Math.min(Math.max(rect.top, 8), window.innerHeight - 220);
+  customerHoverCard.style.left = `${Math.max(8, left)}px`;
+  customerHoverCard.style.top = `${top}px`;
+  requestAnimationFrame(() => customerHoverCard.classList.add('visible'));
+}
+
+function hideCustomerHoverCard() {
+  customerHoverCard.classList.remove('visible');
+  customerHoverCard.hidden = true;
+}
+
+document.querySelector('#customersTable tbody').addEventListener('mouseover', (e) => {
+  const row = e.target.closest('tr[data-customer]');
+  if (row) showCustomerHoverCard(row);
+});
+document.querySelector('#customersTable tbody').addEventListener('mouseout', (e) => {
+  if (!e.relatedTarget || !e.relatedTarget.closest('tr[data-customer]')) hideCustomerHoverCard();
+});
 
 async function loadWeekday() {
   const res = await fetch(apiUrl('/api/weekday'));
@@ -1818,6 +1914,9 @@ async function loadRfm() {
   const res = await fetch(apiUrl('/api/rfm'));
   if (!res.ok) return;
   const rows = await res.json();
+
+  rfmByCustomer = {};
+  rows.forEach(r => { rfmByCustomer[r.customer] = r; });
 
   document.querySelector('#rfmTable tbody').innerHTML = rows.map(r =>
     `<tr>
