@@ -172,6 +172,7 @@ body{ margin:0; background:var(--bg); font-family:var(--font-sans); color:var(--
 /* --- Tableaux --- */
 table.data{ width:100%; border-collapse:collapse; font-size:var(--fs-body); }
 table.data thead th{ text-align:left; font-size:var(--fs-caption); font-weight:var(--fw-caption); text-transform:uppercase; letter-spacing:.04em; color:var(--text-tertiary); padding:0 var(--sp-4) var(--sp-3); border-bottom:1px solid var(--border); }
+table.data thead th.num{ text-align:right; }
 table.data tbody td{ padding:var(--sp-3) var(--sp-4); border-bottom:1px solid var(--border); color:var(--text-primary); }
 table.data tbody tr{ transition:var(--transition); }
 table.data tbody tr:hover{ background:var(--surface-2); }
