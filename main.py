@@ -1,6 +1,7 @@
 import csv
 import io
 import os
+import threading
 import time
 from urllib.parse import urlencode
 
@@ -27,7 +28,8 @@ load_dotenv()
 # Force un rebuild de l'image Docker (donc un vrai redémarrage du conteneur)
 # après une rotation de STRIPE_SECRET_KEY : un `wrangler secret put` seul ne
 # relit pas la variable dans un conteneur déjà démarré — même leçon que pour
-# les secrets D1 rencontrée plus tôt dans ce projet.
+# les secrets D1 rencontrée plus tôt dans ce projet. (rebuild #2, suite à la
+# découverte du vrai compte Stripe plateforme)
 # Cette clé identifie *ta plateforme* auprès de Stripe (nécessaire pour
 # échanger le code OAuth contre le jeton d'un utilisateur). Elle ne sert
 # plus à lire les charges de qui que ce soit directement — chaque
@@ -168,48 +170,21 @@ def auth_login(request: Request):
     return RedirectResponse(f"https://connect.stripe.com/oauth/authorize?{params}")
 
 
-@app.get("/auth/callback", name="auth_callback")
-def auth_callback(code: str = None, error: str = None):
-    if error:
-        return RedirectResponse(f"/?auth_error={error}")
-    if not code:
-        raise HTTPException(400, "Code OAuth manquant")
-    if not SESSION_SECRET:
-        raise HTTPException(500, "SESSION_SECRET non configuré côté serveur")
+# Un code OAuth Stripe est à usage unique. On a observé dans les logs que
+# certaines requêtes vers /auth/callback arrivent en double (même code, même
+# seconde) — vraisemblablement un comportement de l'infrastructure Cloudflare
+# (retry/duplication au niveau Worker/Container), pas du navigateur (le bug
+# persiste identique sur Chrome et Firefox, en navigation privée). La
+# deuxième requête se fait alors rejeter par Stripe ("code ne vous
+# appartient pas") même si la première a réussi. On mémorise donc le
+# résultat par code pour que la deuxième requête réutilise la session déjà
+# créée au lieu de renvoyer le code (déjà consommé) à Stripe.
+_oauth_code_results: dict[str, int] = {}  # code -> user_id
+_oauth_code_lock = threading.Lock()
 
-    try:
-        token_response = stripe.OAuth.token(grant_type="authorization_code", code=code)
-    except Exception as exc:
-        # Diagnostic temporaire : wrangler tail ne remonte pas stdout du
-        # conteneur Python (seulement les logs du Worker JS), donc on met
-        # exceptionnellement le détail dans l'URL de redirection, le temps
-        # d'identifier la cause d'un échec OAuth récurrent. À retirer une
-        # fois stabilisé.
-        detail = urlencode({"detail": f"{type(exc).__name__}: {exc}"})
-        print(f"[metrics-dash] Échec de l'échange du code OAuth : {type(exc).__name__}: {exc}")
-        return RedirectResponse(f"/?auth_error=oauth_failed&{detail}")
 
-    stripe_user_id = token_response["stripe_user_id"]
-    access_token = token_response["access_token"]
-
-    try:
-        account = stripe.Account.retrieve(api_key=access_token)
-        account_name = (
-            (account.get("business_profile") or {}).get("name")
-            or account.get("email")
-            or stripe_user_id
-        )
-    except Exception:
-        account_name = stripe_user_id
-
-    try:
-        user_id = db.upsert_user(stripe_user_id, access_token, account_name)
-    except Exception as exc:
-        print(f"[metrics-dash] Échec de l'écriture en base D1 : {type(exc).__name__}: {exc}")
-        return RedirectResponse("/?auth_error=db_failed")
-
+def _session_redirect(user_id: int) -> RedirectResponse:
     session_token = auth.create_session_token(user_id, SESSION_SECRET)
-
     response = RedirectResponse("/")
     response.set_cookie(
         "session",
@@ -220,6 +195,61 @@ def auth_callback(code: str = None, error: str = None):
         samesite="lax",
     )
     return response
+
+
+@app.get("/auth/callback", name="auth_callback")
+def auth_callback(code: str = None, error: str = None):
+    if error:
+        return RedirectResponse(f"/?auth_error={error}")
+    if not code:
+        raise HTTPException(400, "Code OAuth manquant")
+    if not SESSION_SECRET:
+        raise HTTPException(500, "SESSION_SECRET non configuré côté serveur")
+
+    # Verrou global (pas seulement une vérification de cache) : deux requêtes
+    # avec le même code peuvent arriver quasi simultanément (voir commentaire
+    # ci-dessus), donc une simple lecture du cache avant d'appeler Stripe ne
+    # suffit pas à empêcher la deuxième de partir en parallèle. Le volume de
+    # connexions est trop faible pour que sérialiser tout /auth/callback pose
+    # un problème de performance.
+    with _oauth_code_lock:
+        if code in _oauth_code_results:
+            return _session_redirect(_oauth_code_results[code])
+
+        try:
+            token_response = stripe.OAuth.token(grant_type="authorization_code", code=code)
+        except Exception as exc:
+            # Diagnostic temporaire : wrangler tail ne remonte pas stdout du
+            # conteneur Python (seulement les logs du Worker JS), donc on met
+            # exceptionnellement le détail dans l'URL de redirection, le temps
+            # d'identifier la cause d'un échec OAuth récurrent. À retirer une
+            # fois stabilisé.
+            detail = urlencode({"detail": f"{type(exc).__name__}: {exc}"})
+            print(f"[metrics-dash] Échec de l'échange du code OAuth : {type(exc).__name__}: {exc}")
+            return RedirectResponse(f"/?auth_error=oauth_failed&{detail}")
+
+        stripe_user_id = token_response["stripe_user_id"]
+        access_token = token_response["access_token"]
+
+        try:
+            account = stripe.Account.retrieve(api_key=access_token)
+            account_name = (
+                (account.get("business_profile") or {}).get("name")
+                or account.get("email")
+                or stripe_user_id
+            )
+        except Exception:
+            account_name = stripe_user_id
+
+        try:
+            user_id = db.upsert_user(stripe_user_id, access_token, account_name)
+        except Exception as exc:
+            print(f"[metrics-dash] Échec de l'écriture en base D1 : {type(exc).__name__}: {exc}")
+            return RedirectResponse("/?auth_error=db_failed")
+
+        _oauth_code_results[code] = user_id
+
+    return _session_redirect(user_id)
 
 
 @app.get("/auth/logout")
