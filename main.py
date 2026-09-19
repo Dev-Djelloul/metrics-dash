@@ -674,6 +674,12 @@ def mrr(demo: bool = False, user=Depends(get_current_user)):
         return {"available": False, "reason": "demo", "by_currency": []}
     if not user:
         raise HTTPException(401, "Non connecté — connecte-toi avec Stripe ou utilise le mode démo.")
+    if not user.get("stripe_access_token"):
+        # Important : ne JAMAIS passer api_key=None à l'API Stripe — la
+        # librairie retombe silencieusement sur la clé globale du compte
+        # plateforme (stripe.api_key), ce qui renverrait les abonnements du
+        # compte plateforme lui-même plutôt que rien.
+        return {"available": False, "reason": "stripe_not_connected", "by_currency": []}
 
     try:
         subscriptions = fetch_active_subscriptions(api_key=user["stripe_access_token"])
