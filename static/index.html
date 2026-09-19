@@ -179,6 +179,16 @@
   .sector-label-c3 { color: var(--warn-text); }
   .sector-label-c4 { color: var(--seg-new); }
 
+  /* Note de repère sectoriel ("Sector benchmark (...)") : même palette
+     c1-c4 que le badge secteur, mais en surlignage (fond + liseré gauche)
+     plutôt qu'en simple couleur de texte, pour la détacher visuellement
+     du graphique au-dessus — d'où aussi la marge haute généreuse. */
+  .sector-note { margin-top: var(--sp-5) !important; padding: var(--sp-3) var(--sp-4); border-radius: var(--radius-sm); border-left: 3px solid var(--border-strong); background: var(--surface-2); }
+  .sector-note.sector-note-c1 { background: var(--accent-soft); border-left-color: var(--accent); color: var(--accent-text); }
+  .sector-note.sector-note-c2 { background: var(--pos-soft); border-left-color: var(--pos); color: var(--pos-text); }
+  .sector-note.sector-note-c3 { background: var(--warn-soft); border-left-color: var(--warn); color: var(--warn-text); }
+  .sector-note.sector-note-c4 { background: var(--seg-new-soft); border-left-color: var(--seg-new); color: var(--seg-new); }
+
   .date-range { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-small); color: var(--text-secondary); }
   .date-range input[type="date"] { font-family: var(--font-sans); font-size: var(--fs-small); color: var(--text-primary); background: var(--surface-2); border: var(--border-w) solid var(--border-strong); border-radius: var(--radius-sm); padding: 6px 10px; color-scheme: dark; }
   [data-theme="light"] .date-range input[type="date"] { color-scheme: light; }
@@ -1475,13 +1485,16 @@ function showCustomerHoverCard(row) {
     <div class="chc-row">${segmentHtml}</div>
   `;
 
-  const rect = row.getBoundingClientRect();
+  // Ancrée sur la cellule "nom" (étroite), pas la ligne entière (qui
+  // s'étend jusqu'au bord droit à cause de la colonne montant alignée à
+  // droite) — sinon rect.right touchait quasi toujours le bord du
+  // viewport et la carte repliait systématiquement à gauche.
+  const nameCell = row.firstElementChild;
+  const rect = nameCell.getBoundingClientRect();
   customerHoverCard.hidden = false;
-  // Décalée à droite de la ligne, mais repliée à gauche si ça déborderait
-  // du viewport (table souvent proche du bord droit sur petit écran).
   const cardWidth = 260;
-  let left = rect.right + 12;
-  if (left + cardWidth > window.innerWidth - 8) left = rect.left - cardWidth - 12;
+  let left = rect.right + 16;
+  if (left + cardWidth > window.innerWidth - 8) left = Math.max(8, window.innerWidth - cardWidth - 8);
   const top = Math.min(Math.max(rect.top, 8), window.innerHeight - 220);
   customerHoverCard.style.left = `${Math.max(8, left)}px`;
   customerHoverCard.style.top = `${top}px`;
@@ -1544,7 +1557,8 @@ async function loadConcentration() {
         .replace('{benchPct}', benchmark.top_share_pct)
         .replace('{observedPct}', observedPct);
       const sectorCls = sectorColorClass(currentSector);
-      noteEl.innerHTML = sectorCls ? `<span class="sector-label-${sectorCls}">${noteText}</span>` : noteText;
+      noteEl.className = sectorCls ? `explainer sector-note sector-note-${sectorCls}` : 'explainer sector-note';
+      noteEl.textContent = noteText;
     } else {
       noteEl.style.display = 'none';
     }
