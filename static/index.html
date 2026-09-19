@@ -786,6 +786,7 @@ const I18N = {
     geo_map_unavailable: 'Carte indisponible pour le moment. Le détail par pays reste affiché à côté.',
     geo_unknown_note: '{count} commande(s) sans pays de facturation connu, non comptabilisée(s) sur la carte.',
     not_enough_data: 'Pas assez de données', days_unit: '{n} jours',
+    not_enough_months: 'Pas assez de mois de données pour projeter.',
     set_sector_prompt: "Renseigne ton secteur d'activité (badge en haut) pour comparer ces chiffres à des repères sectoriels.",
     sector_ecommerce: 'E-commerce / vente au détail', sector_saas: 'SaaS / logiciel',
     sector_conseil: 'Conseil / services professionnels', sector_formation: 'Formation / éducation',
@@ -860,6 +861,7 @@ const I18N = {
     geo_map_unavailable: 'Map unavailable right now. The country breakdown is still shown alongside it.',
     geo_unknown_note: '{count} order(s) with no known billing country, not included on the map.',
     not_enough_data: 'Not enough data', days_unit: '{n} days',
+    not_enough_months: 'Not enough months of data to project.',
     set_sector_prompt: 'Set your business sector (badge above) to compare these numbers to sector benchmarks.',
     sector_ecommerce: 'E-commerce / retail', sector_saas: 'SaaS / software',
     sector_conseil: 'Consulting / professional services', sector_formation: 'Training / education',
@@ -1431,11 +1433,13 @@ async function loadConcentration() {
     if (benchmark && c.segments[0]) {
       const observedPct = Math.round((c.segments[0].amount / (c.segments[0].amount + c.segments[1].amount)) * 100);
       noteEl.style.display = 'block';
-      noteEl.innerHTML = t('concentration_note')
-        .replace('{sector}', sectorLabelSpan(currentSector, currentSector))
+      const noteText = t('concentration_note')
+        .replace('{sector}', sectorDisplay(currentSector))
         .replace('{topPct}', c.top_share_pct)
         .replace('{benchPct}', benchmark.top_share_pct)
         .replace('{observedPct}', observedPct);
+      const sectorCls = sectorColorClass(currentSector);
+      noteEl.innerHTML = sectorCls ? `<span class="sector-label-${sectorCls}">${noteText}</span>` : noteText;
     } else {
       noteEl.style.display = 'none';
     }
@@ -1991,12 +1995,12 @@ async function loadForecast() {
   const f = await res.json();
 
   const defaultNoteHtml = `
-    <span class="line">Projette les prochains mois à partir de la tendance historique (<span class="term term-forecast">régression linéaire simple</span>, sans librairie externe).</span>
-    <span class="line">La zone bleue est l'intervalle de confiance (~95%) : elle s'élargit avec l'horizon, une prévision lointaine étant statistiquement moins fiable qu'une prévision proche.</span>
+    <span class="line">${t('ln_24')}</span>
+    <span class="line">${t('ln_25')}</span>
   `;
   const noteEl = document.getElementById('forecastNote');
   if (f.note) {
-    noteEl.textContent = f.note;
+    noteEl.textContent = f.note_code === 'not_enough_months' ? t('not_enough_months') : f.note;
     destroyChart('forecast');
     return;
   }

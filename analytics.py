@@ -281,7 +281,7 @@ def forecast_revenue(records, periods_ahead: int = 3):
 
     months = sorted(revenue_by_month.keys())
     if len(months) < 2:
-        return {"history": [], "forecast": [], "note": "Pas assez de mois de données pour projeter."}
+        return {"history": [], "forecast": [], "note": "Pas assez de mois de données pour projeter.", "note_code": "not_enough_months"}
 
     values = [revenue_by_month[m] for m in months]
     forecast, slope = _forecast_series(months, values, periods_ahead, "predicted_revenue")
@@ -302,7 +302,7 @@ def forecast_order_count(records, periods_ahead: int = 3):
 
     months = sorted(orders_by_month.keys())
     if len(months) < 2:
-        return {"history": [], "forecast": [], "note": "Pas assez de mois de données pour projeter."}
+        return {"history": [], "forecast": [], "note": "Pas assez de mois de données pour projeter.", "note_code": "not_enough_months"}
 
     values = [orders_by_month[m] for m in months]
     forecast, slope = _forecast_series(months, values, periods_ahead, "predicted_orders")
@@ -333,7 +333,7 @@ def forecast_new_customers(records, periods_ahead: int = 3):
 
     months = sorted(new_customers_by_month.keys())
     if len(months) < 2:
-        return {"history": [], "forecast": [], "note": "Pas assez de mois de données pour projeter."}
+        return {"history": [], "forecast": [], "note": "Pas assez de mois de données pour projeter.", "note_code": "not_enough_months"}
 
     values = [new_customers_by_month[m] for m in months]
     forecast, slope = _forecast_series(months, values, periods_ahead, "predicted_new_customers")
