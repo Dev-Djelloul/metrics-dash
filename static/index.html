@@ -112,6 +112,11 @@
     text-decoration: none; line-height: 1.25;
   }
   .conn-chip img { width: 22px; height: 22px; flex-shrink: 0; }
+  /* .stripe-mark impose 36px plus bas dans la feuille de style (utile pour
+     l'icône seule du header) — dans une puce de connexion, ça la rendait
+     visiblement plus "grande"/tassée que ses voisines Power BI/Shopify
+     (toutes deux 20-22px) : on la ramène à la même taille ici. */
+  .conn-chip .stripe-mark { width: 22px; height: 22px; }
   .conn-chip-text small { font-weight: 400; opacity: .8; }
   .conn-chip-action, .conn-chip-action-btn { color: inherit; font-weight: 700; text-decoration: underline; margin-left: var(--sp-2); background: none; border: none; font-family: inherit; font-size: inherit; cursor: pointer; padding: 0; }
 
