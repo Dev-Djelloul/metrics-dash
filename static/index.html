@@ -103,6 +103,13 @@
   }
   .connections-panel-label { font-size: var(--fs-small); font-weight: var(--fw-small); color: var(--text-secondary); text-transform: uppercase; letter-spacing: .04em; margin-bottom: var(--sp-3); }
   .connections-panel-chips { display: flex; align-items: stretch; gap: var(--sp-3); flex-wrap: wrap; }
+  /* #status/#shopifyStatus sont des <div> vides remplis en JS (loadStatus())
+     avec la vraie puce (<a>/<div>/<form>) — sans ça, align-items:stretch ne
+     stretche que ce wrapper invisible, pas la puce à l'intérieur, qui garde
+     sa hauteur intrinsèque : d'où "Connect Stripe" visuellement plus petit
+     que le bouton Power BI (lui, flex item direct). display:contents fait
+     disparaître le wrapper de la mise en page, la puce devient l'item flex. */
+  #status, #shopifyStatus { display: contents; }
 
   .conn-chip {
     display: inline-flex; align-items: center; gap: var(--sp-2);
