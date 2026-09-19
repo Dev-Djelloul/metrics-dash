@@ -219,14 +219,8 @@ def auth_callback(code: str = None, error: str = None):
         try:
             token_response = stripe.OAuth.token(grant_type="authorization_code", code=code)
         except Exception as exc:
-            # Diagnostic temporaire : wrangler tail ne remonte pas stdout du
-            # conteneur Python (seulement les logs du Worker JS), donc on met
-            # exceptionnellement le détail dans l'URL de redirection, le temps
-            # d'identifier la cause d'un échec OAuth récurrent. À retirer une
-            # fois stabilisé.
-            detail = urlencode({"detail": f"{type(exc).__name__}: {exc}"})
             print(f"[metrics-dash] Échec de l'échange du code OAuth : {type(exc).__name__}: {exc}")
-            return RedirectResponse(f"/?auth_error=oauth_failed&{detail}")
+            return RedirectResponse("/?auth_error=oauth_failed")
 
         stripe_user_id = token_response["stripe_user_id"]
         access_token = token_response["access_token"]
@@ -475,18 +469,7 @@ def mrr(demo: bool = False, user=Depends(get_current_user)):
         raise HTTPException(401, "Jeton Stripe invalide ou révoqué — reconnecte-toi.")
 
     if not subscriptions:
-        # Diagnostic temporaire : wrangler tail ne remonte pas stdout Python,
-        # donc on expose directement dans la réponse ce que Stripe renvoie
-        # réellement (tous statuts confondus), pour comprendre pourquoi aucun
-        # abonnement actif n'est détecté. À retirer une fois stabilisé.
-        debug_all = stripe.Subscription.list(status="all", limit=10, api_key=user["stripe_access_token"])
-        return {
-            "available": False,
-            "reason": "no_subscriptions",
-            "by_currency": [],
-            "debug_all_statuses": [s.status for s in debug_all.data],
-            "debug_count": len(debug_all.data),
-        }
+        return {"available": False, "reason": "no_subscriptions", "by_currency": []}
 
     return {"available": True, "by_currency": compute_mrr(subscriptions)}
 
