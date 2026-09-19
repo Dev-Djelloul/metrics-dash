@@ -41,10 +41,20 @@ def filter_by_date(records, start: str = None, end: str = None):
 def growth_metrics(records):
     revenue_by_month = defaultdict(float)
     revenue_by_day = defaultdict(float)
+    # Détail par client pour chaque mois, sur le même principe que
+    # top_customers dans stripe_metrics.compute_metrics_from_records() —
+    # alimente la carte de survol du tableau "CA mensuel & croissance"
+    # (qui client a acheté ce mois-là), sans appel API supplémentaire côté
+    # frontend puisque tout part des records déjà chargés.
+    customer_amount_by_month = defaultdict(lambda: defaultdict(float))
+    customer_orders_by_month = defaultdict(lambda: defaultdict(int))
 
     for r in records:
-        revenue_by_month[_month_key(r["created"])] += r["amount"]
+        month = _month_key(r["created"])
+        revenue_by_month[month] += r["amount"]
         revenue_by_day[r["created"].strftime("%Y-%m-%d")] += r["amount"]
+        customer_amount_by_month[month][r["customer"]] += r["amount"]
+        customer_orders_by_month[month][r["customer"]] += 1
 
     months = sorted(revenue_by_month.keys())
     monthly = []
@@ -59,12 +69,27 @@ def growth_metrics(records):
         yoy_prev = revenue_by_month.get(yoy_key)
         yoy_growth = ((revenue - yoy_prev) / yoy_prev * 100) if yoy_prev else None
 
+        top_customers = sorted(
+            (
+                {
+                    "name": name,
+                    "amount": round(amount, 2),
+                    "order_count": customer_orders_by_month[month][name],
+                }
+                for name, amount in customer_amount_by_month[month].items()
+            ),
+            key=lambda x: x["amount"],
+            reverse=True,
+        )[:5]
+
         monthly.append(
             {
                 "month": month,
                 "revenue": round(revenue, 2),
                 "mom_growth_pct": round(mom_growth, 1) if mom_growth is not None else None,
                 "yoy_growth_pct": round(yoy_growth, 1) if yoy_growth is not None else None,
+                "customer_count": len(customer_amount_by_month[month]),
+                "top_customers": top_customers,
             }
         )
 

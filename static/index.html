@@ -397,7 +397,7 @@
   .rfm-detail-panel .chc-action { align-items: flex-start; gap: var(--sp-3); }
   .rfm-detail-panel .chc-action span { flex-shrink: 0; }
   .rfm-detail-panel .chc-action b { font-weight: 400; text-align: right; color: var(--accent-text); }
-  #customersTable .hoverable-row, #rfmTable .hoverable-row { cursor: pointer; }
+  #customersTable .hoverable-row, #rfmTable .hoverable-row, #monthlyTable .hoverable-row { cursor: pointer; }
 
   @media (max-width: 640px) {
     .modal-card-profile { flex-direction: column; max-height: 90vh; overflow-y: auto; }
@@ -879,6 +879,10 @@
   <!-- Carte de détail au survol d'un client (Top clients) : positionnée en
        JS près du curseur, remplie/affichée par customer-hover.js ci-dessous. -->
   <div id="customerHoverCard" class="customer-hover-card" hidden></div>
+  <!-- Même carte, réutilisée pour le survol d'un mois dans "CA mensuel &
+       croissance" (onglet Croissance) : liste les clients ayant acheté ce
+       mois-là, remplie/affichée par showMonthHoverCard() plus bas. -->
+  <div id="monthHoverCard" class="customer-hover-card" hidden></div>
   </div>
 
 <script>
@@ -963,6 +967,7 @@ const I18N = {
     th_amount: 'Montant', th_month: 'Mois', th_recency: 'Récence (j)', th_frequency: 'Fréquence',
     th_action: 'Action marketing suggérée', th_segment: 'Segment', th_cohort: 'Cohorte', th_size: 'Taille',
     hover_share: 'Part du CA', hover_orders: 'Commandes', hover_last_purchase: 'Dernier achat', hover_no_segment: 'Segment non calculé',
+    hover_month_customers: 'Clients ce mois-ci', hover_no_data: 'Aucune donnée',
     th_aov: 'Panier moyen', th_share: 'Part du CA',
     rfm_filter_label: 'Filtré par pays : {country}',
     rfm_hover_hint: "Clique une ligne du tableau pour voir la fiche détaillée d'un client.",
@@ -1054,6 +1059,7 @@ const I18N = {
     th_amount: 'Amount', th_month: 'Month', th_recency: 'Recency (d)', th_frequency: 'Frequency',
     th_action: 'Suggested marketing action', th_segment: 'Segment', th_cohort: 'Cohort', th_size: 'Size',
     hover_share: 'Share of revenue', hover_orders: 'Orders', hover_last_purchase: 'Last purchase', hover_no_segment: 'Segment not computed',
+    hover_month_customers: 'Customers this month', hover_no_data: 'No data',
     th_aov: 'Average order value', th_share: 'Share of revenue',
     rfm_filter_label: 'Filtered by country: {country}',
     rfm_hover_hint: 'Click a row in the table to see a customer\'s full detail.',
@@ -1779,6 +1785,53 @@ document.querySelector('#customersTable tbody').addEventListener('mouseout', (e)
   if (!e.relatedTarget || !e.relatedTarget.closest('tr[data-customer]')) hideCustomerHoverCard();
 });
 
+// Carte de détail au survol d'une ligne du tableau "CA mensuel &
+// croissance" (onglet Croissance) : même principe que Top clients, mais
+// lit growthMonthlyCache (rempli par loadGrowth()) plutôt que de refaire
+// un appel réseau — /api/growth renvoie déjà top_customers/customer_count
+// par mois.
+const monthHoverCard = document.getElementById('monthHoverCard');
+
+function showMonthHoverCard(row) {
+  const idx = row.dataset.monthIndex;
+  const m = growthMonthlyCache[idx];
+  if (!m) return;
+  const customers = m.top_customers || [];
+  const rowsHtml = customers.length
+    ? customers.map(c => `<div class="chc-row"><span>${escapeHtml(c.name)}</span><b>${fmtMoney(c.amount)}</b></div>`).join('')
+    : `<div class="chc-row"><span style="color:var(--text-tertiary)">${t('hover_no_data')}</span></div>`;
+
+  monthHoverCard.innerHTML = `
+    <div class="chc-name">${escapeHtml(m.month)}</div>
+    <div class="chc-row"><span>${t('hover_month_customers')}</span><b>${m.customer_count}</b></div>
+    ${rowsHtml}
+  `;
+
+  const nameCell = row.firstElementChild;
+  const rect = nameCell.getBoundingClientRect();
+  monthHoverCard.hidden = false;
+  const cardWidth = 260;
+  let left = rect.right + 16;
+  if (left + cardWidth > window.innerWidth - 8) left = Math.max(8, window.innerWidth - cardWidth - 8);
+  const top = Math.min(Math.max(rect.top, 8), window.innerHeight - 220);
+  monthHoverCard.style.left = `${Math.max(8, left)}px`;
+  monthHoverCard.style.top = `${top}px`;
+  requestAnimationFrame(() => monthHoverCard.classList.add('visible'));
+}
+
+function hideMonthHoverCard() {
+  monthHoverCard.classList.remove('visible');
+  monthHoverCard.hidden = true;
+}
+
+document.querySelector('#monthlyTable tbody').addEventListener('mouseover', (e) => {
+  const row = e.target.closest('tr[data-month-index]');
+  if (row) showMonthHoverCard(row);
+});
+document.querySelector('#monthlyTable tbody').addEventListener('mouseout', (e) => {
+  if (!e.relatedTarget || !e.relatedTarget.closest('tr[data-month-index]')) hideMonthHoverCard();
+});
+
 document.querySelector('#geoTable tbody').addEventListener('click', (e) => {
   const row = e.target.closest('tr[data-country]');
   if (!row) return;
@@ -2184,11 +2237,11 @@ async function loadGrowth() {
   if (!res.ok) return;
   const g = await res.json();
 
-  document.querySelector('#monthlyTable tbody').innerHTML = g.monthly.map(m =>
-    `<tr><td>${m.month}</td><td class="num">${fmtMoney(m.revenue)}</td><td class="num">${growthArrow(m.mom_growth_pct)}</td><td class="num">${growthArrow(m.yoy_growth_pct)}</td></tr>`
+  growthMonthlyCache = g.monthly;
+  document.querySelector('#monthlyTable tbody').innerHTML = g.monthly.map((m, i) =>
+    `<tr class="hoverable-row" data-month-index="${i}"><td>${m.month}</td><td class="num">${fmtMoney(m.revenue)}</td><td class="num">${growthArrow(m.mom_growth_pct)}</td><td class="num">${growthArrow(m.yoy_growth_pct)}</td></tr>`
   ).join('');
 
-  growthMonthlyCache = g.monthly;
   const lastMonth = g.monthly[g.monthly.length - 1];
   updateWeatherIcon(lastMonth ? lastMonth.mom_growth_pct : null);
 
