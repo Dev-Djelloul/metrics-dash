@@ -8,6 +8,8 @@ interface Env {
   CF_ACCOUNT_ID: string;
   CF_API_TOKEN: string;
   CF_D1_DATABASE_ID: string;
+  GOOGLE_CLIENT_ID: string;
+  GOOGLE_CLIENT_SECRET: string;
 }
 
 // Le Worker ne fait que router les requêtes vers le conteneur Docker
@@ -23,6 +25,8 @@ export class MetricsDashContainer extends Container<Env> {
     CF_ACCOUNT_ID: this.env.CF_ACCOUNT_ID ?? "",
     CF_API_TOKEN: this.env.CF_API_TOKEN ?? "",
     CF_D1_DATABASE_ID: this.env.CF_D1_DATABASE_ID ?? "",
+    GOOGLE_CLIENT_ID: this.env.GOOGLE_CLIENT_ID ?? "",
+    GOOGLE_CLIENT_SECRET: this.env.GOOGLE_CLIENT_SECRET ?? "",
   };
 }
 
