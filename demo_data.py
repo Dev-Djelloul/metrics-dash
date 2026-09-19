@@ -50,6 +50,7 @@ DEMO_PROFILES = {
             ("one_time", 0.35, (0, 1), (10, 100)),
         ],
         "trend": lambda month_offset, months: 1 + 0.06 * month_offset,
+        "refund_rate": 0.03,
     },
     "seasonal": {
         "seed": 11,
@@ -64,6 +65,9 @@ DEMO_PROFILES = {
         # Pic sur les 2 derniers mois de la fenêtre (simule une saison haute,
         # type fêtes de fin d'année), calme le reste du temps.
         "trend": lambda month_offset, months: 2.2 if month_offset >= months - 2 else 0.85,
+        # Plus de retours en e-commerce qu'ailleurs, et encore plus pendant
+        # le pic saisonnier (achats impulsifs, cadeaux qui ne conviennent pas).
+        "refund_rate": 0.06,
     },
     "decline": {
         "seed": 13,
@@ -78,6 +82,9 @@ DEMO_PROFILES = {
         # Les mois récents pèsent de moins en moins lourd — l'inverse de
         # "growth" — pour simuler un chiffre d'affaires qui s'effrite.
         "trend": lambda month_offset, months: max(0.35, 1 - 0.10 * month_offset),
+        # Un taux de remboursement élevé est cohérent avec un déclin : souvent
+        # un symptôme (produit/service qui déçoit) plutôt qu'une coïncidence.
+        "refund_rate": 0.09,
     },
     "steady": {
         "seed": 17,
@@ -90,6 +97,7 @@ DEMO_PROFILES = {
             ("one_time", 0.20, (0, 1), (10, 80)),
         ],
         "trend": lambda month_offset, months: 1,
+        "refund_rate": 0.02,
     },
 }
 
@@ -169,7 +177,14 @@ def generate_demo_records(months=MONTHS_OF_HISTORY, profile=DEFAULT_PROFILE):
                     continue
                 amount = round(rng.uniform(*archetype["amount_range"]) * month_multiplier, 2)
                 records.append(
-                    {"customer": name, "amount": amount, "created": created, "country": country, "currency": "eur"}
+                    {
+                        "customer": name,
+                        "amount": amount,
+                        "created": created,
+                        "country": country,
+                        "currency": "eur",
+                        "refunded": rng.random() < config["refund_rate"],
+                    }
                 )
 
     return sorted(records, key=lambda r: r["created"])

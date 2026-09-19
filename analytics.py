@@ -562,3 +562,170 @@ def revenue_by_country(records):
     ]
 
     return {"countries": countries, "unknown_count": unknown_count}
+
+
+# ---------------------------------------------------------------------------
+# 10. LTV par segment (valeur vie client) : combien un client rapporte en moyenne sur
+#    toute la période de données disponible — sert de référence pour savoir
+#    combien on peut dépenser en acquisition (pub, commission) sans perdre
+#    d'argent. Calculée en moyenne historique observée (pas de projection) :
+#    on réutilise directement le "monetary" déjà calculé par rfm_segments
+#    (total dépensé par client), regroupé par segment pour voir si les
+#    champions valent vraiment plus que les clients "one-shot".
+# ---------------------------------------------------------------------------
+def ltv_metrics(records, as_of: datetime = None):
+    segments = rfm_segments(records, as_of=as_of)
+    if not segments:
+        return {"avg_ltv": 0, "median_ltv": 0, "customer_count": 0, "by_segment": []}
+
+    values = sorted(s["monetary"] for s in segments)
+    n = len(values)
+    median = values[n // 2] if n % 2 else (values[n // 2 - 1] + values[n // 2]) / 2
+
+    totals_by_segment = defaultdict(lambda: {"total": 0.0, "count": 0})
+    for s in segments:
+        bucket = totals_by_segment[s["segment"]]
+        bucket["total"] += s["monetary"]
+        bucket["count"] += 1
+
+    by_segment = sorted(
+        (
+            {
+                "segment": segment,
+                "avg_ltv": round(bucket["total"] / bucket["count"], 2),
+                "customer_count": bucket["count"],
+            }
+            for segment, bucket in totals_by_segment.items()
+        ),
+        key=lambda x: x["avg_ltv"],
+        reverse=True,
+    )
+
+    return {
+        "avg_ltv": round(sum(values) / n, 2),
+        "median_ltv": round(median, 2),
+        "customer_count": n,
+        "by_segment": by_segment,
+    }
+
+
+# ---------------------------------------------------------------------------
+# 11. Churn mensuel : parmi les clients actifs le mois M, quelle part n'a
+#     plus rien acheté le mois M+1 ? Complète les segments RFM (qui disent
+#     QUI est à risque, à un instant donné) par un taux qui suit son
+#     évolution dans le temps — le churn s'aggrave-t-il mois après mois ?
+# ---------------------------------------------------------------------------
+def monthly_churn(records):
+    customers_by_month = defaultdict(set)
+    for r in records:
+        customers_by_month[_month_key(r["created"])].add(r["customer"])
+
+    months = sorted(customers_by_month.keys())
+    result = []
+    for i in range(1, len(months)):
+        prev_customers = customers_by_month[months[i - 1]]
+        curr_customers = customers_by_month[months[i]]
+        if not prev_customers:
+            continue
+        churned = prev_customers - curr_customers
+        result.append(
+            {
+                "month": months[i],
+                "active_prev_month": len(prev_customers),
+                "churned_count": len(churned),
+                "churn_rate_pct": round(len(churned) / len(prev_customers) * 100, 1),
+            }
+        )
+    return result
+
+
+# ---------------------------------------------------------------------------
+# 12. Taux de remboursement : signal qualité produit/service qu'aucune autre
+#     métrique du dashboard ne couvre (RFM/churn parlent de rétention, pas de
+#     satisfaction). `records` doit ici inclure les commandes remboursées
+#     (avec un flag "refunded"), contrairement au reste du pipeline qui les
+#     exclut déjà du chiffre d'affaires — get_records(include_refunded=True)
+#     dans main.py fournit cette liste élargie spécifiquement pour cet appel.
+# ---------------------------------------------------------------------------
+def refund_metrics(records):
+    revenue_by_month = defaultdict(float)
+    refunded_amount_by_month = defaultdict(float)
+    order_count_by_month = defaultdict(int)
+    refund_count_by_month = defaultdict(int)
+
+    for r in records:
+        month = _month_key(r["created"])
+        order_count_by_month[month] += 1
+        if r.get("refunded"):
+            refund_count_by_month[month] += 1
+            refunded_amount_by_month[month] += r["amount"]
+        else:
+            revenue_by_month[month] += r["amount"]
+
+    months = sorted(order_count_by_month.keys())
+    monthly = [
+        {
+            "month": month,
+            "order_count": order_count_by_month[month],
+            "refund_count": refund_count_by_month[month],
+            "refunded_amount": round(refunded_amount_by_month[month], 2),
+            "refund_rate_pct": round(refund_count_by_month[month] / order_count_by_month[month] * 100, 1)
+            if order_count_by_month[month]
+            else 0,
+        }
+        for month in months
+    ]
+
+    total_orders = sum(order_count_by_month.values())
+    total_refunds = sum(refund_count_by_month.values())
+
+    return {
+        "refund_rate_pct": round(total_refunds / total_orders * 100, 1) if total_orders else 0,
+        "refunded_amount_total": round(sum(refunded_amount_by_month.values()), 2),
+        "monthly": monthly,
+    }
+
+
+# ---------------------------------------------------------------------------
+# 13. Waterfall CA (comparaison entre les deux derniers mois) : décompose la
+#     variation brute de CA en 4 causes distinctes — répond à la question
+#     qualitative derrière le chiffre de croissance MoM ("pourquoi ça a
+#     bougé ?") plutôt que de se contenter du delta global :
+#       - new        : clients apparus au mois B (absents au mois A)
+#       - churned    : clients du mois A qui n'ont rien acheté au mois B
+#       - expansion  : clients présents aux deux mois, qui ont dépensé plus
+#       - contraction: clients présents aux deux mois, qui ont dépensé moins
+# ---------------------------------------------------------------------------
+def revenue_waterfall(records):
+    amount_by_month_customer = defaultdict(lambda: defaultdict(float))
+    for r in records:
+        amount_by_month_customer[_month_key(r["created"])][r["customer"]] += r["amount"]
+
+    months = sorted(amount_by_month_customer.keys())
+    if len(months) < 2:
+        return None
+
+    month_from, month_to = months[-2], months[-1]
+    prev = amount_by_month_customer[month_from]
+    curr = amount_by_month_customer[month_to]
+
+    new_amount = sum(amount for cust, amount in curr.items() if cust not in prev)
+    churned_amount = sum(amount for cust, amount in prev.items() if cust not in curr)
+    expansion_amount = sum(curr[c] - prev[c] for c in curr if c in prev and curr[c] > prev[c])
+    contraction_amount = sum(curr[c] - prev[c] for c in curr if c in prev and curr[c] < prev[c])
+
+    revenue_from = round(sum(prev.values()), 2)
+    revenue_to = round(sum(curr.values()), 2)
+
+    return {
+        "month_from": month_from,
+        "month_to": month_to,
+        "revenue_from": revenue_from,
+        "revenue_to": revenue_to,
+        "steps": [
+            {"label": "new", "amount": round(new_amount, 2)},
+            {"label": "expansion", "amount": round(expansion_amount, 2)},
+            {"label": "contraction", "amount": round(contraction_amount, 2)},
+            {"label": "churned", "amount": round(-churned_amount, 2)},
+        ],
+    }

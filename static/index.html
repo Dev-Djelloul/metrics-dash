@@ -631,6 +631,18 @@
         <tbody></tbody>
       </table>
     </div>
+
+    <div class="card chart-box">
+      <h3 data-i18n="h3_22">Taux de remboursement</h3>
+      <p class="explainer">
+        <span class="line" data-i18n-html="ln_37">Part des commandes remboursées, en tout ou partie — un signal de qualité produit/service qu'aucune autre métrique du dashboard ne couvre (le churn/RFM parlent de rétention, pas de satisfaction).</span>
+      </p>
+      <div class="cards" id="refundCards"></div>
+      <table class="data" id="refundTable">
+        <thead><tr><th data-i18n="th_month">Mois</th><th class="num" data-i18n="th_orders">Commandes</th><th class="num" data-i18n="th_refunds">Remboursements</th><th class="num" data-i18n="th_refund_rate">Taux</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
   </div>
 
   <!-- Growth -->
@@ -655,6 +667,16 @@
         <tbody></tbody>
       </table>
     </div>
+    <div class="card chart-box">
+      <h3 data-i18n="h3_21">Décomposition du CA (waterfall)</h3>
+      <p class="explainer">
+        <span class="line" data-i18n-html="ln_35">Le MoM ci-dessus dit <em>de combien</em> le CA a bougé entre les deux derniers mois — ce graphique dit <em>pourquoi</em>, en décomposant la variation en 4 causes.</span>
+        <span class="line" data-i18n-html="ln_36"><span class="term term-yoy">Nouveaux</span> (clients apparus) · Expansion (clients existants qui dépensent plus) · Contraction (qui dépensent moins) · <span class="term term-ma">Perdus</span> (clients qui n'ont rien racheté).</span>
+      </p>
+      <div id="waterfallNote" class="explainer" style="margin-bottom: var(--sp-3);"></div>
+      <div class="canvas-wrap"><canvas id="waterfallChart"></canvas></div>
+    </div>
+
     <div class="card chart-box">
       <h3 data-i18n="h3_8">CA quotidien + moyenne mobile 7 jours</h3>
       <p class="explainer">
@@ -687,6 +709,18 @@
     </div>
 
     <div class="card chart-box">
+      <h3 data-i18n="h3_19">LTV par segment (valeur vie client)</h3>
+      <p class="explainer">
+        <span class="line" data-i18n-html="ln_31">La <span class="term term-forecast">LTV</span> (valeur vie client) est le montant total dépensé par un client sur toute la période observée — sert de repère pour savoir combien on peut dépenser en acquisition (publicité, commission) sans perdre d'argent sur ce client.</span>
+        <span class="line" data-i18n-html="ln_32">Moyenne historique observée par segment RFM : un Champion vaut-il vraiment plus qu'un client occasionnel ?</span>
+      </p>
+      <table class="data" id="ltvTable">
+        <thead><tr><th data-i18n="th_segment">Segment</th><th class="num" data-i18n="th_avg_ltv">LTV moyenne</th><th class="num" data-i18n="th_customers">Clients</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="card chart-box">
       <h3 data-i18n="h3_11">Segmentation RFM (Récence / Fréquence / Montant)</h3>
       <p class="explainer">
         <span class="line" data-i18n-html="ln_15">Technique de segmentation client classique en marketing/data : chaque client reçoit un score 1-4 sur trois axes.</span>
@@ -706,6 +740,15 @@
 
   <!-- Cohorts -->
   <div class="panel" id="panel-cohorts">
+    <div class="card chart-box">
+      <h3 data-i18n="h3_20">Churn mensuel</h3>
+      <p class="explainer">
+        <span class="line" data-i18n-html="ln_33">Parmi les clients actifs un mois donné, quelle part n'a plus rien acheté le mois suivant ? Complète les segments RFM (qui disent <em>qui</em> est à risque) par un taux qui suit son évolution dans le temps.</span>
+        <span class="line" data-i18n-html="ln_34">Un taux qui grimpe mois après mois est un signal d'alerte précoce, avant même que ça se voie sur le CA global.</span>
+      </p>
+      <div class="canvas-wrap"><canvas id="churnChart"></canvas></div>
+    </div>
+
     <div class="card chart-box">
       <h3 data-i18n="h3_12">Rétention moyenne toutes cohortes confondues</h3>
       <p class="explainer">
@@ -1039,7 +1082,20 @@ const I18N = {
     seg_action_occasional: 'Offre incitative pour encourager la récurrence',
     seg_action_atrisk_lost: 'Campagne de réactivation (email marketing)',
     seg_action_lost: 'Campagne de réactivation (email marketing)',
-    ln_0: 'Carte colorée selon le CA généré par pays de facturation.', ln_1: 'Plus la couleur est intense, plus ce pays représente une part importante du chiffre d\'affaires. Molette ou boutons +/- pour zoomer, glisser pour te déplacer une fois zoomé.', ln_2: 'Regroupe toutes les commandes par <span class="term term-mom">jour de la semaine</span>, toutes semaines confondues.', ln_3: 'Utile pour repérer un jour fort ou faible (ex : plus de ventes le vendredi).', ln_4: 'Illustre le <span class="term term-forecast">principe de Pareto</span> (souvent "80/20") : une petite part de tes clients fait-elle une grande part du CA ?', ln_5: 'Ici : part du CA venant des 20% de clients qui dépensent le plus, vs tous les autres.', ln_6: 'Basé sur tes <span class="term term-mom">abonnements Stripe actifs</span> (pas les paiements ponctuels analysés ailleurs) : combien ça représenterait si chaque abonnement était facturé tous les mois, quel que soit son cycle réel (annuel, hebdomadaire...).', ln_7: '<span class="term term-mom">MoM</span> (Month-over-Month) = variation vs le mois précédent.', ln_8: '<span class="term term-yoy">YoY</span> (Year-over-Year) = variation vs le même mois l\'année dernière.', ln_9: 'Ce sont les deux métriques de croissance les plus utilisées en BI.', ln_10: 'La <span class="term term-ma">moyenne mobile</span> lisse les pics/creux journaliers pour voir la vraie tendance.', ln_11: 'C\'est la technique de base pour lire un graphique de série temporelle.', ln_12: 'Chaque mois, quelle part du CA vient de <span class="term term-yoy">nouveaux clients</span> (1er achat ce mois-là) vs de <span class="term term-ma">clients qui reviennent</span> ?', ln_13: 'Beaucoup de "nouveaux" = tu acquiers. Beaucoup de "récurrents" = tu fidélises. Les deux comptent, mais pas pour les mêmes raisons.', ln_14: 'Combien de clients dans chaque segment RFM, en proportion.', ln_15: 'Technique de segmentation client classique en marketing/data : chaque client reçoit un score 1-4 sur trois axes.', ln_16: '<span class="term term-r">Récence</span> (il a acheté récemment ?) · <span class="term term-f">Fréquence</span> (il achète souvent ?) · <span class="term term-m">Montant</span> (il dépense beaucoup ?).', ln_17: 'Les scores combinés donnent un segment actionnable (Champions, À risque, Perdus...).', ln_18: 'Moyenne du % de rétention à chaque mois écoulé, sur toutes les cohortes — une seule courbe pour voir la tendance générale sans lire tout le tableau.', ln_19: 'Chaque ligne = un groupe de clients ayant acheté pour la première fois ce mois-là (la <span class="term term-cohort">cohorte</span>).', ln_20: 'Chaque colonne = combien de mois plus tard. La couleur montre le % de la cohorte encore active.', ln_21: 'C\'est l\'outil de référence pour mesurer la <span class="term term-retention">fidélisation</span> dans le temps.', ln_22: 'Même lecture que le tableau de rétention, mais en <span class="term term-cohort">chiffre d\'affaires</span> plutôt qu\'en % de clients actifs.', ln_23: 'Deux cohortes avec la même rétention en % peuvent valoir très différemment si l\'une regroupe des clients qui dépensent plus.', ln_24: 'Projette les prochains mois à partir de la tendance historique (<span class="term term-forecast">régression linéaire simple</span>, sans librairie externe).', ln_25: 'La zone bleue est l\'intervalle de confiance (~95%) : elle s\'élargit avec l\'horizon, une prévision lointaine étant statistiquement moins fiable qu\'une prévision proche.', ln_26: 'Même méthode que la prévision de CA, appliquée au <span class="term term-forecast">nombre de commandes</span> plutôt qu\'au montant.', ln_27: 'Répond à « combien de ventes » plutôt qu\'à « combien ça va rapporter » — les deux ne bougent pas forcément ensemble (ex : panier moyen qui grimpe).', ln_28: 'Projette le rythme d\'<span class="term term-forecast">acquisition de nouveaux clients</span> par mois, à partir de la tendance historique.', ln_29: 'Utile pour anticiper si le rythme d\'acquisition ralentit avant que ça se voie sur le CA.', ln_30: 'Chaque terme employé ailleurs dans le dashboard, expliqué simplement — pas besoin de tout connaître pour commencer.', glo_dt_0: '<span class="term term-mom">MoM</span> (Month-over-Month)', glo_dt_1: '<span class="term term-yoy">YoY</span> (Year-over-Year)', glo_dt_2: '<span class="term term-ma">Moyenne mobile</span>', glo_dt_3: 'RFM (<span class="term term-r">Récence</span> / <span class="term term-f">Fréquence</span> / <span class="term term-m">Montant</span>)', glo_dt_4: '<span class="term term-cohort">Cohorte</span>', glo_dt_5: '<span class="term term-retention">Rétention / fidélisation</span>', glo_dt_6: '<span class="term term-forecast">Régression linéaire</span>', glo_dt_7: 'Pareto (règle du « 80/20 »)', glo_dt_8: 'LTV (Lifetime Value / valeur vie client)', glo_dt_9: 'Churn (taux d\'attrition)', glo_dt_10: 'API', glo_dt_11: 'CSV', glo_dd_0: 'Variation du CA vs le mois précédent. Répond à : « est-ce qu\'on progresse court terme ? »', glo_dd_1: 'Variation vs le même mois l\'an dernier. Neutralise la saisonnalité (ex : pic de décembre comparé au décembre précédent, pas à novembre).', glo_dd_2: 'Moyenne calculée sur une fenêtre glissante (ex : les 7 derniers jours), qui lisse le bruit journalier pour voir la vraie tendance.', glo_dd_3: '\n          Méthode CRM qui segmente les clients sur 3 dimensions comportementales : <b>quand</b> ils ont acheté pour la dernière fois (Récence), <b>à quelle fréquence</b> ils achètent, et <b>combien</b> ils dépensent (Montant). Chaque client reçoit un score 1-4 sur chaque axe, combinés en un segment actionnable.\n          <br><br>\n          L\'intérêt pratique : relier chaque segment à une action marketing concrète (visible dans la colonne dédiée de l\'onglet RFM) — <i>segment → intention → action</i> :\n          <ul style="margin:8px 0 0; padding-left:20px;">\n            <li><b>Champions</b> : fidéliser → programme VIP, avantages exclusifs</li>\n            <li><b>Clients fidèles</b> : entretenir → offres régulières</li>\n            <li><b>Nouveaux clients</b> : accompagner → email de bienvenue</li>\n            <li><b>À risque</b> : prévenir le désengagement → offre personnalisée ou rappel</li>\n            <li><b>Perdus</b> : récupérer → campagne de réactivation</li>\n          </ul>\n        ', glo_dd_4: 'Groupe de clients qui partagent un point de départ commun — ici, le mois de leur tout premier achat — suivi dans le temps.', glo_dd_5: '% d\'une cohorte encore active N mois après son premier achat. Mesure si les clients reviennent, pas juste s\'ils achètent une fois.', glo_dd_6: 'Méthode statistique qui trace la droite collant au mieux à des points historiques, pour projeter la tendance dans le futur. Simple, mais fragile sur peu de données.', glo_dd_7: 'Observation empirique : une petite part des causes (ex : 20% des clients) produit souvent une grande part des effets (ex : 80% du CA).', glo_dd_8: 'CA moyen généré par un client sur toute sa relation avec toi. Sert à savoir combien tu peux dépenser pour en acquérir un nouveau sans perdre d\'argent.', glo_dd_9: 'Part des clients qui arrêtent d\'acheter. Approximé ici par le % de clients dans les segments RFM « À risque » et « Perdus ».', glo_dd_10: 'Interface de Programmation d\'Application : la façon dont deux logiciels échangent des données — ici, ton dashboard interroge l\'API de Stripe.', glo_dd_11: 'Fichier texte tabulaire (Comma-Separated Values) : le format le plus simple pour faire passer des données d\'un outil à un autre — ex : vers Excel ou Power BI.', glo_dt_12: 'Panier moyen (AOV)', glo_dd_12: 'CA total divisé par le nombre de commandes. Attention à l\'interpréter seul : il peut monter simplement parce qu\'il y a moins de commandes, pas parce que chaque client dépense plus.', glo_dt_13: 'MRR (revenu récurrent mensuel)', glo_dd_13: 'Ce que rapporteraient tous les abonnements actifs s\'ils étaient facturés chaque mois, quel que soit leur cycle réel (annuel, hebdomadaire...). Indicateur clé en SaaS : il lisse les pics de facturation pour montrer le revenu récurrent réel.', glo_dt_14: 'Intervalle de confiance', glo_dd_14: 'Zone autour d\'une prévision qui matérialise l\'incertitude statistique (ici ~95%) : elle s\'élargit avec l\'horizon, une prévision lointaine étant toujours moins fiable qu\'une prévision proche.', glo_dt_15: 'Taux de clients récurrents', glo_dd_15: 'Part des clients ayant effectué plus d\'un achat. Version simple et immédiate de la fidélisation, complémentaire à l\'analyse de cohortes qui, elle, suit ce taux mois par mois.', glo_dt_16: 'Repère sectoriel (benchmark)', glo_dd_16: 'Valeur de référence indicative pour ton secteur d\'activité (ex : 30% de clients récurrents en e-commerce). Ce ne sont pas des moyennes calculées depuis les utilisateurs de metrics-dash — trop peu nombreux pour être significatives — juste un ordre de grandeur pour te situer.', h3_0: 'CA par pays', h3_1: 'Détail par pays', h3_2: 'CA par jour', h3_3: 'CA par jour de la semaine', h3_4: 'Concentration du CA', h3_5: 'Top clients', h3_6: 'MRR (revenu récurrent mensuel)', h3_7: 'CA mensuel & croissance', h3_8: 'CA quotidien + moyenne mobile 7 jours', h3_9: 'Nouveaux vs clients récurrents', h3_10: 'Répartition des clients par segment', h3_11: 'Segmentation RFM (Récence / Fréquence / Montant)', h3_12: 'Rétention moyenne toutes cohortes confondues', h3_13: 'Analyse de cohortes (rétention)', h3_14: 'CA généré par cohorte', h3_15: 'Prévision de CA (régression linéaire)', h3_16: 'Prévision du nombre de commandes', h3_17: 'Prévision de nouveaux clients', h3_18: 'Lexique des termes techniques',
+    ln_0: 'Carte colorée selon le CA généré par pays de facturation.', ln_1: 'Plus la couleur est intense, plus ce pays représente une part importante du chiffre d\'affaires. Molette ou boutons +/- pour zoomer, glisser pour te déplacer une fois zoomé.', ln_2: 'Regroupe toutes les commandes par <span class="term term-mom">jour de la semaine</span>, toutes semaines confondues.', ln_3: 'Utile pour repérer un jour fort ou faible (ex : plus de ventes le vendredi).', ln_4: 'Illustre le <span class="term term-forecast">principe de Pareto</span> (souvent "80/20") : une petite part de tes clients fait-elle une grande part du CA ?', ln_5: 'Ici : part du CA venant des 20% de clients qui dépensent le plus, vs tous les autres.', ln_6: 'Basé sur tes <span class="term term-mom">abonnements Stripe actifs</span> (pas les paiements ponctuels analysés ailleurs) : combien ça représenterait si chaque abonnement était facturé tous les mois, quel que soit son cycle réel (annuel, hebdomadaire...).', ln_7: '<span class="term term-mom">MoM</span> (Month-over-Month) = variation vs le mois précédent.', ln_8: '<span class="term term-yoy">YoY</span> (Year-over-Year) = variation vs le même mois l\'année dernière.', ln_9: 'Ce sont les deux métriques de croissance les plus utilisées en BI.', ln_10: 'La <span class="term term-ma">moyenne mobile</span> lisse les pics/creux journaliers pour voir la vraie tendance.', ln_11: 'C\'est la technique de base pour lire un graphique de série temporelle.', ln_12: 'Chaque mois, quelle part du CA vient de <span class="term term-yoy">nouveaux clients</span> (1er achat ce mois-là) vs de <span class="term term-ma">clients qui reviennent</span> ?', ln_13: 'Beaucoup de "nouveaux" = tu acquiers. Beaucoup de "récurrents" = tu fidélises. Les deux comptent, mais pas pour les mêmes raisons.', ln_14: 'Combien de clients dans chaque segment RFM, en proportion.', ln_15: 'Technique de segmentation client classique en marketing/data : chaque client reçoit un score 1-4 sur trois axes.', ln_16: '<span class="term term-r">Récence</span> (il a acheté récemment ?) · <span class="term term-f">Fréquence</span> (il achète souvent ?) · <span class="term term-m">Montant</span> (il dépense beaucoup ?).', ln_17: 'Les scores combinés donnent un segment actionnable (Champions, À risque, Perdus...).', ln_18: 'Moyenne du % de rétention à chaque mois écoulé, sur toutes les cohortes — une seule courbe pour voir la tendance générale sans lire tout le tableau.', ln_19: 'Chaque ligne = un groupe de clients ayant acheté pour la première fois ce mois-là (la <span class="term term-cohort">cohorte</span>).', ln_20: 'Chaque colonne = combien de mois plus tard. La couleur montre le % de la cohorte encore active.', ln_21: 'C\'est l\'outil de référence pour mesurer la <span class="term term-retention">fidélisation</span> dans le temps.', ln_22: 'Même lecture que le tableau de rétention, mais en <span class="term term-cohort">chiffre d\'affaires</span> plutôt qu\'en % de clients actifs.', ln_23: 'Deux cohortes avec la même rétention en % peuvent valoir très différemment si l\'une regroupe des clients qui dépensent plus.', ln_24: 'Projette les prochains mois à partir de la tendance historique (<span class="term term-forecast">régression linéaire simple</span>, sans librairie externe).', ln_25: 'La zone bleue est l\'intervalle de confiance (~95%) : elle s\'élargit avec l\'horizon, une prévision lointaine étant statistiquement moins fiable qu\'une prévision proche.', ln_26: 'Même méthode que la prévision de CA, appliquée au <span class="term term-forecast">nombre de commandes</span> plutôt qu\'au montant.', ln_27: 'Répond à « combien de ventes » plutôt qu\'à « combien ça va rapporter » — les deux ne bougent pas forcément ensemble (ex : panier moyen qui grimpe).', ln_28: 'Projette le rythme d\'<span class="term term-forecast">acquisition de nouveaux clients</span> par mois, à partir de la tendance historique.', ln_29: 'Utile pour anticiper si le rythme d\'acquisition ralentit avant que ça se voie sur le CA.', ln_30: 'Chaque terme employé ailleurs dans le dashboard, expliqué simplement — pas besoin de tout connaître pour commencer.', glo_dt_0: '<span class="term term-mom">MoM</span> (Month-over-Month)', glo_dt_1: '<span class="term term-yoy">YoY</span> (Year-over-Year)', glo_dt_2: '<span class="term term-ma">Moyenne mobile</span>', glo_dt_3: 'RFM (<span class="term term-r">Récence</span> / <span class="term term-f">Fréquence</span> / <span class="term term-m">Montant</span>)', glo_dt_4: '<span class="term term-cohort">Cohorte</span>', glo_dt_5: '<span class="term term-retention">Rétention / fidélisation</span>', glo_dt_6: '<span class="term term-forecast">Régression linéaire</span>', glo_dt_7: 'Pareto (règle du « 80/20 »)', glo_dt_8: 'LTV (Lifetime Value / valeur vie client)', glo_dt_9: 'Churn (taux d\'attrition)', glo_dt_10: 'API', glo_dt_11: 'CSV', glo_dd_0: 'Variation du CA vs le mois précédent. Répond à : « est-ce qu\'on progresse court terme ? »', glo_dd_1: 'Variation vs le même mois l\'an dernier. Neutralise la saisonnalité (ex : pic de décembre comparé au décembre précédent, pas à novembre).', glo_dd_2: 'Moyenne calculée sur une fenêtre glissante (ex : les 7 derniers jours), qui lisse le bruit journalier pour voir la vraie tendance.', glo_dd_3: '\n          Méthode CRM qui segmente les clients sur 3 dimensions comportementales : <b>quand</b> ils ont acheté pour la dernière fois (Récence), <b>à quelle fréquence</b> ils achètent, et <b>combien</b> ils dépensent (Montant). Chaque client reçoit un score 1-4 sur chaque axe, combinés en un segment actionnable.\n          <br><br>\n          L\'intérêt pratique : relier chaque segment à une action marketing concrète (visible dans la colonne dédiée de l\'onglet RFM) — <i>segment → intention → action</i> :\n          <ul style="margin:8px 0 0; padding-left:20px;">\n            <li><b>Champions</b> : fidéliser → programme VIP, avantages exclusifs</li>\n            <li><b>Clients fidèles</b> : entretenir → offres régulières</li>\n            <li><b>Nouveaux clients</b> : accompagner → email de bienvenue</li>\n            <li><b>À risque</b> : prévenir le désengagement → offre personnalisée ou rappel</li>\n            <li><b>Perdus</b> : récupérer → campagne de réactivation</li>\n          </ul>\n        ', glo_dd_4: 'Groupe de clients qui partagent un point de départ commun — ici, le mois de leur tout premier achat — suivi dans le temps.', glo_dd_5: '% d\'une cohorte encore active N mois après son premier achat. Mesure si les clients reviennent, pas juste s\'ils achètent une fois.', glo_dd_6: 'Méthode statistique qui trace la droite collant au mieux à des points historiques, pour projeter la tendance dans le futur. Simple, mais fragile sur peu de données.', glo_dd_7: 'Observation empirique : une petite part des causes (ex : 20% des clients) produit souvent une grande part des effets (ex : 80% du CA).', glo_dd_8: 'CA moyen généré par un client sur toute sa relation avec toi. Sert à savoir combien tu peux dépenser pour en acquérir un nouveau sans perdre d\'argent.', glo_dd_9: 'Part des clients qui arrêtent d\'acheter. Approximé ici par le % de clients dans les segments RFM « À risque » et « Perdus ».', glo_dd_10: 'Interface de Programmation d\'Application : la façon dont deux logiciels échangent des données — ici, ton dashboard interroge l\'API de Stripe.', glo_dd_11: 'Fichier texte tabulaire (Comma-Separated Values) : le format le plus simple pour faire passer des données d\'un outil à un autre — ex : vers Excel ou Power BI.', glo_dt_12: 'Panier moyen (AOV)', glo_dd_12: 'CA total divisé par le nombre de commandes. Attention à l\'interpréter seul : il peut monter simplement parce qu\'il y a moins de commandes, pas parce que chaque client dépense plus.', glo_dt_13: 'MRR (revenu récurrent mensuel)', glo_dd_13: 'Ce que rapporteraient tous les abonnements actifs s\'ils étaient facturés chaque mois, quel que soit leur cycle réel (annuel, hebdomadaire...). Indicateur clé en SaaS : il lisse les pics de facturation pour montrer le revenu récurrent réel.', glo_dt_14: 'Intervalle de confiance', glo_dd_14: 'Zone autour d\'une prévision qui matérialise l\'incertitude statistique (ici ~95%) : elle s\'élargit avec l\'horizon, une prévision lointaine étant toujours moins fiable qu\'une prévision proche.', glo_dt_15: 'Taux de clients récurrents', glo_dd_15: 'Part des clients ayant effectué plus d\'un achat. Version simple et immédiate de la fidélisation, complémentaire à l\'analyse de cohortes qui, elle, suit ce taux mois par mois.', glo_dt_16: 'Repère sectoriel (benchmark)', glo_dd_16: 'Valeur de référence indicative pour ton secteur d\'activité (ex : 30% de clients récurrents en e-commerce). Ce ne sont pas des moyennes calculées depuis les utilisateurs de metrics-dash — trop peu nombreux pour être significatives — juste un ordre de grandeur pour te situer.', h3_0: 'CA par pays', h3_1: 'Détail par pays', h3_2: 'CA par jour', h3_3: 'CA par jour de la semaine', h3_4: 'Concentration du CA', h3_5: 'Top clients', h3_6: 'MRR (revenu récurrent mensuel)', h3_7: 'CA mensuel & croissance', h3_8: 'CA quotidien + moyenne mobile 7 jours', h3_9: 'Nouveaux vs clients récurrents', h3_10: 'Répartition des clients par segment', h3_11: 'Segmentation RFM (Récence / Fréquence / Montant)', h3_12: 'Rétention moyenne toutes cohortes confondues', h3_13: 'Analyse de cohortes (rétention)', h3_14: 'CA généré par cohorte', h3_15: 'Prévision de CA (régression linéaire)', h3_16: 'Prévision du nombre de commandes', h3_17: 'Prévision de nouveaux clients', h3_18: 'Lexique des termes techniques', h3_19: 'LTV par segment (valeur vie client)', h3_20: 'Churn mensuel', h3_21: 'Décomposition du CA (waterfall)', h3_22: 'Taux de remboursement',
+    ln_31: 'La <span class="term term-forecast">LTV</span> (valeur vie client) est le montant total dépensé par un client sur toute la période observée — sert de repère pour savoir combien on peut dépenser en acquisition (publicité, commission) sans perdre d\'argent sur ce client.',
+    ln_32: 'Moyenne historique observée par segment RFM : un Champion vaut-il vraiment plus qu\'un client occasionnel ?',
+    ln_33: 'Parmi les clients actifs un mois donné, quelle part n\'a plus rien acheté le mois suivant ? Complète les segments RFM (qui disent qui est à risque) par un taux qui suit son évolution dans le temps.',
+    ln_34: 'Un taux qui grimpe mois après mois est un signal d\'alerte précoce, avant même que ça se voie sur le CA global.',
+    ln_35: 'Le MoM ci-dessus dit de combien le CA a bougé entre les deux derniers mois — ce graphique dit pourquoi, en décomposant la variation en 4 causes.',
+    ln_36: 'Nouveaux (clients apparus) · Expansion (clients existants qui dépensent plus) · Contraction (qui dépensent moins) · Perdus (clients qui n\'ont rien racheté).',
+    ln_37: 'Part des commandes remboursées, en tout ou partie — un signal de qualité produit/service qu\'aucune autre métrique du dashboard ne couvre.',
+    th_avg_ltv: 'LTV moyenne', th_orders: 'Commandes', th_refunds: 'Remboursements', th_refund_rate: 'Taux',
+    kpi_refund_rate: 'Taux de remboursement', kpi_refunded_amount: 'Montant remboursé',
+    waterfall_new: 'Nouveaux', waterfall_expansion: 'Expansion', waterfall_contraction: 'Contraction', waterfall_churned: 'Perdus',
+    waterfall_note: 'Entre {from} et {to} : {revFrom} → {revTo}',
+    churn_legend: 'Taux de churn mensuel',
+    ltv_no_data: 'Pas assez de données pour calculer une LTV.',
   },
   en: {
     theme_light: 'Light', theme_dark: 'Dark',
@@ -1132,7 +1188,20 @@ const I18N = {
     seg_action_atrisk_lost: 'Reactivation campaign (email marketing)',
     seg_action_lost: 'Reactivation campaign (email marketing)',
     ln_0: 'Colored map based on revenue generated per billing country.', ln_1: 'The more intense the color, the larger that country\'s share of revenue. Scroll wheel or +/- buttons to zoom, drag to move once zoomed.', ln_2: 'Groups all orders by <span class="term term-mom">day of the week</span>, across all weeks.', ln_3: 'Useful for spotting a strong or weak day (e.g. more sales on Fridays).', ln_4: 'Illustrates the <span class="term term-forecast">Pareto principle</span> (often "80/20"): does a small share of your customers generate a large share of revenue?', ln_5: 'Here: share of revenue coming from the top 20% of highest-spending customers, vs everyone else.', ln_6: 'Based on your <span class="term term-mom">active Stripe subscriptions</span> (not the one-off payments analyzed elsewhere): what it would represent if every subscription were billed monthly, regardless of its actual cycle (yearly, weekly...).', ln_7: '<span class="term term-mom">MoM</span> (Month-over-Month) = change vs the previous month.', ln_8: '<span class="term term-yoy">YoY</span> (Year-over-Year) = change vs the same month last year.', ln_9: 'These are the two most commonly used growth metrics in BI.', ln_10: 'The <span class="term term-ma">moving average</span> smooths daily peaks/dips to reveal the real trend.', ln_11: 'It\'s the basic technique for reading a time series chart.', ln_12: 'Each month, what share of revenue comes from <span class="term term-yoy">new customers</span> (first purchase that month) vs <span class="term term-ma">returning customers</span>?', ln_13: 'A lot of "new" = you\'re acquiring. A lot of "returning" = you\'re retaining. Both matter, but not for the same reasons.', ln_14: 'How many customers in each RFM segment, as a proportion.', ln_15: 'Classic marketing/data customer segmentation technique: each customer gets a 1-4 score on three axes.', ln_16: '<span class="term term-r">Recency</span> (did they buy recently?) · <span class="term term-f">Frequency</span> (do they buy often?) · <span class="term term-m">Monetary</span> (do they spend a lot?).', ln_17: 'The combined scores produce an actionable segment (Champions, At risk, Lost...).', ln_18: 'Average % retention at each elapsed month, across all cohorts — a single curve to see the overall trend without reading the whole table.', ln_19: 'Each row = a group of customers who made their first purchase that month (the <span class="term term-cohort">cohort</span>).', ln_20: 'Each column = how many months later. The color shows the % of the cohort still active.', ln_21: 'The reference tool for measuring <span class="term term-retention">retention</span> over time.', ln_22: 'Same reading as the retention table, but in <span class="term term-cohort">revenue</span> rather than % of active customers.', ln_23: 'Two cohorts with the same retention % can be worth very different amounts if one has higher-spending customers.', ln_24: 'Projects the coming months from the historical trend (<span class="term term-forecast">simple linear regression</span>, no external library).', ln_25: 'The blue band is the confidence interval (~95%): it widens with the horizon, since a far-off forecast is statistically less reliable than a near one.', ln_26: 'Same method as the revenue forecast, applied to the <span class="term term-forecast">order count</span> instead of the amount.', ln_27: 'Answers "how many sales" rather than "how much will it bring in" — the two don\'t necessarily move together (e.g. a rising average order value).', ln_28: 'Projects the monthly rate of <span class="term term-forecast">new customer acquisition</span> from the historical trend.', ln_29: 'Useful for anticipating a slowdown in acquisition before it shows up in revenue.', ln_30: 'Every term used elsewhere in the dashboard, explained simply — no need to know it all to get started.', glo_dt_0: '<span class="term term-mom">MoM</span> (Month-over-Month)', glo_dt_1: '<span class="term term-yoy">YoY</span> (Year-over-Year)', glo_dt_2: '<span class="term term-ma">Moving average</span>', glo_dt_3: 'RFM (<span class="term term-r">Recency</span> / <span class="term term-f">Frequency</span> / <span class="term term-m">Monetary</span>)', glo_dt_4: '<span class="term term-cohort">Cohort</span>', glo_dt_5: '<span class="term term-retention">Retention</span>', glo_dt_6: '<span class="term term-forecast">Linear regression</span>', glo_dt_7: 'Pareto (the "80/20" rule)', glo_dt_8: 'LTV (Lifetime Value)', glo_dt_9: 'Churn', glo_dt_10: 'API', glo_dt_11: 'CSV', glo_dd_0: 'Revenue change vs the previous month. Answers: "are we growing short-term?"', glo_dd_1: 'Change vs the same month last year. Cancels out seasonality (e.g. a December peak compared to the previous December, not to November).', glo_dd_2: 'Average calculated over a rolling window (e.g. the last 7 days), which smooths daily noise to reveal the real trend.', glo_dd_3: '\n          CRM method that segments customers on 3 behavioral dimensions: <b>when</b> they last bought (Recency), <b>how often</b> they buy (Frequency), and <b>how much</b> they spend (Monetary). Each customer gets a 1-4 score on each axis, combined into an actionable segment.\n          <br><br>\n          The practical value: linking each segment to a concrete marketing action (visible in the dedicated column of the RFM tab) — <i>segment → intent → action</i>:\n          <ul style="margin:8px 0 0; padding-left:20px;">\n            <li><b>Champions</b>: retain → VIP program, exclusive perks</li>\n            <li><b>Loyal customers</b>: maintain → regular offers</li>\n            <li><b>New customers</b>: onboard → welcome email</li>\n            <li><b>At risk</b>: prevent churn → personalized offer or reminder</li>\n            <li><b>Lost</b>: win back → reactivation campaign</li>\n          </ul>', glo_dd_4: 'A group of customers who share a common starting point — here, the month of their very first purchase — tracked over time.', glo_dd_5: 'The % of a cohort still active N months after their first purchase. Measures whether customers come back, not just whether they buy once.', glo_dd_6: 'A statistical method that draws the line that best fits historical data points, to project the trend into the future. Simple, but fragile with little data.', glo_dd_7: 'Empirical observation: a small share of causes (e.g. 20% of customers) often produces a large share of effects (e.g. 80% of revenue).', glo_dd_8: 'Average revenue generated by a customer over their whole relationship with you. Used to know how much you can spend acquiring a new one without losing money.', glo_dd_9: 'The share of customers who stop buying. Approximated here by the % of customers in the "At risk" and "Lost" RFM segments.', glo_dd_10: 'Application Programming Interface: the way two pieces of software exchange data — here, your dashboard queries Stripe\'s API.', glo_dd_11: 'Tabular text file (Comma-Separated Values): the simplest format for moving data from one tool to another — e.g. to Excel or Power BI.', glo_dt_12: 'Average order value (AOV)', glo_dd_12: 'Total revenue divided by the number of orders. Worth reading with care: it can rise simply because there are fewer orders, not because each customer spends more.', glo_dt_13: 'MRR (monthly recurring revenue)', glo_dd_13: 'What all active subscriptions would bring in if billed every month, regardless of their actual cycle (yearly, weekly...). A key SaaS metric: it smooths out billing spikes to show the real recurring revenue.', glo_dt_14: 'Confidence interval', glo_dd_14: 'The band around a forecast that shows statistical uncertainty (~95% here): it widens with the horizon, since a far-off forecast is always less reliable than a near one.', glo_dt_15: 'Repeat customer rate', glo_dd_15: 'Share of customers who made more than one purchase. A simple, immediate read on loyalty, complementary to cohort analysis, which tracks that rate month by month.', glo_dt_16: 'Sector benchmark', glo_dd_16: "An indicative reference value for your business sector (e.g. 30% repeat customers in e-commerce). These aren't averages computed from metrics-dash's own users — too few to be meaningful — just a rough order of magnitude to place yourself against.",
-    h3_0: 'Revenue by country', h3_1: 'Country breakdown', h3_2: 'Revenue by day', h3_3: 'Revenue by day of the week', h3_4: 'Revenue concentration', h3_5: 'Top customers', h3_6: 'MRR (monthly recurring revenue)', h3_7: 'Monthly revenue & growth', h3_8: 'Daily revenue + 7-day moving average', h3_9: 'New vs returning customers', h3_10: 'Customer segment breakdown', h3_11: 'RFM segmentation (Recency / Frequency / Monetary)', h3_12: 'Average retention across all cohorts', h3_13: 'Cohort analysis (retention)', h3_14: 'Revenue by cohort', h3_15: 'Revenue forecast (linear regression)', h3_16: 'Order count forecast', h3_17: 'New customer forecast', h3_18: 'Glossary of technical terms',
+    h3_0: 'Revenue by country', h3_1: 'Country breakdown', h3_2: 'Revenue by day', h3_3: 'Revenue by day of the week', h3_4: 'Revenue concentration', h3_5: 'Top customers', h3_6: 'MRR (monthly recurring revenue)', h3_7: 'Monthly revenue & growth', h3_8: 'Daily revenue + 7-day moving average', h3_9: 'New vs returning customers', h3_10: 'Customer segment breakdown', h3_11: 'RFM segmentation (Recency / Frequency / Monetary)', h3_12: 'Average retention across all cohorts', h3_13: 'Cohort analysis (retention)', h3_14: 'Revenue by cohort', h3_15: 'Revenue forecast (linear regression)', h3_16: 'Order count forecast', h3_17: 'New customer forecast', h3_18: 'Glossary of technical terms', h3_19: 'LTV by segment (lifetime value)', h3_20: 'Monthly churn', h3_21: 'Revenue breakdown (waterfall)', h3_22: 'Refund rate',
+    ln_31: '<span class="term term-forecast">LTV</span> (lifetime value) is the total amount a customer has spent over the whole observed period — a reference point for how much you can spend on acquisition (ads, commission) without losing money on that customer.',
+    ln_32: 'Historical average observed per RFM segment: does a Champion really spend more than an occasional customer?',
+    ln_33: 'Among customers active in a given month, what share bought nothing the following month? Complements RFM segments (which say who is at risk) with a rate you can track over time.',
+    ln_34: 'A rate climbing month after month is an early warning sign, before it even shows up in overall revenue.',
+    ln_35: 'The MoM above says how much revenue moved between the last two months — this chart says why, breaking the change into 4 causes.',
+    ln_36: 'New (customers who appeared) · Expansion (existing customers spending more) · Contraction (spending less) · Churned (customers who bought nothing again).',
+    ln_37: 'Share of orders refunded, in full or in part — a product/service quality signal no other metric on this dashboard covers.',
+    th_avg_ltv: 'Average LTV', th_orders: 'Orders', th_refunds: 'Refunds', th_refund_rate: 'Rate',
+    kpi_refund_rate: 'Refund rate', kpi_refunded_amount: 'Refunded amount',
+    waterfall_new: 'New', waterfall_expansion: 'Expansion', waterfall_contraction: 'Contraction', waterfall_churned: 'Churned',
+    waterfall_note: 'Between {from} and {to}: {revFrom} → {revTo}',
+    churn_legend: 'Monthly churn rate',
+    ltv_no_data: 'Not enough data to compute an LTV.',
   },
 };
 
@@ -2672,6 +2741,101 @@ async function loadForecastNewCustomers() {
   renderForecastChart('forecastNewCustomersChart', 'forecastNewCustomers', f.history, f.forecast, 'new_customers', 'predicted_new_customers', countTooltip, (v) => v);
 }
 
+// LTV par segment : table simple, pas de graphique — le chiffre en lui-même
+// (une moyenne par segment) porte déjà l'info, un graphique n'ajouterait
+// rien qu'un tableau ne montre pas mieux.
+async function loadLtv() {
+  const res = await fetch(apiUrl('/api/ltv'));
+  if (!res.ok) return;
+  const data = await res.json();
+  const tbody = document.querySelector('#ltvTable tbody');
+  if (!data.by_segment.length) {
+    tbody.innerHTML = `<tr><td colspan="3">${t('ltv_no_data')}</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.by_segment.map(s =>
+    `<tr><td><span class="badge ${SEGMENT_CLASS[s.segment] || 'loyal'}">${segmentDisplay(s.segment)}</span></td><td class="num">${fmtMoney(s.avg_ltv)}</td><td class="num">${s.customer_count}</td></tr>`
+  ).join('');
+}
+
+async function loadChurn() {
+  const res = await fetch(apiUrl('/api/churn'));
+  if (!res.ok) return;
+  const { monthly } = await res.json();
+
+  destroyChart('churn');
+  charts.churn = new Chart(document.getElementById('churnChart'), {
+    type: 'line',
+    data: {
+      labels: monthly.map(m => m.month),
+      datasets: [{
+        label: t('churn_legend'), data: monthly.map(m => m.churn_rate_pct),
+        borderColor: cssVar('--neg'), backgroundColor: cssVar('--neg-soft'), fill: true, tension: 0.3,
+      }]
+    },
+    options: {
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (ctx) => t('pct_tooltip').replace('{label}', t('churn_legend')).replace('{pct}', ctx.parsed.y) } },
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: cssVar('--text-secondary') } },
+        y: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary'), callback: (v) => `${v}%` }, min: 0 },
+      },
+    }
+  });
+}
+
+async function loadRefunds() {
+  const res = await fetch(apiUrl('/api/refunds'));
+  if (!res.ok) return;
+  const data = await res.json();
+
+  document.getElementById('refundCards').innerHTML =
+    card(t('kpi_refund_rate'), `${data.refund_rate_pct}%`) +
+    card(t('kpi_refunded_amount'), fmtMoney(data.refunded_amount_total));
+
+  document.querySelector('#refundTable tbody').innerHTML = data.monthly.map(m =>
+    `<tr><td>${m.month}</td><td class="num">${m.order_count}</td><td class="num">${m.refund_count}</td><td class="num">${m.refund_rate_pct}%</td></tr>`
+  ).join('');
+}
+
+// Barres colorées pos/neg plutôt qu'un vrai waterfall empilé (base
+// transparente + delta) : plus simple à lire d'un coup d'œil pour 4
+// catégories, et Chart.js n'a pas de type "waterfall" natif.
+async function loadWaterfall() {
+  const res = await fetch(apiUrl('/api/waterfall'));
+  if (!res.ok) return;
+  const w = await res.json();
+  const note = document.getElementById('waterfallNote');
+  if (!w.steps) {
+    note.textContent = t('not_enough_months');
+    destroyChart('waterfall');
+    return;
+  }
+
+  note.innerHTML = `<span class="line">${t('waterfall_note').replace('{from}', w.month_from).replace('{to}', w.month_to).replace('{revFrom}', fmtMoney(w.revenue_from)).replace('{revTo}', fmtMoney(w.revenue_to))}</span>`;
+
+  const labels = [t('waterfall_new'), t('waterfall_expansion'), t('waterfall_contraction'), t('waterfall_churned')];
+  const values = w.steps.map(s => s.amount);
+  const colors = values.map(v => v >= 0 ? cssVar('--pos') : cssVar('--neg'));
+
+  destroyChart('waterfall');
+  charts.waterfall = new Chart(document.getElementById('waterfallChart'), {
+    type: 'bar',
+    data: { labels, datasets: [{ data: values, backgroundColor: colors }] },
+    options: {
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: moneyTooltip } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: cssVar('--text-secondary') } },
+        y: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary'), callback: fmtMoney } },
+      },
+    }
+  });
+}
+
 async function loadAll() {
   // loadCurrencyPicker() en tout premier : apiUrl() lit sa sélection pour
   // filtrer chaque requête suivante sur une seule devise à la fois.
@@ -2684,6 +2848,7 @@ async function loadAll() {
     loadGrowth(), loadRfm(), loadCohorts(), loadForecast(), loadWeekday(),
     loadConcentration(), loadNewVsReturning(), loadLoyaltyCards(), loadGeo(),
     loadForecastOrders(), loadForecastNewCustomers(), loadAlerts(), loadMrr(),
+    loadLtv(), loadChurn(), loadRefunds(), loadWaterfall(),
   ]);
 }
 

@@ -28,7 +28,13 @@ def fetch_recent_charges(api_key: str, limit_pages: int = 5):
         if not page.has_more:
             break
         starting_after = page.data[-1].id
-    return [c for c in charges if c.status == "succeeded" and not c.refunded]
+    # On garde aussi les charges remboursées (contrairement à avant, où elles
+    # étaient filtrées ici) : charges_to_records() les marque via un flag
+    # "refunded" plutôt que de les faire disparaître, pour permettre le
+    # calcul d'un taux de remboursement — get_records() dans main.py les
+    # exclut par défaut du CA (même comportement qu'avant pour tout le
+    # reste du dashboard), sauf appel explicite avec include_refunded=True.
+    return [c for c in charges if c.status == "succeeded"]
 
 
 def compute_metrics_from_records(records, currency="eur"):
@@ -185,6 +191,7 @@ def charges_to_records(charges):
                 "created": datetime.fromtimestamp(c.created, tz=timezone.utc),
                 "country": country,
                 "currency": c.currency,
+                "refunded": bool(c.refunded),
             }
         )
     return records

@@ -580,7 +580,7 @@ def get_all_records(demo: bool, demo_profile: str, user: dict | None) -> list[di
     raise HTTPException(401, "Non connecté — connecte-toi avec Stripe/Shopify ou utilise le mode démo.")
 
 
-def get_records(demo: bool, demo_profile: str, start: str, end: str, user: dict | None, currency: str = None):
+def get_records(demo: bool, demo_profile: str, start: str, end: str, user: dict | None, currency: str = None, include_refunded: bool = False):
     """Fetches and normalizes records, then filters by currency and by the
     date range picker's filter (start/end, both optional "YYYY-MM-DD").
 
@@ -588,13 +588,21 @@ def get_records(demo: bool, demo_profile: str, start: str, end: str, user: dict 
     additionner reviendrait à sommer des unités différentes comme si
     c'était la même, donc on isole toujours une seule devise à la fois
     plutôt que de les mélanger ou de les convertir (pas de taux de change
-    fiable disponible ici)."""
+    fiable disponible ici).
+
+    Les commandes remboursées (flag "refunded", posé par charges_to_records/
+    orders_to_records/generate_demo_records) sont exclues par défaut, comme
+    c'était déjà le cas avant leur introduction — aucune des métriques CA/
+    croissance/RFM ne doit compter un remboursement comme du chiffre
+    d'affaires. Seul /api/refunds a besoin de les voir, via include_refunded."""
     records = get_all_records(demo, demo_profile, user)
 
     available = sorted({r.get("currency", "eur") for r in records}) or ["eur"]
     selected = currency if currency in available else available[0]
 
     records = [r for r in records if r.get("currency", "eur") == selected]
+    if not include_refunded:
+        records = [r for r in records if not r.get("refunded")]
     records = analytics.filter_by_date(records, start, end)
     return records, selected
 
@@ -621,6 +629,30 @@ def growth(demo: bool = False, demo_profile: str = 'growth', start: str = None, 
 def rfm(demo: bool = False, demo_profile: str = 'growth', start: str = None, end: str = None, currency: str = None, user=Depends(get_current_user)):
     records, _ = get_records(demo, demo_profile, start, end, user, currency)
     return analytics.rfm_segments(records)
+
+
+@app.get("/api/ltv")
+def ltv(demo: bool = False, demo_profile: str = 'growth', start: str = None, end: str = None, currency: str = None, user=Depends(get_current_user)):
+    records, _ = get_records(demo, demo_profile, start, end, user, currency)
+    return analytics.ltv_metrics(records)
+
+
+@app.get("/api/churn")
+def churn(demo: bool = False, demo_profile: str = 'growth', start: str = None, end: str = None, currency: str = None, user=Depends(get_current_user)):
+    records, _ = get_records(demo, demo_profile, start, end, user, currency)
+    return {"monthly": analytics.monthly_churn(records)}
+
+
+@app.get("/api/refunds")
+def refunds(demo: bool = False, demo_profile: str = 'growth', start: str = None, end: str = None, currency: str = None, user=Depends(get_current_user)):
+    records, _ = get_records(demo, demo_profile, start, end, user, currency, include_refunded=True)
+    return analytics.refund_metrics(records)
+
+
+@app.get("/api/waterfall")
+def waterfall(demo: bool = False, demo_profile: str = 'growth', start: str = None, end: str = None, currency: str = None, user=Depends(get_current_user)):
+    records, _ = get_records(demo, demo_profile, start, end, user, currency)
+    return analytics.revenue_waterfall(records) or {}
 
 
 @app.get("/api/cohorts")
