@@ -1,6 +1,9 @@
 import csv
+import hashlib
+import hmac as hmac_lib
 import io
 import os
+import re
 import threading
 import time
 from urllib.parse import urlencode
@@ -16,6 +19,7 @@ import analytics
 import auth
 import db
 import demo_data
+from shopify_metrics import fetch_orders as fetch_shopify_orders, orders_to_records
 from stripe_metrics import (
     charges_to_records,
     compute_metrics_from_records,
@@ -51,9 +55,17 @@ STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 
+# Connexion Shopify : deuxième source de ventes possible en plus de Stripe
+# (une boutique en ligne, avec ses propres commandes). Les commandes Shopify
+# rejoignent les charges Stripe dans get_all_records() — même client final,
+# deux canaux de vente, un seul dashboard.
+SHOPIFY_API_KEY = os.getenv("SHOPIFY_API_KEY")
+SHOPIFY_API_SECRET = os.getenv("SHOPIFY_API_SECRET")
+
 app = FastAPI(title="metrics-dash")
 
 _cache: dict[int, dict] = {}  # user_id -> {"charges": [...], "fetched_at": float}
+_shopify_cache: dict[int, dict] = {}  # user_id -> {"orders": [...], "fetched_at": float}
 CACHE_TTL_SECONDS = 60
 
 # Secteurs proposés à la connexion : Stripe ne fournit aucune info
@@ -110,9 +122,19 @@ def get_current_user(request: Request) -> dict | None:
     if user_id is None:
         return None
     try:
-        return db.get_user(user_id)
+        user = db.get_user(user_id)
     except Exception:
         return None
+    if user is None:
+        return None
+    try:
+        shopify = db.get_shopify_connection(user_id)
+    except Exception:
+        shopify = None
+    if shopify:
+        user["shopify_shop_domain"] = shopify["shop_domain"]
+        user["shopify_access_token"] = shopify["access_token"]
+    return user
 
 
 @app.get("/api/status")
@@ -124,16 +146,22 @@ def status(user: dict | None = Depends(get_current_user)):
             "reason": "Non connecté",
             "connect_configured": bool(STRIPE_CONNECT_CLIENT_ID),
             "google_configured": bool(GOOGLE_CLIENT_ID),
+            "shopify_configured": bool(SHOPIFY_API_KEY),
         }
     stripe_connected = bool(user.get("stripe_user_id"))
+    shopify_connected = bool(user.get("shopify_access_token"))
     return {
         "authenticated": True,
         "email": user.get("email"),
         "name": user.get("name"),
-        "connected": stripe_connected,
+        "connected": stripe_connected or shopify_connected,
+        "stripe_connected": stripe_connected,
         "account": user.get("account_name") or user.get("stripe_user_id"),
+        "shopify_connected": shopify_connected,
+        "shop_domain": user.get("shopify_shop_domain"),
         "sector": user.get("sector"),
         "connect_configured": bool(STRIPE_CONNECT_CLIENT_ID),
+        "shopify_configured": bool(SHOPIFY_API_KEY),
     }
 
 
@@ -336,6 +364,77 @@ def auth_google_callback(request: Request, code: str = None, error: str = None):
     return _session_redirect(user_id)
 
 
+_SHOP_DOMAIN_RE = re.compile(r"^[a-z0-9][a-z0-9-]*\.myshopify\.com$")
+
+
+@app.get("/auth/shopify/login")
+def auth_shopify_login(request: Request, shop: str = None):
+    if not SHOPIFY_API_KEY:
+        raise HTTPException(500, "SHOPIFY_API_KEY non configuré côté serveur")
+    if not get_current_user(request):
+        return RedirectResponse("/?auth_error=login_required_before_shopify")
+    if not shop or not _SHOP_DOMAIN_RE.match(shop):
+        raise HTTPException(400, "Domaine de boutique invalide (attendu : xxx.myshopify.com)")
+
+    redirect_uri = str(request.url_for("auth_shopify_callback")).replace("http://", "https://", 1)
+    params = urlencode(
+        {
+            "client_id": SHOPIFY_API_KEY,
+            # read_orders suffit : on ne fait que lire les commandes pour
+            # les métriques, jamais les modifier.
+            "scope": "read_orders",
+            "redirect_uri": redirect_uri,
+        }
+    )
+    return RedirectResponse(f"https://{shop}/admin/oauth/authorize?{params}")
+
+
+@app.get("/auth/shopify/callback", name="auth_shopify_callback")
+def auth_shopify_callback(request: Request, shop: str = None, code: str = None, hmac: str = None):
+    current_user = get_current_user(request)
+    if not current_user:
+        return RedirectResponse("/?auth_error=login_required_before_shopify")
+    if not code or not shop or not _SHOP_DOMAIN_RE.match(shop):
+        raise HTTPException(400, "Paramètres Shopify manquants ou invalides")
+
+    # Vérifie que la requête vient bien de Shopify : signature HMAC calculée
+    # sur les query params (hors hmac lui-même) avec le secret de l'app,
+    # même principe que la signature webhook Stripe.
+    params = dict(request.query_params)
+    params.pop("hmac", None)
+    message = "&".join(f"{k}={v}" for k, v in sorted(params.items()))
+    expected_hmac = hmac_lib.new(
+        SHOPIFY_API_SECRET.encode(), message.encode(), hashlib.sha256
+    ).hexdigest()
+    if not hmac or not hmac_lib.compare_digest(expected_hmac, hmac):
+        raise HTTPException(400, "Signature Shopify invalide")
+
+    try:
+        token_response = httpx.post(
+            f"https://{shop}/admin/oauth/access_token",
+            json={
+                "client_id": SHOPIFY_API_KEY,
+                "client_secret": SHOPIFY_API_SECRET,
+                "code": code,
+            },
+            timeout=10,
+        )
+        token_response.raise_for_status()
+        access_token = token_response.json()["access_token"]
+    except Exception as exc:
+        print(f"[metrics-dash] Échec de l'échange du code Shopify : {type(exc).__name__}: {exc}")
+        return RedirectResponse("/?auth_error=oauth_failed")
+
+    try:
+        db.link_shopify_connection(current_user["id"], shop, access_token)
+    except Exception as exc:
+        print(f"[metrics-dash] Échec de l'écriture en base D1 : {type(exc).__name__}: {exc}")
+        return RedirectResponse("/?auth_error=db_failed")
+
+    _shopify_cache.pop(current_user["id"], None)
+    return RedirectResponse("/")
+
+
 @app.get("/auth/logout")
 def auth_logout():
     response = RedirectResponse("/")
@@ -393,6 +492,20 @@ async def stripe_webhook(request: Request):
     return {"received": True}
 
 
+def get_shopify_orders_for_user(user: dict) -> list[dict]:
+    """Même logique de cache que get_charges_for_user, côté Shopify."""
+    now = time.time()
+    cached = _shopify_cache.get(user["id"])
+    if cached is not None and now - cached["fetched_at"] < CACHE_TTL_SECONDS:
+        return cached["orders"]
+
+    orders = fetch_shopify_orders(
+        shop_domain=user["shopify_shop_domain"], access_token=user["shopify_access_token"]
+    )
+    _shopify_cache[user["id"]] = {"orders": orders, "fetched_at": now}
+    return orders
+
+
 def get_all_records(demo: bool, user: dict | None) -> list[dict]:
     """Fetches and normalizes every record for this user/demo, toutes devises
     confondues, sans filtre de date — utilisé pour lister les devises
@@ -400,8 +513,17 @@ def get_all_records(demo: bool, user: dict | None) -> list[dict]:
     if demo:
         return demo_data.generate_demo_records()
     if user:
-        return charges_to_records(get_charges_for_user(user))
-    raise HTTPException(401, "Non connecté — connecte-toi avec Stripe ou utilise le mode démo.")
+        records = []
+        if user.get("stripe_access_token"):
+            records.extend(charges_to_records(get_charges_for_user(user)))
+        if user.get("shopify_access_token"):
+            # Deux canaux de vente pour le même business : Stripe (paiements
+            # directs) et Shopify (boutique en ligne) s'additionnent dans le
+            # même chiffre d'affaires plutôt que de s'exclure.
+            records.extend(orders_to_records(get_shopify_orders_for_user(user)))
+        if records:
+            return records
+    raise HTTPException(401, "Non connecté — connecte-toi avec Stripe/Shopify ou utilise le mode démo.")
 
 
 def get_records(demo: bool, start: str, end: str, user: dict | None, currency: str = None):

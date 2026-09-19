@@ -101,6 +101,8 @@ def ensure_schema():
     if not _table_exists("users"):
         query("ALTER TABLE users_v2 RENAME TO users")
 
+    ensure_shopify_table()
+
 
 def _table_exists(name: str) -> bool:
     rows = query(
@@ -197,3 +199,40 @@ def upsert_standalone_stripe_user(
 
 def set_user_sector(user_id: int, sector: str) -> None:
     query("UPDATE stripe_connections SET sector = ? WHERE user_id = ?", [sector, user_id])
+
+
+def ensure_shopify_table():
+    """Table séparée (pas de migration à prévoir, contrairement à
+    stripe_connections/users) : ajoutée après coup, jamais présente dans un
+    ancien schéma."""
+    query(
+        """
+        CREATE TABLE IF NOT EXISTS shopify_connections (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER UNIQUE NOT NULL,
+            shop_domain TEXT NOT NULL,
+            access_token TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+
+
+def get_shopify_connection(user_id: int) -> dict | None:
+    rows = query(
+        "SELECT shop_domain, access_token FROM shopify_connections WHERE user_id = ?", [user_id]
+    )
+    return rows[0] if rows else None
+
+
+def link_shopify_connection(user_id: int, shop_domain: str, access_token: str) -> None:
+    query(
+        """
+        INSERT INTO shopify_connections (user_id, shop_domain, access_token)
+        VALUES (?, ?, ?)
+        ON CONFLICT(user_id) DO UPDATE SET
+            shop_domain = excluded.shop_domain,
+            access_token = excluded.access_token
+        """,
+        [user_id, shop_domain, access_token],
+    )

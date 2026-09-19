@@ -60,6 +60,10 @@
 
   .connections-row { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin: var(--sp-5) 0 var(--sp-4); }
 
+  .shopify-connect { display: inline-flex; align-items: center; gap: var(--sp-2); }
+  .shopify-connect input { font-family: var(--font-sans); font-size: var(--fs-small); color: var(--text-primary); background: var(--surface-2); border: var(--border-w) solid var(--border-strong); border-radius: var(--radius-pill); padding: 6px 12px; width: 200px; }
+  .shopify-connect input::placeholder { color: var(--text-tertiary); }
+
   .toolbar-row { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin: 0 0 var(--sp-6); }
   .stripe-mark { width: 36px; height: 36px; object-fit: contain; flex-shrink: 0; }
   #status.status-pill { padding: 8px 16px; gap: 10px; }
@@ -225,6 +229,7 @@
       Connecter à Power BI
     </button>
     <div id="status" class="status-pill">Connexion à Stripe...</div>
+    <div id="shopifyStatus"></div>
   </div>
 
   <div class="toolbar-row">
@@ -845,7 +850,7 @@ async function loadStatus() {
 
   // Bloc accès aux données (corps de page) : Stripe relié ou non, à côté de Power BI.
   const el = document.getElementById('status');
-  if (data.connected) {
+  if (data.stripe_connected) {
     el.innerHTML = `${stripeIcon}<span class="status-dot"></span>Connecté à Stripe (${data.account})`;
     el.className = 'status-pill';
   } else if (data.connect_configured) {
@@ -854,6 +859,25 @@ async function loadStatus() {
   } else {
     el.innerHTML = `${stripeIcon}<span class="status-dot"></span>Non connecté — utilise le mode démo`;
     el.className = 'status-pill error';
+  }
+
+  // Bloc Shopify (corps de page) : deuxième canal de vente possible, indépendant de Stripe.
+  const shopifyEl = document.getElementById('shopifyStatus');
+  if (data.shopify_connected) {
+    shopifyEl.innerHTML = `<div class="status-pill">🛍️<span class="status-dot"></span>Connecté à Shopify (${data.shop_domain})</div>`;
+  } else if (data.shopify_configured && data.authenticated) {
+    shopifyEl.innerHTML = `
+      <form class="shopify-connect" id="shopifyConnectForm">
+        <input type="text" id="shopifyDomainInput" placeholder="ma-boutique.myshopify.com" pattern="[a-z0-9-]+\\.myshopify\\.com">
+        <button class="powerbi-link" type="submit">🛍️ Connecter Shopify</button>
+      </form>`;
+    document.getElementById('shopifyConnectForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const shop = document.getElementById('shopifyDomainInput').value.trim();
+      if (shop) window.location.href = `/auth/shopify/login?shop=${encodeURIComponent(shop)}`;
+    });
+  } else {
+    shopifyEl.innerHTML = '';
   }
 
   await updateSectorBadge(isDemo() ? localStorage.getItem(DEMO_SECTOR_KEY) : data.sector);
