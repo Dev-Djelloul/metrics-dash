@@ -236,6 +236,7 @@
   .rfm-score-gauge-track { height: 8px; border-radius: 4px; background: var(--surface-3); overflow: hidden; }
   .rfm-score-gauge-fill { height: 100%; border-radius: 4px; background: var(--accent); transition: width .2s ease; }
   #rfmModalTable tbody tr { cursor: pointer; }
+  #rfmModalTable tbody tr.active-row { background: var(--accent-soft); }
 
   .date-range { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-small); color: var(--text-secondary); }
   .date-range input[type="date"] { font-family: var(--font-sans); font-size: var(--fs-small); color: var(--text-primary); background: var(--surface-2); border: var(--border-w) solid var(--border-strong); border-radius: var(--radius-sm); padding: 6px 10px; color-scheme: dark; }
@@ -2133,7 +2134,7 @@ function rfmGauge(labelKey, score) {
     </div>`;
 }
 
-function showRfmDetail(customerName) {
+function showRfmDetail(customerName, row) {
   const r = rfmByCustomer[customerName];
   if (!r) return;
   const detail = document.getElementById('rfmModalDetail');
@@ -2150,6 +2151,14 @@ function showRfmDetail(customerName) {
     <div class="chc-row">${segmentActionDisplay(r.segment)}</div>
   `;
   detail.classList.add('visible');
+
+  // La fiche s'affiche en haut de la modale (avant le tableau) : sans ça,
+  // cliquer une ligne loin dans une longue liste ne montrait aucun
+  // changement visible à l'écran (il fallait remonter la modale à la main).
+  detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  document.querySelectorAll('#rfmModalTable tbody tr').forEach(tr => tr.classList.remove('active-row'));
+  if (row) row.classList.add('active-row');
 }
 
 document.getElementById('rfmExpandBtn').addEventListener('click', openRfmModal);
@@ -2158,7 +2167,7 @@ rfmModal.addEventListener('click', (e) => { if (e.target === rfmModal) closeRfmM
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !rfmModal.hidden) closeRfmModal(); });
 document.querySelector('#rfmModalTable tbody').addEventListener('click', (e) => {
   const row = e.target.closest('tr[data-customer]');
-  if (row) showRfmDetail(row.dataset.customer);
+  if (row) showRfmDetail(row.dataset.customer, row);
 });
 
 function heatBucket(value, max = 100) {
