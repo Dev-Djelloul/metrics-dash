@@ -56,7 +56,7 @@
 
   .google-status:empty { display: none; }
   .google-status .status-pill { padding: 6px 14px; gap: 8px; }
-  .google-mark { width: 18px; height: 18px; flex-shrink: 0; }
+  .google-mark { width: 20px; height: 20px; flex-shrink: 0; }
 
   .connections-row { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin: var(--sp-5) 0 var(--sp-4); }
 
@@ -838,7 +838,7 @@ async function loadStatus() {
     const name = data.name || data.email || 'Connecté';
     googleEl.innerHTML = `<div class="status-pill">${googleIcon}<span class="status-dot"></span>Bonjour ${name}<a class="status-action" href="/auth/logout">Se déconnecter</a></div>`;
   } else if (data.google_configured) {
-    googleEl.innerHTML = `<a class="status-action status-action-primary" href="/auth/google/login">${googleIcon}Se connecter avec Google</a>`;
+    googleEl.innerHTML = `<a class="powerbi-link" href="/auth/google/login">${googleIcon}Se connecter avec Google</a>`;
   } else {
     googleEl.innerHTML = '';
   }
