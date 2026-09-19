@@ -97,7 +97,8 @@
   .conn-chip-text small { font-weight: 400; opacity: .8; }
   .conn-chip-action, .conn-chip-action-btn { color: inherit; font-weight: 700; text-decoration: underline; margin-left: var(--sp-2); background: none; border: none; font-family: inherit; font-size: inherit; cursor: pointer; padding: 0; }
 
-  .conn-chip-connected { background: var(--pos-soft); border-color: var(--pos); color: var(--pos-text); }
+  .conn-chip-connected { background: var(--pos-soft); border-color: var(--pos); color: var(--pos-text); cursor: pointer; }
+  .conn-chip-connected:hover { filter: brightness(1.1); }
   .conn-chip-disconnected { background: var(--surface-1); border-color: var(--border-strong); color: var(--text-secondary); }
   .conn-chip-disconnected:hover { border-color: var(--accent); color: var(--text-primary); }
   .conn-chip-neutral { background: var(--surface-1); border-color: var(--border-strong); color: var(--text-primary); }
@@ -748,7 +749,7 @@ function openProfileModal() {
     </div>
     <p class="explainer">
       <span class="line">Membre depuis le ${memberSince}.</span>
-      <span class="line">Secteur : ${lastStatus.sector || 'non renseigné'}.</span>
+      <span class="line">Secteur : ${lastStatus.sector ? sectorLabelSpan(lastStatus.sector, lastStatus.sector) : 'non renseigné'}.</span>
     </p>
     <p class="explainer">
       ${stripeLine}
@@ -1024,7 +1025,8 @@ async function loadStatus() {
   // texte de tailles différentes.
   const el = document.getElementById('status');
   if (data.stripe_connected) {
-    el.innerHTML = `<div class="conn-chip conn-chip-connected">${stripeIcon}<span class="conn-chip-text">Stripe<br><small>${data.account}</small></span><a class="conn-chip-action" href="/auth/stripe/disconnect">Déconnecter</a></div>`;
+    el.innerHTML = `<div class="conn-chip conn-chip-connected" id="openProfileFromStripe">${stripeIcon}<span class="conn-chip-text">Stripe</span></div>`;
+    document.getElementById('openProfileFromStripe').addEventListener('click', openProfileModal);
   } else if (data.connect_configured) {
     el.innerHTML = `<a class="conn-chip conn-chip-disconnected" href="/auth/login">${stripeIcon}<span class="conn-chip-text">Connecter Stripe</span></a>`;
   } else {
@@ -1034,7 +1036,8 @@ async function loadStatus() {
   // Bloc Shopify (corps de page) : deuxième canal de vente possible, indépendant de Stripe.
   const shopifyEl = document.getElementById('shopifyStatus');
   if (data.shopify_connected) {
-    shopifyEl.innerHTML = `<div class="conn-chip conn-chip-connected">${shopifyIcon}<span class="conn-chip-text">Shopify<br><small>${data.shop_domain}</small></span><a class="conn-chip-action" href="/auth/shopify/disconnect">Déconnecter</a></div>`;
+    shopifyEl.innerHTML = `<div class="conn-chip conn-chip-connected" id="openProfileFromShopify">${shopifyIcon}<span class="conn-chip-text">Shopify</span></div>`;
+    document.getElementById('openProfileFromShopify').addEventListener('click', openProfileModal);
   } else if (data.shopify_configured && data.authenticated) {
     shopifyEl.innerHTML = `
       <form class="conn-chip conn-chip-disconnected shopify-connect" id="shopifyConnectForm">
