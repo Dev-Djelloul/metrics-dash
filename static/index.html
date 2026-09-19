@@ -57,6 +57,7 @@
   .google-status:empty { display: none; }
   .google-status .status-pill { padding: 6px 14px; gap: 8px; }
   .google-mark { width: 20px; height: 20px; flex-shrink: 0; }
+  .shopify-mark { width: 20px; height: 20px; flex-shrink: 0; }
 
   .connections-row { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin: var(--sp-5) 0 var(--sp-4); }
 
@@ -836,6 +837,7 @@ async function loadStatus() {
   const data = await res.json();
   const stripeIcon = '<img class="stripe-mark" src="icons8-stripe-100.png" alt="" aria-hidden="true">';
   const googleIcon = '<img class="google-mark" src="icons8-google-100.png" alt="" aria-hidden="true">';
+  const shopifyIcon = '<img class="shopify-mark" src="icons8-shopify-96.png" alt="" aria-hidden="true">';
 
   // Bloc identité (header) : qui es-tu ? Google en priorité, indépendant de Stripe.
   const googleEl = document.getElementById('googleStatus');
@@ -864,12 +866,12 @@ async function loadStatus() {
   // Bloc Shopify (corps de page) : deuxième canal de vente possible, indépendant de Stripe.
   const shopifyEl = document.getElementById('shopifyStatus');
   if (data.shopify_connected) {
-    shopifyEl.innerHTML = `<div class="status-pill">🛍️<span class="status-dot"></span>Connecté à Shopify (${data.shop_domain})</div>`;
+    shopifyEl.innerHTML = `<div class="status-pill">${shopifyIcon}<span class="status-dot"></span>Connecté à Shopify (${data.shop_domain})</div>`;
   } else if (data.shopify_configured && data.authenticated) {
     shopifyEl.innerHTML = `
       <form class="shopify-connect" id="shopifyConnectForm">
         <input type="text" id="shopifyDomainInput" placeholder="ma-boutique.myshopify.com" pattern="[a-z0-9-]+\\.myshopify\\.com">
-        <button class="powerbi-link" type="submit">🛍️ Connecter Shopify</button>
+        <button class="powerbi-link" type="submit">${shopifyIcon}Connecter Shopify</button>
       </form>`;
     document.getElementById('shopifyConnectForm').addEventListener('submit', (e) => {
       e.preventDefault();
