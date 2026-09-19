@@ -342,7 +342,9 @@
   .export-link.c2 { background: var(--pos-soft); color: var(--pos-text); border-color: var(--pos); }
   .export-link.c3 { background: var(--warn-soft); color: var(--warn-text); border-color: var(--warn); }
   #alertsBanner { display: flex; flex-direction: column; gap: var(--sp-2); margin: 0 0 var(--sp-5); }
-  .alert-item { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: var(--radius-sm); background: var(--warn-soft); color: var(--warn-text); border: var(--border-w) solid var(--warn); font-size: var(--fs-small); font-weight: var(--fw-small); }
+  .alert-item { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: var(--radius-sm); font-size: var(--fs-small); font-weight: var(--fw-small); border: var(--border-w) solid transparent; }
+  .alert-item.alert-warning { background: var(--warn-soft); color: var(--warn-text); border-color: var(--warn); }
+  .alert-item.alert-success { background: var(--pos-soft); color: var(--pos-text); border-color: var(--pos); }
   .export-link.c4 { background: var(--seg-new-soft); color: var(--seg-new); border-color: var(--seg-new); }
 
   /* Popup Power BI */
@@ -967,6 +969,7 @@ const I18N = {
     rfm_gauge_recency: 'Récence', rfm_gauge_frequency: 'Fréquence', rfm_gauge_monetary: 'Montant',
     rfm_detail_last_purchase: 'Dernier achat il y a {days} jours', rfm_detail_frequency: '{count} commandes',
     alert_revenue_drop: 'CA de {month} en baisse de {pct}% vs le mois précédent.',
+    alert_revenue_growth: 'CA de {month} en hausse de {pct}% vs le mois précédent.',
     alert_churn_risk: '{pct}% des clients sont à risque ou perdus ({count}/{total}).',
     auth_err_oauth_failed: 'La connexion à Stripe a échoué (code refusé ou expiré). Réessaie.',
     auth_err_db_failed: "La connexion à Stripe a réussi côté Stripe, mais l'enregistrement a échoué côté serveur. Réessaie dans un instant.",
@@ -1057,6 +1060,7 @@ const I18N = {
     rfm_gauge_recency: 'Recency', rfm_gauge_frequency: 'Frequency', rfm_gauge_monetary: 'Monetary',
     rfm_detail_last_purchase: 'Last purchase {days} days ago', rfm_detail_frequency: '{count} orders',
     alert_revenue_drop: 'Revenue for {month} dropped {pct}% vs the previous month.',
+    alert_revenue_growth: 'Revenue for {month} grew {pct}% vs the previous month.',
     alert_churn_risk: '{pct}% of customers are at risk or lost ({count}/{total}).',
     auth_err_oauth_failed: 'The connection to Stripe failed (code rejected or expired). Please try again.',
     auth_err_db_failed: 'The connection to Stripe succeeded, but saving it failed on our side. Please try again in a moment.',
@@ -2053,21 +2057,32 @@ function formatAlert(a) {
   if (a.type === 'revenue_drop') {
     return t('alert_revenue_drop').replace('{month}', a.month).replace('{pct}', a.pct);
   }
+  if (a.type === 'revenue_growth') {
+    return t('alert_revenue_growth').replace('{month}', a.month).replace('{pct}', a.pct);
+  }
   if (a.type === 'churn_risk') {
     return t('alert_churn_risk').replace('{pct}', a.pct).replace('{count}', a.at_risk_count).replace('{total}', a.total);
   }
   return a.message;
 }
 
+// Un symbole par sévérité, comme les flèches ▲/▼ utilisées ailleurs pour
+// distinguer bonne/mauvaise nouvelle d'un coup d'œil — authErrorMessage
+// (pas d'objet {severity} propre) retombe sur "warning" par défaut.
+const ALERT_ICON = { success: '✅', warning: '⚠️' };
+
 async function loadAlerts() {
   const res = await fetch(apiUrl('/api/alerts'));
   const banner = document.getElementById('alertsBanner');
-  const messages = res.ok ? (await res.json()).alerts.map(formatAlert) : [];
-  if (authErrorMessage) messages.unshift(authErrorMessage);
+  const alerts = res.ok ? (await res.json()).alerts : [];
+  const items = alerts.map(a => ({ severity: a.severity || 'warning', text: formatAlert(a) }));
+  if (authErrorMessage) items.unshift({ severity: 'warning', text: authErrorMessage });
 
-  if (!messages.length) { banner.style.display = 'none'; banner.innerHTML = ''; return; }
+  if (!items.length) { banner.style.display = 'none'; banner.innerHTML = ''; return; }
   banner.style.display = 'flex';
-  banner.innerHTML = messages.map(m => `<div class="alert-item">${m}</div>`).join('');
+  banner.innerHTML = items.map(({ severity, text }) =>
+    `<div class="alert-item alert-${severity}"><span aria-hidden="true">${ALERT_ICON[severity] || ALERT_ICON.warning}</span>${text}</div>`
+  ).join('');
 }
 
 async function loadMrr() {

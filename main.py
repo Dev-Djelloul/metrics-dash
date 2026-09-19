@@ -698,6 +698,20 @@ def alerts(demo: bool = False, demo_profile: str = 'growth', start: str = None, 
                     "message": f"CA de {last['month']} en baisse de {abs(last['mom_growth_pct'])}% vs le mois précédent.",
                 }
             )
+        # Symétrique du déclin ci-dessus : une bonne nouvelle mérite le même
+        # traitement qu'une mauvaise plutôt que de n'alerter que sur les
+        # problèmes — sinon le bandeau n'aurait jamais que de mauvaises
+        # nouvelles à afficher, biaisant la lecture de la santé du business.
+        elif last["mom_growth_pct"] is not None and last["mom_growth_pct"] >= 20:
+            result.append(
+                {
+                    "type": "revenue_growth",
+                    "severity": "success",
+                    "month": last["month"],
+                    "pct": last["mom_growth_pct"],
+                    "message": f"CA de {last['month']} en hausse de {last['mom_growth_pct']}% vs le mois précédent.",
+                }
+            )
 
     rfm_rows = analytics.rfm_segments(records)
     at_risk = [r for r in rfm_rows if "risque" in r["segment"] or "Perdus" in r["segment"]]
