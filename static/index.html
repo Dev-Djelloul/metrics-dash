@@ -160,11 +160,16 @@
 
   .demo-btn { display: inline-flex; align-items: center; gap: var(--sp-2); font-family: var(--font-sans); font-size: var(--fs-small); font-weight: var(--fw-small); color: var(--text-secondary); background: var(--surface-2); border: var(--border-w) solid var(--border-strong); border-radius: var(--radius-pill); padding: 7px 14px 7px 8px; cursor: pointer; transition: var(--transition); }
   /* Badge date + "météo" figurative de la santé commerciale : même gabarit
-     que .demo-btn/#sectorBadge, mais pas cliquable (rien à faire au clic,
-     juste un repère visuel) et l'icône reflète le MoM du dernier mois
+     que .demo-btn/#sectorBadge. Clic → modale détaillant chaque mois
+     (weather_months ci-dessous). L'icône reflète le MoM du dernier mois
      plutôt qu'une vraie météo — pas de dépendance à une API externe. */
-  .weather-badge { cursor: default; font-size: 15px; }
+  .weather-badge { font-size: 15px; }
   .weather-badge #weatherIcon { font-size: 18px; line-height: 1; }
+  .weather-months { display: flex; flex-direction: column; gap: var(--sp-2); max-height: 50vh; overflow-y: auto; }
+  .weather-month-row { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3); background: var(--surface-2); border-radius: var(--radius-sm); }
+  .weather-month-icon { font-size: 22px; flex-shrink: 0; }
+  .weather-month-name { font-weight: 700; color: var(--text-primary); flex-shrink: 0; width: 90px; }
+  .weather-month-detail { color: var(--text-secondary); font-size: var(--fs-small); }
   .demo-btn:hover { border-color: var(--accent); color: var(--text-primary); }
   .demo-btn[data-on="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-text); }
   .demo-btn .demo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-tertiary); transition: var(--transition); }
@@ -482,13 +487,17 @@
       <input type="date" id="dateEnd">
       <button class="btn" id="dateReset" type="button" data-i18n="date_reset">Réinitialiser</button>
     </div>
-    <div class="demo-btn weather-badge" id="weatherBadge" title="">
+    <button class="demo-btn weather-badge" id="weatherBadge" type="button" data-i18n-title="weather_badge_hint" title="Voir le détail">
       <span id="weatherIcon" aria-hidden="true">🌤️</span>
       <span id="weatherDateLabel"></span>
-    </div>
+    </button>
     <button class="demo-btn" id="demoToggle" data-on="false" type="button" aria-pressed="false" title="8 mois de données simulées, pour voir cohortes/tendances/prévision avec du volume" data-i18n-title="demo_toggle_title">
       <span class="demo-dot"></span>
       <span data-i18n="demo_toggle">Mode démo</span>
+    </button>
+    <button class="demo-btn" id="demoProfileBadge" type="button" hidden title="Scénario de données simulées" data-i18n-title="demo_profile_badge_title">
+      <span class="demo-dot"></span>
+      <span id="demoProfileBadgeLabel"></span>
     </button>
     <button class="demo-btn" id="sectorBadge" type="button" title="Secteur d'activité de ces données" data-i18n-title="sector_badge_title">
       <span class="demo-dot"></span>
@@ -805,6 +814,30 @@
     </div>
   </div>
 
+  <!-- Popup scénario de démo -->
+  <div class="modal-overlay" id="demoProfileModal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="demoProfileModalTitle">
+      <button class="modal-close" id="demoProfileModalClose" type="button" aria-label="Fermer">&times;</button>
+      <h3 id="demoProfileModalTitle" data-i18n="demo_profile_modal_title">Quel scénario de démo veux-tu explorer ?</h3>
+      <p class="explainer">
+        <span class="line" data-i18n="demo_profile_modal_p1">Chaque scénario simule une histoire de vente différente sur 8 mois (clients, montants, tendance) — utile pour voir comment le dashboard réagit à un business qui croît, décline ou reste stable.</span>
+      </p>
+      <div class="export-list" id="demoProfileList"></div>
+    </div>
+  </div>
+
+  <!-- Popup détail météo (santé commerciale) -->
+  <div class="modal-overlay" id="weatherModal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="weatherModalTitle">
+      <button class="modal-close" id="weatherModalClose" type="button" aria-label="Fermer">&times;</button>
+      <h3 id="weatherModalTitle" data-i18n="weather_modal_title">Météo de votre activité</h3>
+      <p class="explainer">
+        <span class="line" data-i18n="weather_modal_p1">Une icône par mois, basée sur la variation du CA vs le mois précédent (MoM) — comme un bulletin météo, mais pour la santé commerciale plutôt que le ciel.</span>
+      </p>
+      <div id="weatherModalMonths" class="weather-months"></div>
+    </div>
+  </div>
+
   <!-- Popup profil du compte connecté -->
   <div class="modal-overlay" id="profileModal" hidden>
     <div class="modal-card modal-card-profile" role="dialog" aria-modal="true" aria-labelledby="profileModalTitle">
@@ -891,6 +924,12 @@ const I18N = {
     weather_cloudy: 'CA en légère baisse ce mois-ci ({pct}% vs le mois précédent).',
     weather_stormy: 'CA en forte baisse ce mois-ci ({pct}% vs le mois précédent).',
     weather_unknown: 'Pas encore assez de mois de données pour évaluer la tendance.',
+    weather_badge_hint: 'Voir le détail mois par mois',
+    weather_modal_title: 'Météo de votre activité',
+    weather_modal_p1: 'Une icône par mois, basée sur la variation du CA vs le mois précédent (MoM) — comme un bulletin météo, mais pour la santé commerciale plutôt que le ciel.',
+    demo_profile_badge_title: 'Scénario de données simulées',
+    demo_profile_modal_title: 'Quel scénario de démo veux-tu explorer ?',
+    demo_profile_modal_p1: 'Chaque scénario simule une histoire de vente différente sur 8 mois (clients, montants, tendance) — utile pour voir comment le dashboard réagit à un business qui croît, décline ou reste stable.',
     kpi_ltv: 'LTV moyen (valeur vie client)', kpi_delay: 'Délai moyen entre 2 achats',
     kpi_atrisk: 'Clients à risque / perdus', kpi_repeat: 'Taux de clients récurrents',
     kpi_active_subs: 'Abonnements actifs',
@@ -975,6 +1014,12 @@ const I18N = {
     weather_cloudy: 'Revenue slightly down this month ({pct}% vs the previous month).',
     weather_stormy: 'Revenue sharply down this month ({pct}% vs the previous month).',
     weather_unknown: 'Not enough months of data yet to read the trend.',
+    weather_badge_hint: 'See the month-by-month detail',
+    weather_modal_title: 'Your business weather',
+    weather_modal_p1: 'One icon per month, based on revenue change vs the previous month (MoM) — like a weather forecast, but for business health instead of the sky.',
+    demo_profile_badge_title: 'Simulated data scenario',
+    demo_profile_modal_title: 'Which demo scenario do you want to explore?',
+    demo_profile_modal_p1: 'Each scenario simulates a different 8-month sales story (customers, amounts, trend) — useful to see how the dashboard reacts to a growing, declining or stable business.',
     kpi_ltv: 'Average LTV (lifetime value)', kpi_delay: 'Average time between purchases',
     kpi_atrisk: 'At-risk / lost customers', kpi_repeat: 'Repeat customer rate',
     kpi_active_subs: 'Active subscriptions',
@@ -1358,9 +1403,14 @@ function isDemo() {
   return document.getElementById('demoToggle').getAttribute('data-on') === 'true';
 }
 
+const DEMO_PROFILE_KEY = 'metrics-dash-demo-profile';
+
 function apiUrl(path) {
   const params = new URLSearchParams();
-  if (isDemo()) params.set('demo', 'true');
+  if (isDemo()) {
+    params.set('demo', 'true');
+    params.set('demo_profile', localStorage.getItem(DEMO_PROFILE_KEY) || 'growth');
+  }
   const start = document.getElementById('dateStart').value;
   const end = document.getElementById('dateEnd').value;
   if (start) params.set('start', start);
@@ -1408,8 +1458,67 @@ document.getElementById('demoToggle').addEventListener('click', async (e) => {
   const next = btn.getAttribute('data-on') !== 'true';
   btn.setAttribute('data-on', String(next));
   btn.setAttribute('aria-pressed', String(next));
+  updateDemoProfileBadge();
   const connected = await loadStatus();
   if (connected || next) await loadAll();
+});
+
+/* --- Sélecteur de scénario de démo : n'a de sens qu'en mode démo (visible
+   seulement dans ce cas), stocké en localStorage (pas de compte réel à
+   rattacher), même pattern que le secteur d'activité en mode démo. --- */
+let demoProfilesCache = null;
+
+async function getDemoProfiles() {
+  if (demoProfilesCache) return demoProfilesCache;
+  const res = await fetch('/api/demo-profiles');
+  const data = await res.json();
+  demoProfilesCache = data.profiles;
+  return demoProfilesCache;
+}
+
+function currentDemoProfile() {
+  return localStorage.getItem(DEMO_PROFILE_KEY) || 'growth';
+}
+
+async function updateDemoProfileBadge() {
+  const badge = document.getElementById('demoProfileBadge');
+  if (!isDemo()) { badge.hidden = true; return; }
+  badge.hidden = false;
+  const profiles = await getDemoProfiles();
+  const lang = localStorage.getItem('lang') === 'en' ? 'label_en' : 'label_fr';
+  const active = profiles.find(p => p.key === currentDemoProfile()) || profiles[0];
+  document.getElementById('demoProfileBadgeLabel').textContent = active ? active[lang] : '';
+}
+
+const demoProfileModal = document.getElementById('demoProfileModal');
+function openDemoProfileModal() { demoProfileModal.hidden = false; }
+function closeDemoProfileModal() { demoProfileModal.hidden = true; }
+document.getElementById('demoProfileModalClose').addEventListener('click', closeDemoProfileModal);
+demoProfileModal.addEventListener('click', (e) => { if (e.target === demoProfileModal) closeDemoProfileModal(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !demoProfileModal.hidden) closeDemoProfileModal(); });
+
+async function renderDemoProfileList() {
+  const profiles = await getDemoProfiles();
+  const lang = localStorage.getItem('lang') === 'en' ? 'label_en' : 'label_fr';
+  const current = currentDemoProfile();
+  const list = document.getElementById('demoProfileList');
+  list.innerHTML = profiles.map((p, i) => {
+    const cls = 'export-link c' + ((i % 4) + 1) + (p.key === current ? ' active' : '');
+    return `<button class="${cls}" type="button" data-profile="${p.key}">${p[lang]}</button>`;
+  }).join('');
+  list.querySelectorAll('[data-profile]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      localStorage.setItem(DEMO_PROFILE_KEY, btn.dataset.profile);
+      await updateDemoProfileBadge();
+      closeDemoProfileModal();
+      await loadAll();
+    });
+  });
+}
+
+document.getElementById('demoProfileBadge').addEventListener('click', async () => {
+  await renderDemoProfileList();
+  openDemoProfileModal();
 });
 
 function activateTab(name) {
@@ -1490,6 +1599,7 @@ async function loadStatus() {
   }
 
   await updateSectorBadge(isDemo() ? localStorage.getItem(DEMO_SECTOR_KEY) : data.sector);
+  await updateDemoProfileBadge();
   return data.connected;
 }
 
@@ -1982,22 +2092,47 @@ function updateWeatherDate() {
     new Date().toLocaleDateString(dateLang, { weekday: 'long', day: 'numeric', month: 'long' });
 }
 
-function updateWeatherIcon(momGrowthPct) {
-  const icon = document.getElementById('weatherIcon');
-  const badge = document.getElementById('weatherBadge');
-  if (momGrowthPct === null || momGrowthPct === undefined) {
-    icon.textContent = '🌫️';
-    badge.title = t('weather_unknown');
-    return;
-  }
-  let icon_, key;
-  if (momGrowthPct >= 10) { icon_ = '☀️'; key = 'weather_sunny'; }
-  else if (momGrowthPct >= 0) { icon_ = '🌤️'; key = 'weather_partly'; }
-  else if (momGrowthPct >= -10) { icon_ = '⛅'; key = 'weather_cloudy'; }
-  else { icon_ = '⛈️'; key = 'weather_stormy'; }
-  icon.textContent = icon_;
-  badge.title = t(key).replace('{pct}', momGrowthPct);
+// {icon, key} pour un MoM donné — factorisé pour être utilisé à la fois par
+// le badge (dernier mois) et la modale de détail (tous les mois du tableau).
+function weatherFor(momGrowthPct) {
+  if (momGrowthPct === null || momGrowthPct === undefined) return { icon: '🌫️', key: 'weather_unknown' };
+  if (momGrowthPct >= 10) return { icon: '☀️', key: 'weather_sunny' };
+  if (momGrowthPct >= 0) return { icon: '🌤️', key: 'weather_partly' };
+  if (momGrowthPct >= -10) return { icon: '⛅', key: 'weather_cloudy' };
+  return { icon: '⛈️', key: 'weather_stormy' };
 }
+
+function updateWeatherIcon(momGrowthPct) {
+  const { icon, key } = weatherFor(momGrowthPct);
+  document.getElementById('weatherIcon').textContent = icon;
+  document.getElementById('weatherBadge').title = key === 'weather_unknown'
+    ? t('weather_unknown')
+    : t(key).replace('{pct}', momGrowthPct);
+}
+
+// Rempli par loadGrowth(), lu par la modale météo au clic sur le badge —
+// évite un second appel réseau pour afficher le détail mois par mois.
+let growthMonthlyCache = [];
+
+const weatherModal = document.getElementById('weatherModal');
+function openWeatherModal() {
+  document.getElementById('weatherModalMonths').innerHTML = growthMonthlyCache.map(m => {
+    const { icon, key } = weatherFor(m.mom_growth_pct);
+    const detail = key === 'weather_unknown' ? t('weather_unknown') : t(key).replace('{pct}', m.mom_growth_pct);
+    return `
+      <div class="weather-month-row">
+        <span class="weather-month-icon" aria-hidden="true">${icon}</span>
+        <span class="weather-month-name">${m.month}</span>
+        <span class="weather-month-detail">${detail}</span>
+      </div>`;
+  }).join('') || `<p class="explainer">${t('weather_unknown')}</p>`;
+  weatherModal.hidden = false;
+}
+function closeWeatherModal() { weatherModal.hidden = true; }
+document.getElementById('weatherBadge').addEventListener('click', openWeatherModal);
+document.getElementById('weatherModalClose').addEventListener('click', closeWeatherModal);
+weatherModal.addEventListener('click', (e) => { if (e.target === weatherModal) closeWeatherModal(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !weatherModal.hidden) closeWeatherModal(); });
 
 updateWeatherDate();
 
@@ -2010,6 +2145,7 @@ async function loadGrowth() {
     `<tr><td>${m.month}</td><td class="num">${fmtMoney(m.revenue)}</td><td class="num">${growthArrow(m.mom_growth_pct)}</td><td class="num">${growthArrow(m.yoy_growth_pct)}</td></tr>`
   ).join('');
 
+  growthMonthlyCache = g.monthly;
   const lastMonth = g.monthly[g.monthly.length - 1];
   updateWeatherIcon(lastMonth ? lastMonth.mom_growth_pct : null);
 
