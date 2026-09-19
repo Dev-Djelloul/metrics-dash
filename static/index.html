@@ -226,6 +226,11 @@
   .rfm-score-gauge-label { font-size: var(--fs-small); color: var(--text-secondary); margin-bottom: 4px; display: flex; justify-content: space-between; }
   .rfm-score-gauge-track { height: 8px; border-radius: 4px; background: var(--surface-3); overflow: hidden; }
   .rfm-score-gauge-fill { height: 100%; border-radius: 4px; background: var(--accent); transition: width .2s ease; }
+
+  /* Carte "Période des ventes" : une plage de dates ("19 févr. 2025 – 28
+     mars 2026") ne tient pas à --fs-kpi (38px, pensé pour un chiffre court)
+     sans déborder de la carte — réduite spécifiquement pour ce cas. */
+  .kpi-value-sm { font-size: var(--fs-h2); font-variant-numeric: normal; }
   #rfmTable tbody tr.active-row { background: var(--accent-soft); }
 
   .date-range { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-small); color: var(--text-secondary); }
@@ -870,7 +875,7 @@ const I18N = {
     sector_modal_title: "Quel est ton secteur d'activité ?",
     sector_modal_p1: "Stripe ne transmet aucune info sur ton activité (une transaction, c'est juste un montant, un client, une date) — cette info sert uniquement à situer tes métriques dans leur contexte.",
     profile_modal_title: 'Mon profil',
-    kpi_revenue: "Chiffre d'affaires", kpi_orders: 'Commandes', kpi_aov: 'Panier moyen',
+    kpi_revenue: "Chiffre d'affaires", kpi_orders: 'Commandes', kpi_aov: 'Panier moyen', kpi_period: 'Période des ventes',
     kpi_ltv: 'LTV moyen (valeur vie client)', kpi_delay: 'Délai moyen entre 2 achats',
     kpi_atrisk: 'Clients à risque / perdus', kpi_repeat: 'Taux de clients récurrents',
     kpi_active_subs: 'Abonnements actifs',
@@ -949,7 +954,7 @@ const I18N = {
     sector_modal_title: "What's your business sector?",
     sector_modal_p1: "Stripe doesn't send any info about your activity (a transaction is just an amount, a customer, a date) — this info is only used to put your metrics in context.",
     profile_modal_title: 'My profile',
-    kpi_revenue: 'Revenue', kpi_orders: 'Orders', kpi_aov: 'Average order value',
+    kpi_revenue: 'Revenue', kpi_orders: 'Orders', kpi_aov: 'Average order value', kpi_period: 'Sales period',
     kpi_ltv: 'Average LTV (lifetime value)', kpi_delay: 'Average time between purchases',
     kpi_atrisk: 'At-risk / lost customers', kpi_repeat: 'Repeat customer rate',
     kpi_active_subs: 'Active subscriptions',
@@ -1482,9 +1487,9 @@ function benchmarkDelta(value, benchmarkValue, direction, label) {
   };
 }
 
-function card(label, value, sub) {
+function card(label, value, sub, valueClass) {
   const subHtml = sub ? `<div class="kpi-delta ${sub.cls}">${sub.text}</div>` : '';
-  return `<div class="card kpi-card"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div>${subHtml}</div>`;
+  return `<div class="card kpi-card"><div class="kpi-label">${label}</div><div class="kpi-value${valueClass ? ' ' + valueClass : ''}">${value}</div>${subHtml}</div>`;
 }
 
 // Devise résolue une fois par /api/metrics (seule route qui la renvoie),
@@ -1504,6 +1509,22 @@ function moneyTooltip(ctx) {
   return value === null || value === undefined ? label : `${label}: ${fmtMoney(value)}`;
 }
 
+// Première/dernière vente de la période affichée (revient en KPI plutôt que
+// dans le date range picker, qui montre les bornes du FILTRE demandé — pas
+// forcément les mêmes dates que les ventes réellement présentes dedans).
+function formatPeriodRange(startStr, endStr) {
+  if (!startStr || !endStr) return '—';
+  const dateLang = localStorage.getItem('lang') === 'en' ? 'en-US' : 'fr-FR';
+  const opts = { day: 'numeric', month: 'short' };
+  const start = new Date(startStr + 'T00:00:00Z');
+  const end = new Date(endStr + 'T00:00:00Z');
+  if (startStr === endStr) return start.toLocaleDateString(dateLang, { ...opts, year: 'numeric' });
+  const sameYear = start.getUTCFullYear() === end.getUTCFullYear();
+  const startLabel = start.toLocaleDateString(dateLang, sameYear ? opts : { ...opts, year: 'numeric' });
+  const endLabel = end.toLocaleDateString(dateLang, { ...opts, year: 'numeric' });
+  return `${startLabel} – ${endLabel}`;
+}
+
 async function loadOverview() {
   const res = await fetch(apiUrl('/api/metrics'));
   if (!res.ok) return;
@@ -1513,7 +1534,8 @@ async function loadOverview() {
   document.getElementById('cards').innerHTML =
     card(t('kpi_revenue'), fmtMoney(m.total_revenue)) +
     card(t('kpi_orders'), m.order_count) +
-    card(t('kpi_aov'), fmtMoney(m.avg_order_value));
+    card(t('kpi_aov'), fmtMoney(m.avg_order_value)) +
+    card(t('kpi_period'), formatPeriodRange(m.period_start, m.period_end), null, 'kpi-value-sm');
 
   destroyChart('revenue');
   charts.revenue = new Chart(document.getElementById('revenueChart'), {

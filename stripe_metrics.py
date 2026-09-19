@@ -39,6 +39,8 @@ def compute_metrics_from_records(records, currency="eur"):
             "total_revenue": 0,
             "order_count": 0,
             "avg_order_value": 0,
+            "period_start": None,
+            "period_end": None,
             "currency": currency,
             "revenue_by_day": [],
             "top_customers": [],
@@ -81,10 +83,18 @@ def compute_metrics_from_records(records, currency="eur"):
         reverse=True,
     )[:5]
 
+    # Première et dernière vente de la période affichée (pas forcément les
+    # bornes du date range picker : en mode démo/sans filtre, ce sont les
+    # dates réelles couvertes par les données générées/récupérées).
+    period_start = min(r["created"] for r in records).strftime("%Y-%m-%d")
+    period_end = max(r["created"] for r in records).strftime("%Y-%m-%d")
+
     return {
         "total_revenue": round(total, 2),
         "order_count": order_count,
         "avg_order_value": round(total / order_count, 2),
+        "period_start": period_start,
+        "period_end": period_end,
         "currency": currency,
         "revenue_by_day": revenue_by_day,
         "top_customers": top_customers,
