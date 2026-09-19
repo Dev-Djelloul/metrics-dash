@@ -205,6 +205,12 @@
   }
   .rfm-filter-badge button:hover { background: rgba(0,0,0,.15); }
   #geoTable tbody tr { cursor: pointer; }
+  /* 5 colonnes (Pays/Clients/CA/Panier moyen/Part du CA) dans une carte
+     étroite : sans ça, les montants et les en-têtes sur 2 mots (Panier
+     moyen, Part du CA) passaient à la ligne et débordaient verticalement. */
+  #geoTable { font-size: var(--fs-small); }
+  #geoTable th, #geoTable td { white-space: nowrap; padding-left: var(--sp-2); padding-right: var(--sp-2); }
+  #geoTable th:first-child, #geoTable td:first-child { padding-left: var(--sp-4); }
 
   /* Fiche client affichée au clic sur une ligne du tableau RFM, directement
      dans la carte (juste au-dessus du tableau, id="rfmDetail") plutôt que
@@ -512,10 +518,12 @@
       </div>
       <div class="card chart-box">
         <h3 data-i18n="h3_1">Détail par pays</h3>
-        <table class="data" id="geoTable">
-          <thead><tr><th data-i18n="th_country">Pays</th><th class="num" data-i18n="th_customers">Clients</th><th class="num" data-i18n="th_revenue">CA</th><th class="num" data-i18n="th_aov">Panier moyen</th><th class="num" data-i18n="th_share">Part du CA</th></tr></thead>
-          <tbody></tbody>
-        </table>
+        <div class="scroll" style="overflow-x:auto;">
+          <table class="data" id="geoTable">
+            <thead><tr><th data-i18n="th_country">Pays</th><th class="num" data-i18n="th_customers">Clients</th><th class="num" data-i18n="th_revenue">CA</th><th class="num" data-i18n="th_aov">Panier moyen</th><th class="num" data-i18n="th_share">Part du CA</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
         <p class="explainer" id="geoUnknownNote" style="display:none; margin: var(--sp-4) 0 0;"></p>
       </div>
     </div>
