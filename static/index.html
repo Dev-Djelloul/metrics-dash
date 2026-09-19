@@ -76,6 +76,8 @@
   .login-gate-card .explainer { text-align: left; }
   .login-gate-btn { font-size: var(--fs-body); padding: 12px 22px 12px 14px; margin-top: var(--sp-2); }
   .login-gate-btn .google-mark { width: 22px; height: 22px; }
+  .login-gate-icons { display: flex; align-items: center; gap: var(--sp-4); }
+  .login-gate-icons img { width: 28px; height: 28px; object-fit: contain; opacity: .85; }
   #gateError { color: var(--neg-text, #f87171); font-size: var(--fs-small); }
 
   .shopify-connect { display: inline-flex; align-items: center; gap: var(--sp-2); }
@@ -257,6 +259,11 @@
         <span class="line">• ou explorer metrics-dash en mode démo, avec des données simulées.</span>
         <span class="line">Vos données d'analyse restent distinctes de votre compte de connexion.</span>
       </p>
+      <div class="login-gate-icons" aria-hidden="true">
+        <img src="icons8-google-100.png" alt="">
+        <img src="icons8-shopify-96.png" alt="">
+        <img src="icons8-power-bi-2021-96.png" alt="">
+      </div>
       <a class="powerbi-link login-gate-btn" id="gateGoogleLink" href="/auth/google/login">
         <img class="google-mark" src="icons8-google-100.png" alt="" aria-hidden="true">
         Se connecter avec Google
