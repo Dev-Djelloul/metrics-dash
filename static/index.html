@@ -897,7 +897,7 @@ async function loadStatus() {
   // Bloc accès aux données (corps de page) : Stripe relié ou non, à côté de Power BI.
   const el = document.getElementById('status');
   if (data.stripe_connected) {
-    el.innerHTML = `${stripeIcon}<span class="status-dot"></span>Connecté à Stripe (${data.account})`;
+    el.innerHTML = `${stripeIcon}<span class="status-dot"></span>Connecté à Stripe (${data.account})<a class="status-action" href="/auth/stripe/disconnect">Déconnecter</a>`;
     el.className = 'status-pill';
   } else if (data.connect_configured) {
     el.innerHTML = `${stripeIcon}<a class="status-action status-action-primary" href="/auth/login">Connecter Stripe</a>`;
@@ -910,7 +910,7 @@ async function loadStatus() {
   // Bloc Shopify (corps de page) : deuxième canal de vente possible, indépendant de Stripe.
   const shopifyEl = document.getElementById('shopifyStatus');
   if (data.shopify_connected) {
-    shopifyEl.innerHTML = `<div class="status-pill">${shopifyIcon}<span class="status-dot"></span>Connecté à Shopify (${data.shop_domain})</div>`;
+    shopifyEl.innerHTML = `<div class="status-pill">${shopifyIcon}<span class="status-dot"></span>Connecté à Shopify (${data.shop_domain})<a class="status-action" href="/auth/shopify/disconnect">Déconnecter</a></div>`;
   } else if (data.shopify_configured && data.authenticated) {
     shopifyEl.innerHTML = `
       <form class="shopify-connect" id="shopifyConnectForm">

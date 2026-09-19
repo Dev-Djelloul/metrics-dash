@@ -219,6 +219,16 @@ def set_user_sector(user_id: int, sector: str) -> None:
     query("UPDATE stripe_connections SET sector = ? WHERE user_id = ?", [sector, user_id])
 
 
+def unlink_stripe_connection(user_id: int) -> None:
+    """Déconnecte Stripe sans toucher à l'identité Google ni à Shopify —
+    permet de tester/reconnecter une source indépendamment de l'autre."""
+    query("DELETE FROM stripe_connections WHERE user_id = ?", [user_id])
+
+
+def unlink_shopify_connection(user_id: int) -> None:
+    query("DELETE FROM shopify_connections WHERE user_id = ?", [user_id])
+
+
 def ensure_shopify_table():
     """Table séparée (pas de migration à prévoir, contrairement à
     stripe_connections/users) : ajoutée après coup, jamais présente dans un

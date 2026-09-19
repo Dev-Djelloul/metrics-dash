@@ -450,6 +450,24 @@ def auth_logout():
     return response
 
 
+@app.get("/auth/stripe/disconnect")
+def auth_stripe_disconnect(request: Request, user: dict | None = Depends(get_current_user)):
+    """Déconnecte Stripe seul, en gardant l'identité Google et Shopify
+    intactes — utile pour retester une connexion sans tout recommencer."""
+    if user:
+        db.unlink_stripe_connection(user["id"])
+        _cache.pop(user["id"], None)
+    return RedirectResponse("/")
+
+
+@app.get("/auth/shopify/disconnect")
+def auth_shopify_disconnect(request: Request, user: dict | None = Depends(get_current_user)):
+    if user:
+        db.unlink_shopify_connection(user["id"])
+        _shopify_cache.pop(user["id"], None)
+    return RedirectResponse("/")
+
+
 def get_charges_for_user(user: dict):
     """Fetches charges for one logged-in user, cached briefly per user to
     avoid hammering Stripe every time that user reloads a tab. Le webhook
@@ -522,13 +540,23 @@ def get_all_records(demo: bool, user: dict | None) -> list[dict]:
         return demo_data.generate_demo_records()
     if user:
         records = []
+        # Chaque source est indépendante : si l'une échoue (jeton révoqué,
+        # boutique injoignable...), ça ne doit jamais faire planter les
+        # autres — avant, une seule source en erreur cassait tout /api/metrics,
+        # y compris les données de la source qui fonctionnait.
         if user.get("stripe_access_token"):
-            records.extend(charges_to_records(get_charges_for_user(user)))
+            try:
+                records.extend(charges_to_records(get_charges_for_user(user)))
+            except Exception as exc:
+                print(f"[metrics-dash] Échec de récupération Stripe : {type(exc).__name__}: {exc}")
         if user.get("shopify_access_token"):
             # Deux canaux de vente pour le même business : Stripe (paiements
             # directs) et Shopify (boutique en ligne) s'additionnent dans le
             # même chiffre d'affaires plutôt que de s'exclure.
-            records.extend(orders_to_records(get_shopify_orders_for_user(user)))
+            try:
+                records.extend(orders_to_records(get_shopify_orders_for_user(user)))
+            except Exception as exc:
+                print(f"[metrics-dash] Échec de récupération Shopify : {type(exc).__name__}: {exc}")
         if records:
             return records
     raise HTTPException(401, "Non connecté — connecte-toi avec Stripe/Shopify ou utilise le mode démo.")
