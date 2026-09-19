@@ -346,8 +346,9 @@
   /* Action marketing suggérée : phrase complète, pas une valeur courte —
      empilée sous son libellé (comme les autres .chc-row, mais verticalement)
      plutôt qu'alignée à droite, pour rester lisible sans se couper. */
-  .rfm-detail-panel .chc-action { flex-direction: column; align-items: flex-start; gap: 4px; }
-  .rfm-detail-panel .chc-action b { font-weight: 400; }
+  .rfm-detail-panel .chc-action { align-items: flex-start; gap: var(--sp-3); }
+  .rfm-detail-panel .chc-action span { flex-shrink: 0; }
+  .rfm-detail-panel .chc-action b { font-weight: 400; text-align: right; color: var(--accent-text); }
   #customersTable .hoverable-row, #rfmTable .hoverable-row { cursor: pointer; }
 
   @media (max-width: 640px) {
