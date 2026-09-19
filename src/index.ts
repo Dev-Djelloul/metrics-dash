@@ -10,6 +10,8 @@ interface Env {
   CF_D1_DATABASE_ID: string;
   GOOGLE_CLIENT_ID: string;
   GOOGLE_CLIENT_SECRET: string;
+  SHOPIFY_API_KEY: string;
+  SHOPIFY_API_SECRET: string;
 }
 
 // Le Worker ne fait que router les requêtes vers le conteneur Docker
@@ -27,6 +29,8 @@ export class MetricsDashContainer extends Container<Env> {
     CF_D1_DATABASE_ID: this.env.CF_D1_DATABASE_ID ?? "",
     GOOGLE_CLIENT_ID: this.env.GOOGLE_CLIENT_ID ?? "",
     GOOGLE_CLIENT_SECRET: this.env.GOOGLE_CLIENT_SECRET ?? "",
+    SHOPIFY_API_KEY: this.env.SHOPIFY_API_KEY ?? "",
+    SHOPIFY_API_SECRET: this.env.SHOPIFY_API_SECRET ?? "",
   };
 }
 
