@@ -399,6 +399,19 @@
   .rfm-detail-panel .chc-action b { font-weight: 400; text-align: right; color: var(--accent-text); }
   #customersTable .hoverable-row, #rfmTable .hoverable-row, #monthlyTable .hoverable-row { cursor: pointer; }
 
+  /* Code couleur des cartes au survol (Top clients / CA mensuel) : un
+     petit point coloré avant chaque nom de client, qui tourne sur les 4
+     mêmes couleurs que les puces de la page de connexion (sector-label-c1
+     à c4) — repère visuel rapide du rang, cohérent avec le reste du site
+     plutôt qu'une nouvelle palette. */
+  .chc-rank-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; flex-shrink: 0; }
+  .chc-rank-dot.c1 { background: var(--accent-text); }
+  .chc-rank-dot.c2 { background: var(--pos-text); }
+  .chc-rank-dot.c3 { background: var(--warn-text); }
+  .chc-rank-dot.c4 { background: var(--seg-new); }
+  .customer-hover-card .chc-row .chc-name-cell { display: flex; align-items: center; min-width: 0; }
+  .customer-hover-card .chc-row .chc-name-cell span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
   @media (max-width: 640px) {
     .modal-card-profile { flex-direction: column; max-height: 90vh; overflow-y: auto; }
     .profile-modal-banner { flex-basis: 140px; }
@@ -1749,8 +1762,8 @@ function showCustomerHoverCard(row) {
 
   customerHoverCard.innerHTML = `
     <div class="chc-name">${escapeHtml(name)}</div>
-    <div class="chc-row"><span>${t('kpi_revenue')}</span><b>${fmtMoney(c.amount)}</b></div>
-    <div class="chc-row"><span>${t('hover_share')}</span><b>${c.share_pct}%</b></div>
+    <div class="chc-row"><span>${t('kpi_revenue')}</span><b style="color:var(--pos-text)">${fmtMoney(c.amount)}</b></div>
+    <div class="chc-row"><span>${t('hover_share')}</span><b style="color:var(${concentrationColorVar(c.share_pct)})">${c.share_pct}%</b></div>
     <div class="chc-row"><span>${t('hover_orders')}</span><b>${c.order_count}</b></div>
     <div class="chc-row"><span>${t('hover_last_purchase')}</span><b>${lastPurchase}</b></div>
     <div class="chc-row">${segmentHtml}</div>
@@ -1798,12 +1811,12 @@ function showMonthHoverCard(row) {
   if (!m) return;
   const customers = m.top_customers || [];
   const rowsHtml = customers.length
-    ? customers.map(c => `<div class="chc-row"><span>${escapeHtml(c.name)}</span><b>${fmtMoney(c.amount)}</b></div>`).join('')
+    ? customers.map((c, i) => `<div class="chc-row"><span class="chc-name-cell"><span class="chc-rank-dot ${RANK_DOT_CLASSES[i % RANK_DOT_CLASSES.length]}"></span><span>${escapeHtml(c.name)}</span></span><b style="color:var(--pos-text)">${fmtMoney(c.amount)}</b></div>`).join('')
     : `<div class="chc-row"><span style="color:var(--text-tertiary)">${t('hover_no_data')}</span></div>`;
 
   monthHoverCard.innerHTML = `
     <div class="chc-name">${escapeHtml(m.month)}</div>
-    <div class="chc-row"><span>${t('hover_month_customers')}</span><b>${m.customer_count}</b></div>
+    <div class="chc-row"><span>${t('hover_month_customers')}</span><b style="color:var(--accent-text)">${m.customer_count}</b></div>
     ${rowsHtml}
   `;
 
@@ -2411,6 +2424,19 @@ function rfmGauge(labelKey, score, colorVar) {
 // Fraîcheur du dernier achat : vert si récent, orange si ça date un peu,
 // rouge si ça fait longtemps — même logique de lecture rapide que les
 // jauges, appliquée à une donnée qui n'était jusqu'ici qu'un chiffre brut.
+// Code couleur de la part du CA d'un client (carte Top clients) : plus un
+// client pèse lourd dans le CA, plus la dépendance à ce client est un
+// risque de concentration à surveiller — même logique pos/warn/neg que le
+// reste du site (croissance, récence RFM), juste appliquée à un autre
+// indicateur.
+function concentrationColorVar(sharePct) {
+  if (sharePct <= 15) return '--pos-text';
+  if (sharePct <= 30) return '--warn-text';
+  return '--neg-text';
+}
+
+const RANK_DOT_CLASSES = ['c1', 'c2', 'c3', 'c4'];
+
 function recencyColorVar(days) {
   if (days <= 30) return '--pos-text';
   if (days <= 90) return '--warn-text';
