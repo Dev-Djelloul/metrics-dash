@@ -10,8 +10,6 @@ Produces the same record shape as stripe_metrics.charges_to_records():
 import random
 from datetime import datetime, timedelta, timezone
 
-random.seed(7)
-
 MONTHS_OF_HISTORY = 8
 CUSTOMER_NAMES = [
     "Alice Martin", "Bruno Bernard", "Chloé Dubois", "David Petit", "Emma Robert",
@@ -29,8 +27,8 @@ COUNTRY_WEIGHTS = [
 ]
 
 
-def _pick_country():
-    r = random.random()
+def _pick_country(rng):
+    r = rng.random()
     cumulative = 0
     for code, weight in COUNTRY_WEIGHTS:
         cumulative += weight
@@ -39,10 +37,10 @@ def _pick_country():
     return COUNTRY_WEIGHTS[-1][0]
 
 
-def _customer_profile(name):
+def _customer_profile(rng):
     """Assigns each customer a behavior archetype so the dataset produces
     realistic segments once RFM/cohorts run on it."""
-    roll = random.random()
+    roll = rng.random()
     if roll < 0.15:
         return {"type": "champion", "monthly_orders": (2, 4), "amount_range": (40, 150)}
     if roll < 0.40:
@@ -53,17 +51,27 @@ def _customer_profile(name):
 
 
 def generate_demo_records(months=MONTHS_OF_HISTORY):
+    # Instance locale plutôt que le module `random` global : celui-ci garde
+    # un état partagé par tout le process, donc avec un seed posé une seule
+    # fois à l'import, seul le tout premier appel après démarrage du serveur
+    # était reproductible — chaque appel suivant (chaque requête /api/*, il
+    # n'y a pas de cache ici) repartait d'un état différent et générait des
+    # clients/montants différents. Une Random(7) locale, recréée à chaque
+    # appel, rend le jeu de données identique à chaque fois, y compris avec
+    # des requêtes en parallèle (loadAll() en tire une quinzaine à la fois).
+    rng = random.Random(7)
     now = datetime.now(timezone.utc)
-    start_month = (now.replace(day=1) - timedelta(days=30 * (months - 1))).replace(day=1)
+    midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    start_month = (midnight.replace(day=1) - timedelta(days=30 * (months - 1))).replace(day=1)
 
     records = []
     for name in CUSTOMER_NAMES:
-        profile = _customer_profile(name)
-        country = _pick_country()
-        first_active_offset = random.randint(0, months - 2)
+        profile = _customer_profile(rng)
+        country = _pick_country(rng)
+        first_active_offset = rng.randint(0, months - 2)
 
         if profile["type"] == "churned":
-            active_span = random.randint(1, max(1, months // 3))
+            active_span = rng.randint(1, max(1, months // 3))
         elif profile["type"] == "one_time":
             active_span = 1
         else:
@@ -71,15 +79,15 @@ def generate_demo_records(months=MONTHS_OF_HISTORY):
 
         for month_offset in range(first_active_offset, min(months, first_active_offset + active_span)):
             lo, hi = profile["monthly_orders"]
-            num_orders = random.randint(lo, hi)
+            num_orders = rng.randint(lo, hi)
             for _ in range(num_orders):
-                day = random.randint(1, 28)
+                day = rng.randint(1, 28)
                 created = _add_months(start_month, month_offset).replace(
-                    day=day, hour=random.randint(8, 21), minute=random.randint(0, 59)
+                    day=day, hour=rng.randint(8, 21), minute=rng.randint(0, 59)
                 )
                 if created > now:
                     continue
-                amount = round(random.uniform(*profile["amount_range"]), 2)
+                amount = round(rng.uniform(*profile["amount_range"]), 2)
                 records.append(
                     {"customer": name, "amount": amount, "created": created, "country": country, "currency": "eur"}
                 )
