@@ -190,6 +190,11 @@ def set_sector(payload: dict = Body(...), user=Depends(get_current_user)):
 def auth_login(request: Request):
     if not STRIPE_CONNECT_CLIENT_ID:
         raise HTTPException(500, "STRIPE_CONNECT_CLIENT_ID non configuré côté serveur")
+    if not get_current_user(request):
+        # Google est désormais le préalable obligatoire à toute connexion de
+        # données (Stripe/Shopify/Power BI) — plus de création d'identité
+        # "standalone" à la volée comme avant son ajout.
+        return RedirectResponse("/?auth_error=login_required_before_stripe")
 
     # Cloudflare termine le HTTPS à la périphérie et transmet au conteneur
     # en clair : request.url_for() voit donc un schéma "http" et générerait

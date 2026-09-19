@@ -61,6 +61,15 @@
 
   .connections-row { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin: var(--sp-5) 0 var(--sp-4); }
 
+  .login-gate { display: flex; align-items: center; justify-content: center; min-height: 60vh; padding: var(--sp-5); }
+  .login-gate-card { max-width: 480px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: var(--sp-4); }
+  .login-gate-card .google-mark { width: 40px; height: 40px; }
+  .login-gate-card h2 { font-size: 22px; margin: 0; }
+  .login-gate-card .explainer { text-align: left; }
+  .login-gate-btn { font-size: var(--fs-body); padding: 12px 22px 12px 14px; margin-top: var(--sp-2); }
+  .login-gate-btn .google-mark { width: 22px; height: 22px; }
+  #gateError { color: var(--neg-text, #f87171); font-size: var(--fs-small); }
+
   .shopify-connect { display: inline-flex; align-items: center; gap: var(--sp-2); }
   .shopify-connect input { font-family: var(--font-sans); font-size: var(--fs-small); color: var(--text-primary); background: var(--surface-2); border: var(--border-w) solid var(--border-strong); border-radius: var(--radius-pill); padding: 6px 12px; width: 260px; }
   .shopify-connect input::placeholder { color: var(--text-tertiary); }
@@ -224,6 +233,27 @@
     </div>
   </div>
 
+  <!-- Écran d'accueil, affiché tant que la personne n'est pas identifiée
+       via Google — condition préalable à tout le reste (Power BI, Stripe,
+       Shopify, mode démo compris) : voir loadStatus() qui bascule entre
+       #loginGate et #appBody. -->
+  <div id="loginGate" class="login-gate">
+    <div class="login-gate-card">
+      <img class="google-mark" src="icons8-google-100.png" alt="" aria-hidden="true">
+      <h2>Connecte-toi pour accéder au dashboard</h2>
+      <p class="explainer">
+        <span class="line">La connexion Google identifie qui tu es, séparément des données que tu choisis d'analyser ensuite (Stripe, Shopify, Power BI ou le mode démo).</span>
+        <span class="line">Une fois connecté, tu pourras relier tes propres données ou explorer le dashboard avec des données simulées.</span>
+      </p>
+      <a class="powerbi-link login-gate-btn" id="gateGoogleLink" href="/auth/google/login">
+        <img class="google-mark" src="icons8-google-100.png" alt="" aria-hidden="true">
+        Se connecter avec Google
+      </a>
+      <div id="gateError" style="display:none;"></div>
+    </div>
+  </div>
+
+  <div id="appBody" style="display:none;">
   <div class="connections-row">
     <button class="powerbi-link" id="powerBiLink" type="button">
       <img class="powerbi-mark" src="icons8-power-bi-2021-96.png" alt="" aria-hidden="true">
@@ -540,6 +570,7 @@
       <div class="export-list" id="sectorList"></div>
     </div>
   </div>
+  </div>
 
 <script>
 const charts = {};
@@ -839,13 +870,19 @@ async function loadStatus() {
   const googleIcon = '<img class="google-mark" src="icons8-google-100.png" alt="" aria-hidden="true">';
   const shopifyIcon = '<img class="shopify-mark" src="icons8-shopify-96.png" alt="" aria-hidden="true">';
 
-  // Bloc identité (header) : qui es-tu ? Google en priorité, indépendant de Stripe.
+  // Connexion Google obligatoire avant tout le reste (Power BI, Stripe,
+  // Shopify, mode démo compris) : tant qu'elle n'est pas faite, seul
+  // l'écran d'accueil (#loginGate) est visible, le reste du dashboard
+  // (#appBody) reste caché plutôt que simplement vide.
+  document.getElementById('loginGate').style.display = data.authenticated ? 'none' : '';
+  document.getElementById('appBody').style.display = data.authenticated ? '' : 'none';
+
+  // Bloc identité (header) : une fois connecté seulement — avant, le CTA
+  // vit dans #loginGate, pas la peine de le dupliquer dans le header.
   const googleEl = document.getElementById('googleStatus');
   if (data.authenticated) {
     const name = data.name || data.email || 'Connecté';
     googleEl.innerHTML = `<div class="status-pill">${googleIcon}<span class="status-dot"></span>Bonjour ${name}<a class="status-action" href="/auth/logout">Se déconnecter</a></div>`;
-  } else if (data.google_configured) {
-    googleEl.innerHTML = `<a class="powerbi-link" href="/auth/google/login">${googleIcon}Se connecter avec Google</a>`;
   } else {
     googleEl.innerHTML = '';
   }
@@ -1552,6 +1589,8 @@ function showAuthError() {
   const messages = {
     oauth_failed: "La connexion à Stripe a échoué (code refusé ou expiré). Réessaie.",
     db_failed: "La connexion à Stripe a réussi côté Stripe, mais l'enregistrement a échoué côté serveur. Réessaie dans un instant.",
+    login_required_before_stripe: "Connecte-toi d'abord avec Google avant de relier Stripe.",
+    login_required_before_shopify: "Connecte-toi d'abord avec Google avant de relier Shopify.",
   };
   authErrorMessage = messages[code] || "La connexion a échoué. Réessaie.";
 
@@ -1561,6 +1600,16 @@ function showAuthError() {
   params.delete('detail');
   const qs = params.toString();
   history.replaceState({}, '', window.location.pathname + (qs ? `?${qs}` : ''));
+
+  // Erreurs survenant avant toute identité Google (Stripe/Shopify tentés
+  // sans être connecté) : l'#alertsBanner habituel vit dans #appBody, caché
+  // tant qu'on n'est pas authentifié — affichage direct dans l'écran d'accueil.
+  if (code === 'login_required_before_stripe' || code === 'login_required_before_shopify') {
+    const gateError = document.getElementById('gateError');
+    gateError.textContent = authErrorMessage;
+    gateError.style.display = '';
+    authErrorMessage = null;
+  }
 }
 
 (async () => {
