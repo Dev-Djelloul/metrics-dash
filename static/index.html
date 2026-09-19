@@ -206,37 +206,15 @@
   .rfm-filter-badge button:hover { background: rgba(0,0,0,.15); }
   #geoTable tbody tr { cursor: pointer; }
 
-  /* Bouton "agrandir" sur l'en-tête d'une carte (ex: Segmentation RFM) qui
-     ouvre son contenu dans une grande modale plutôt que de surcharger la
-     carte elle-même — même logique que .modal-close (petit rond discret). */
-  .chart-box-header { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
-  .chart-box-header h3 { margin: 0 0 var(--sp-2); }
-  .expand-btn {
-    flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%;
-    border: var(--border-w) solid var(--border-strong); background: var(--surface-2);
-    color: var(--text-secondary); font-size: 16px; line-height: 1; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; transition: var(--transition);
-  }
-  .expand-btn:hover { border-color: var(--accent); color: var(--accent-text); background: var(--accent-soft); }
-
-  /* Modale RFM détaillée : plus large que .modal-card standard (table
-     complète à afficher), avec une hauteur plafonnée + scroll interne
-     comme .modal-card-profile, plutôt qu'une modale qui déborde l'écran. */
-  .modal-card-wide { max-width: 1100px; max-height: 85vh; overflow-y: auto; }
-  .rfm-modal-intro { background: var(--surface-2); border-radius: var(--radius-sm); padding: var(--sp-4); margin-bottom: var(--sp-4); }
-  .rfm-modal-detail {
-    display: none; background: var(--accent-soft); border: var(--border-w) solid var(--accent);
-    border-radius: var(--radius-sm); padding: var(--sp-4); margin-bottom: var(--sp-4);
-  }
-  .rfm-modal-detail.visible { display: block; }
-  .rfm-modal-detail-name { font-size: var(--fs-h2); font-weight: var(--fw-h2); color: var(--text-primary); margin-bottom: var(--sp-3); }
-  .rfm-modal-scores { display: flex; gap: var(--sp-5); flex-wrap: wrap; margin-bottom: var(--sp-3); }
-  .rfm-score-gauge { flex: 1 1 140px; }
+  /* Fiche client au survol du tableau RFM (même carte que Top clients,
+     élargie pour les 3 jauges R/F/M + l'action marketing suggérée —
+     retirée du tableau lui-même pour gagner de la place). */
+  .rfm-hover-card { width: 280px; }
+  .rfm-hover-name { font-size: var(--fs-h2); font-weight: var(--fw-h2); color: var(--text-primary); margin-bottom: var(--sp-3); }
+  .rfm-score-gauge-stack { display: flex; flex-direction: column; gap: var(--sp-2); margin-bottom: var(--sp-3); }
   .rfm-score-gauge-label { font-size: var(--fs-small); color: var(--text-secondary); margin-bottom: 4px; display: flex; justify-content: space-between; }
   .rfm-score-gauge-track { height: 8px; border-radius: 4px; background: var(--surface-3); overflow: hidden; }
   .rfm-score-gauge-fill { height: 100%; border-radius: 4px; background: var(--accent); transition: width .2s ease; }
-  #rfmModalTable tbody tr { cursor: pointer; }
-  #rfmModalTable tbody tr.active-row { background: var(--accent-soft); }
 
   .date-range { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-small); color: var(--text-secondary); }
   .date-range input[type="date"] { font-family: var(--font-sans); font-size: var(--fs-small); color: var(--text-primary); background: var(--surface-2); border: var(--border-w) solid var(--border-strong); border-radius: var(--radius-sm); padding: 6px 10px; color-scheme: dark; }
@@ -356,10 +334,10 @@
   .customer-hover-card.visible { opacity: 1; transform: translateY(0); }
   [data-theme="light"] .customer-hover-card { background: rgba(255, 255, 255, 0.9); }
   .customer-hover-card .chc-name { font-size: var(--fs-body); font-weight: 700; color: var(--text-primary); margin-bottom: var(--sp-3); }
-  .customer-hover-card .chc-row, .rfm-modal-detail .chc-row { display: flex; justify-content: space-between; align-items: center; font-size: var(--fs-small); color: var(--text-secondary); padding: 4px 0; }
-  .customer-hover-card .chc-row + .chc-row, .rfm-modal-detail .chc-row + .chc-row { border-top: var(--border-w) solid var(--border); }
-  .customer-hover-card .chc-row b, .rfm-modal-detail .chc-row b { color: var(--text-primary); font-weight: 700; }
-  #customersTable .hoverable-row { cursor: pointer; }
+  .customer-hover-card .chc-row { display: flex; justify-content: space-between; align-items: center; font-size: var(--fs-small); color: var(--text-secondary); padding: 4px 0; }
+  .customer-hover-card .chc-row + .chc-row { border-top: var(--border-w) solid var(--border); }
+  .customer-hover-card .chc-row b { color: var(--text-primary); font-weight: 700; }
+  #customersTable .hoverable-row, #rfmTable .hoverable-row { cursor: pointer; }
 
   @media (max-width: 640px) {
     .modal-card-profile { flex-direction: column; max-height: 90vh; overflow-y: auto; }
@@ -617,41 +595,15 @@
     </div>
 
     <div class="card chart-box">
-      <div class="chart-box-header">
-        <h3 data-i18n="h3_11">Segmentation RFM (Récence / Fréquence / Montant)</h3>
-        <button class="expand-btn" id="rfmExpandBtn" type="button" data-i18n-title="rfm_expand_title" title="Voir en détail" aria-label="Voir en détail">⤢</button>
-      </div>
+      <h3 data-i18n="h3_11">Segmentation RFM (Récence / Fréquence / Montant)</h3>
       <p class="explainer">
         <span class="line" data-i18n-html="ln_15">Technique de segmentation client classique en marketing/data : chaque client reçoit un score 1-4 sur trois axes.</span>
         <span class="line" data-i18n-html="ln_16"><span class="term term-r">Récence</span> (il a acheté récemment ?) · <span class="term term-f">Fréquence</span> (il achète souvent ?) · <span class="term term-m">Montant</span> (il dépense beaucoup ?).</span>
-        <span class="line" data-i18n-html="ln_17">Les scores combinés donnent un segment actionnable (Champions, À risque, Perdus...).</span>
+        <span class="line" data-i18n="rfm_hover_hint">Survole une ligne du tableau pour voir la fiche détaillée d'un client.</span>
       </p>
       <div id="rfmCountryFilterBadge" class="rfm-filter-badge" hidden></div>
       <div class="scroll" style="overflow-x:auto;">
         <table class="data" id="rfmTable">
-          <thead><tr><th data-i18n="th_customer">Client</th><th class="num" data-i18n="th_recency">Récence (j)</th><th class="num" data-i18n="th_frequency">Fréquence</th><th class="num" data-i18n="th_amount">Montant</th><th class="num">R</th><th class="num">F</th><th class="num">M</th><th data-i18n="th_action">Action marketing suggérée</th><th data-i18n="th_segment">Segment</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modale "Segmentation RFM" détaillée : ouverte par le bouton ⤢ de la
-       carte ci-dessus. Combine méthodologie (rappel pédagogique), tableau
-       complet et fiche client au clic sur une ligne — trois angles dans une
-       seule modale plutôt que trois modales séparées, pour rester simple. -->
-  <div class="modal-overlay" id="rfmModal" hidden>
-    <div class="modal-card modal-card-wide" role="dialog" aria-modal="true" aria-labelledby="rfmModalTitle">
-      <button class="modal-close" id="rfmModalClose" type="button" aria-label="Fermer">&times;</button>
-      <h3 id="rfmModalTitle" data-i18n="h3_11">Segmentation RFM (Récence / Fréquence / Montant)</h3>
-      <p class="explainer rfm-modal-intro">
-        <span class="line" data-i18n-html="ln_15">Technique de segmentation client classique en marketing/data : chaque client reçoit un score 1-4 sur trois axes.</span>
-        <span class="line" data-i18n-html="ln_16"><span class="term term-r">Récence</span> (il a acheté récemment ?) · <span class="term term-f">Fréquence</span> (il achète souvent ?) · <span class="term term-m">Montant</span> (il dépense beaucoup ?).</span>
-        <span class="line" data-i18n="rfm_modal_hint">Clique une ligne du tableau pour voir la fiche détaillée d'un client.</span>
-      </p>
-      <div id="rfmModalDetail" class="rfm-modal-detail"></div>
-      <div class="scroll" style="overflow-x:auto;">
-        <table class="data" id="rfmModalTable">
           <thead><tr><th data-i18n="th_customer">Client</th><th class="num" data-i18n="th_recency">Récence (j)</th><th class="num" data-i18n="th_frequency">Fréquence</th><th class="num" data-i18n="th_amount">Montant</th><th class="num">R</th><th class="num">F</th><th class="num">M</th><th data-i18n="th_segment">Segment</th></tr></thead>
           <tbody></tbody>
         </table>
@@ -817,6 +769,12 @@
   <!-- Carte de détail au survol d'un client (Top clients) : positionnée en
        JS près du curseur, remplie/affichée par customer-hover.js ci-dessous. -->
   <div id="customerHoverCard" class="customer-hover-card" hidden></div>
+
+  <!-- Même carte de survol que Top clients, réutilisée pour la Segmentation
+       RFM (fiche client + jauges R/F/M) : voir customer-hover-card ci-dessus
+       pour l'esthétique, .rfm-hover-card en hérite en changeant juste la
+       largeur (contenu plus riche : 3 jauges + action marketing). -->
+  <div id="rfmHoverCard" class="customer-hover-card rfm-hover-card" hidden></div>
   </div>
 
 <script>
@@ -892,7 +850,7 @@ const I18N = {
     hover_share: 'Part du CA', hover_orders: 'Commandes', hover_last_purchase: 'Dernier achat', hover_no_segment: 'Segment non calculé',
     th_aov: 'Panier moyen', th_share: 'Part du CA',
     rfm_filter_label: 'Filtré par pays : {country}',
-    rfm_expand_title: 'Voir en détail', rfm_modal_hint: "Clique une ligne du tableau pour voir la fiche détaillée d'un client.",
+    rfm_hover_hint: "Survole une ligne du tableau pour voir la fiche détaillée d'un client.",
     rfm_gauge_recency: 'Récence', rfm_gauge_frequency: 'Fréquence', rfm_gauge_monetary: 'Montant',
     rfm_detail_last_purchase: 'Dernier achat il y a {days} jours', rfm_detail_frequency: '{count} commandes',
     alert_revenue_drop: 'CA de {month} en baisse de {pct}% vs le mois précédent.',
@@ -971,7 +929,7 @@ const I18N = {
     hover_share: 'Share of revenue', hover_orders: 'Orders', hover_last_purchase: 'Last purchase', hover_no_segment: 'Segment not computed',
     th_aov: 'Average order value', th_share: 'Share of revenue',
     rfm_filter_label: 'Filtered by country: {country}',
-    rfm_expand_title: 'View in detail', rfm_modal_hint: 'Click a row in the table to see a customer\'s full detail.',
+    rfm_hover_hint: 'Hover a row in the table to see a customer\'s full detail.',
     rfm_gauge_recency: 'Recency', rfm_gauge_frequency: 'Frequency', rfm_gauge_monetary: 'Monetary',
     rfm_detail_last_purchase: 'Last purchase {days} days ago', rfm_detail_frequency: '{count} orders',
     alert_revenue_drop: 'Revenue for {month} dropped {pct}% vs the previous month.',
@@ -2054,10 +2012,9 @@ function renderRfmTable() {
   }
 
   document.querySelector('#rfmTable tbody').innerHTML = rows.map(r =>
-    `<tr>
+    `<tr class="hoverable-row" data-customer="${escapeHtml(r.customer)}">
       <td>${r.customer}</td><td class="num">${r.recency_days}</td><td class="num">${r.frequency}</td><td class="num">${fmtMoney(r.monetary)}</td>
       <td class="num">${r.r_score}</td><td class="num">${r.f_score}</td><td class="num">${r.m_score}</td>
-      <td class="explainer" style="margin:0;">${segmentActionDisplay(r.segment)}</td>
       <td><span class="badge ${SEGMENT_CLASS[r.segment] || 'loyal'}">${segmentDisplay(r.segment)}</span></td>
     </tr>`
   ).join('');
@@ -2096,35 +2053,12 @@ async function loadRfm() {
   });
 }
 
-/* --- Modale "Segmentation RFM" détaillée --- */
-const rfmModal = document.getElementById('rfmModal');
-
-function openRfmModal() {
-  renderRfmModalTable();
-  document.getElementById('rfmModalDetail').classList.remove('visible');
-  rfmModal.hidden = false;
-}
-
-function closeRfmModal() {
-  rfmModal.hidden = true;
-}
-
-// Même filtre pays que le tableau compact (rfmCountryFilter), pour rester
-// cohérent : si on arrive dans la modale depuis "Détail par pays" filtré,
-// la modale montre le même sous-ensemble plutôt que de le perdre.
-function renderRfmModalTable() {
-  const rows = rfmCountryFilter
-    ? rfmRowsCache.filter(r => r.country === rfmCountryFilter)
-    : rfmRowsCache;
-
-  document.querySelector('#rfmModalTable tbody').innerHTML = rows.map(r =>
-    `<tr data-customer="${escapeHtml(r.customer)}">
-      <td>${r.customer}</td><td class="num">${r.recency_days}</td><td class="num">${r.frequency}</td><td class="num">${fmtMoney(r.monetary)}</td>
-      <td class="num">${r.r_score}</td><td class="num">${r.f_score}</td><td class="num">${r.m_score}</td>
-      <td><span class="badge ${SEGMENT_CLASS[r.segment] || 'loyal'}">${segmentDisplay(r.segment)}</span></td>
-    </tr>`
-  ).join('');
-}
+/* --- Carte de détail au survol d'une ligne RFM (même principe que
+   customerHoverCard sur Top clients) : la colonne "Action marketing
+   suggérée" a été retirée du tableau pour gagner de la place, elle
+   apparaît ici avec les jauges R/F/M plutôt que dans une modale à part,
+   ce qui évitait de dupliquer la même info à deux endroits. --- */
+const rfmHoverCard = document.getElementById('rfmHoverCard');
 
 function rfmGauge(labelKey, score) {
   return `
@@ -2134,13 +2068,14 @@ function rfmGauge(labelKey, score) {
     </div>`;
 }
 
-function showRfmDetail(customerName, row) {
-  const r = rfmByCustomer[customerName];
+function showRfmHoverCard(row) {
+  const name = row.dataset.customer;
+  const r = rfmByCustomer[name];
   if (!r) return;
-  const detail = document.getElementById('rfmModalDetail');
-  detail.innerHTML = `
-    <div class="rfm-modal-detail-name">${escapeHtml(customerName)} <span class="badge ${SEGMENT_CLASS[r.segment] || 'loyal'}">${segmentDisplay(r.segment)}</span></div>
-    <div class="rfm-modal-scores">
+
+  rfmHoverCard.innerHTML = `
+    <div class="rfm-hover-name">${escapeHtml(name)} <span class="badge ${SEGMENT_CLASS[r.segment] || 'loyal'}">${segmentDisplay(r.segment)}</span></div>
+    <div class="rfm-score-gauge-stack">
       ${rfmGauge('rfm_gauge_recency', r.r_score)}
       ${rfmGauge('rfm_gauge_frequency', r.f_score)}
       ${rfmGauge('rfm_gauge_monetary', r.m_score)}
@@ -2150,24 +2085,34 @@ function showRfmDetail(customerName, row) {
     <div class="chc-row"><span>${t('th_action')}</span></div>
     <div class="chc-row">${segmentActionDisplay(r.segment)}</div>
   `;
-  detail.classList.add('visible');
 
-  // La fiche s'affiche en haut de la modale (avant le tableau) : sans ça,
-  // cliquer une ligne loin dans une longue liste ne montrait aucun
-  // changement visible à l'écran (il fallait remonter la modale à la main).
-  detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-  document.querySelectorAll('#rfmModalTable tbody tr').forEach(tr => tr.classList.remove('active-row'));
-  if (row) row.classList.add('active-row');
+  // Ancrée sur la cellule "nom" (étroite), pas la ligne entière — même
+  // correctif que la carte de survol de Top clients : la ligne complète va
+  // jusqu'au bord droit (colonnes numériques alignées à droite), donc
+  // ancrer dessus repliait quasi toujours la carte à gauche.
+  const nameCell = row.firstElementChild;
+  const rect = nameCell.getBoundingClientRect();
+  rfmHoverCard.hidden = false;
+  const cardWidth = 280;
+  let left = rect.right + 16;
+  if (left + cardWidth > window.innerWidth - 8) left = Math.max(8, window.innerWidth - cardWidth - 8);
+  const top = Math.min(Math.max(rect.top, 8), window.innerHeight - 280);
+  rfmHoverCard.style.left = `${left}px`;
+  rfmHoverCard.style.top = `${top}px`;
+  requestAnimationFrame(() => rfmHoverCard.classList.add('visible'));
 }
 
-document.getElementById('rfmExpandBtn').addEventListener('click', openRfmModal);
-document.getElementById('rfmModalClose').addEventListener('click', closeRfmModal);
-rfmModal.addEventListener('click', (e) => { if (e.target === rfmModal) closeRfmModal(); });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !rfmModal.hidden) closeRfmModal(); });
-document.querySelector('#rfmModalTable tbody').addEventListener('click', (e) => {
+function hideRfmHoverCard() {
+  rfmHoverCard.classList.remove('visible');
+  rfmHoverCard.hidden = true;
+}
+
+document.querySelector('#rfmTable tbody').addEventListener('mouseover', (e) => {
   const row = e.target.closest('tr[data-customer]');
-  if (row) showRfmDetail(row.dataset.customer, row);
+  if (row) showRfmHoverCard(row);
+});
+document.querySelector('#rfmTable tbody').addEventListener('mouseout', (e) => {
+  if (!e.relatedTarget || !e.relatedTarget.closest('tr[data-customer]')) hideRfmHoverCard();
 });
 
 function heatBucket(value, max = 100) {
