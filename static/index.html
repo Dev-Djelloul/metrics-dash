@@ -408,8 +408,8 @@
       <div class="card chart-box">
         <h3 data-i18n="h3_0">CA par pays</h3>
         <p class="explainer">
-          <span class="line">Carte colorée selon le CA généré par pays de facturation.</span>
-          <span class="line">Plus la couleur est intense, plus ce pays représente une part importante du chiffre d'affaires. Molette ou boutons +/- pour zoomer, glisser pour te déplacer une fois zoomé.</span>
+          <span class="line" data-i18n-html="ln_0">Carte colorée selon le CA généré par pays de facturation.</span>
+          <span class="line" data-i18n-html="ln_1">Plus la couleur est intense, plus ce pays représente une part importante du chiffre d'affaires. Molette ou boutons +/- pour zoomer, glisser pour te déplacer une fois zoomé.</span>
         </p>
         <div id="geoMapWrap" class="canvas-wrap">
           <canvas id="geoChart"></canvas>
@@ -423,7 +423,7 @@
       <div class="card chart-box">
         <h3 data-i18n="h3_1">Détail par pays</h3>
         <table class="data" id="geoTable">
-          <thead><tr><th>Pays</th><th class="num">Clients</th><th class="num">CA</th></tr></thead>
+          <thead><tr><th data-i18n="th_country">Pays</th><th class="num" data-i18n="th_customers">Clients</th><th class="num" data-i18n="th_revenue">CA</th></tr></thead>
           <tbody></tbody>
         </table>
         <p class="explainer" id="geoUnknownNote" style="display:none; margin: var(--sp-4) 0 0;"></p>
@@ -438,8 +438,8 @@
     <div class="card chart-box">
       <h3 data-i18n="h3_3">CA par jour de la semaine</h3>
       <p class="explainer">
-        <span class="line">Regroupe toutes les commandes par <span class="term term-mom">jour de la semaine</span>, toutes semaines confondues.</span>
-        <span class="line">Utile pour repérer un jour fort ou faible (ex : plus de ventes le vendredi).</span>
+        <span class="line" data-i18n-html="ln_2">Regroupe toutes les commandes par <span class="term term-mom">jour de la semaine</span>, toutes semaines confondues.</span>
+        <span class="line" data-i18n-html="ln_3">Utile pour repérer un jour fort ou faible (ex : plus de ventes le vendredi).</span>
       </p>
       <div class="canvas-wrap"><canvas id="weekdayChart"></canvas></div>
     </div>
@@ -447,8 +447,8 @@
     <div class="card chart-box">
       <h3 data-i18n="h3_4">Concentration du CA</h3>
       <p class="explainer">
-        <span class="line">Illustre le <span class="term term-forecast">principe de Pareto</span> (souvent "80/20") : une petite part de tes clients fait-elle une grande part du CA ?</span>
-        <span class="line">Ici : part du CA venant des 20% de clients qui dépensent le plus, vs tous les autres.</span>
+        <span class="line" data-i18n-html="ln_4">Illustre le <span class="term term-forecast">principe de Pareto</span> (souvent "80/20") : une petite part de tes clients fait-elle une grande part du CA ?</span>
+        <span class="line" data-i18n-html="ln_5">Ici : part du CA venant des 20% de clients qui dépensent le plus, vs tous les autres.</span>
       </p>
       <div class="canvas-wrap"><canvas id="concentrationChart"></canvas></div>
       <p class="explainer" id="concentrationBenchmark" style="display:none;"></p>
@@ -457,7 +457,7 @@
     <div class="card chart-box">
       <h3 data-i18n="h3_5">Top clients</h3>
       <table class="data" id="customersTable">
-        <thead><tr><th>Client</th><th class="num">Montant</th></tr></thead>
+        <thead><tr><th data-i18n="th_customer">Client</th><th class="num" data-i18n="th_amount">Montant</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -468,7 +468,7 @@
     <div class="card chart-box" id="mrrCard" style="display:none;">
       <h3 data-i18n="h3_6">MRR (revenu récurrent mensuel)</h3>
       <p class="explainer">
-        <span class="line">Basé sur tes <span class="term term-mom">abonnements Stripe actifs</span> (pas les paiements ponctuels analysés ailleurs) : combien ça représenterait si chaque abonnement était facturé tous les mois, quel que soit son cycle réel (annuel, hebdomadaire...).</span>
+        <span class="line" data-i18n-html="ln_6">Basé sur tes <span class="term term-mom">abonnements Stripe actifs</span> (pas les paiements ponctuels analysés ailleurs) : combien ça représenterait si chaque abonnement était facturé tous les mois, quel que soit son cycle réel (annuel, hebdomadaire...).</span>
       </p>
       <div class="cards" id="mrrCards"></div>
     </div>
@@ -476,20 +476,20 @@
     <div class="card chart-box">
       <h3 data-i18n="h3_7">CA mensuel & croissance</h3>
       <p class="explainer">
-        <span class="line"><span class="term term-mom">MoM</span> (Month-over-Month) = variation vs le mois précédent.</span>
-        <span class="line"><span class="term term-yoy">YoY</span> (Year-over-Year) = variation vs le même mois l'année dernière.</span>
-        <span class="line">Ce sont les deux métriques de croissance les plus utilisées en BI.</span>
+        <span class="line" data-i18n-html="ln_7"><span class="term term-mom">MoM</span> (Month-over-Month) = variation vs le mois précédent.</span>
+        <span class="line" data-i18n-html="ln_8"><span class="term term-yoy">YoY</span> (Year-over-Year) = variation vs le même mois l'année dernière.</span>
+        <span class="line" data-i18n-html="ln_9">Ce sont les deux métriques de croissance les plus utilisées en BI.</span>
       </p>
       <table class="data" id="monthlyTable">
-        <thead><tr><th>Mois</th><th class="num">CA</th><th class="num">MoM</th><th class="num">YoY</th></tr></thead>
+        <thead><tr><th data-i18n="th_month">Mois</th><th class="num" data-i18n="th_revenue">CA</th><th class="num">MoM</th><th class="num">YoY</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
     <div class="card chart-box">
       <h3 data-i18n="h3_8">CA quotidien + moyenne mobile 7 jours</h3>
       <p class="explainer">
-        <span class="line">La <span class="term term-ma">moyenne mobile</span> lisse les pics/creux journaliers pour voir la vraie tendance.</span>
-        <span class="line">C'est la technique de base pour lire un graphique de série temporelle.</span>
+        <span class="line" data-i18n-html="ln_10">La <span class="term term-ma">moyenne mobile</span> lisse les pics/creux journaliers pour voir la vraie tendance.</span>
+        <span class="line" data-i18n-html="ln_11">C'est la technique de base pour lire un graphique de série temporelle.</span>
       </p>
       <div class="canvas-wrap"><canvas id="movingAvgChart"></canvas></div>
     </div>
@@ -497,8 +497,8 @@
     <div class="card chart-box">
       <h3 data-i18n="h3_9">Nouveaux vs clients récurrents</h3>
       <p class="explainer">
-        <span class="line">Chaque mois, quelle part du CA vient de <span class="term term-yoy">nouveaux clients</span> (1er achat ce mois-là) vs de <span class="term term-ma">clients qui reviennent</span> ?</span>
-        <span class="line">Beaucoup de "nouveaux" = tu acquiers. Beaucoup de "récurrents" = tu fidélises. Les deux comptent, mais pas pour les mêmes raisons.</span>
+        <span class="line" data-i18n-html="ln_12">Chaque mois, quelle part du CA vient de <span class="term term-yoy">nouveaux clients</span> (1er achat ce mois-là) vs de <span class="term term-ma">clients qui reviennent</span> ?</span>
+        <span class="line" data-i18n-html="ln_13">Beaucoup de "nouveaux" = tu acquiers. Beaucoup de "récurrents" = tu fidélises. Les deux comptent, mais pas pour les mêmes raisons.</span>
       </p>
       <div class="canvas-wrap"><canvas id="newVsReturningChart"></canvas></div>
     </div>
@@ -511,7 +511,7 @@
     <div class="card chart-box">
       <h3 data-i18n="h3_10">Répartition des clients par segment</h3>
       <p class="explainer">
-        <span class="line">Combien de clients dans chaque segment RFM, en proportion.</span>
+        <span class="line" data-i18n-html="ln_14">Combien de clients dans chaque segment RFM, en proportion.</span>
       </p>
       <div class="canvas-wrap"><canvas id="segmentChart"></canvas></div>
     </div>
@@ -519,13 +519,13 @@
     <div class="card chart-box">
       <h3 data-i18n="h3_11">Segmentation RFM (Récence / Fréquence / Montant)</h3>
       <p class="explainer">
-        <span class="line">Technique de segmentation client classique en marketing/data : chaque client reçoit un score 1-4 sur trois axes.</span>
-        <span class="line"><span class="term term-r">Récence</span> (il a acheté récemment ?) · <span class="term term-f">Fréquence</span> (il achète souvent ?) · <span class="term term-m">Montant</span> (il dépense beaucoup ?).</span>
-        <span class="line">Les scores combinés donnent un segment actionnable (Champions, À risque, Perdus...).</span>
+        <span class="line" data-i18n-html="ln_15">Technique de segmentation client classique en marketing/data : chaque client reçoit un score 1-4 sur trois axes.</span>
+        <span class="line" data-i18n-html="ln_16"><span class="term term-r">Récence</span> (il a acheté récemment ?) · <span class="term term-f">Fréquence</span> (il achète souvent ?) · <span class="term term-m">Montant</span> (il dépense beaucoup ?).</span>
+        <span class="line" data-i18n-html="ln_17">Les scores combinés donnent un segment actionnable (Champions, À risque, Perdus...).</span>
       </p>
       <div class="scroll" style="overflow-x:auto;">
         <table class="data" id="rfmTable">
-          <thead><tr><th>Client</th><th class="num">Récence (j)</th><th class="num">Fréquence</th><th class="num">Montant</th><th class="num">R</th><th class="num">F</th><th class="num">M</th><th>Action marketing suggérée</th><th>Segment</th></tr></thead>
+          <thead><tr><th data-i18n="th_customer">Client</th><th class="num" data-i18n="th_recency">Récence (j)</th><th class="num" data-i18n="th_frequency">Fréquence</th><th class="num" data-i18n="th_amount">Montant</th><th class="num">R</th><th class="num">F</th><th class="num">M</th><th data-i18n="th_action">Action marketing suggérée</th><th data-i18n="th_segment">Segment</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -537,7 +537,7 @@
     <div class="card chart-box">
       <h3 data-i18n="h3_12">Rétention moyenne toutes cohortes confondues</h3>
       <p class="explainer">
-        <span class="line">Moyenne du % de rétention à chaque mois écoulé, sur toutes les cohortes — une seule courbe pour voir la tendance générale sans lire tout le tableau.</span>
+        <span class="line" data-i18n-html="ln_18">Moyenne du % de rétention à chaque mois écoulé, sur toutes les cohortes — une seule courbe pour voir la tendance générale sans lire tout le tableau.</span>
       </p>
       <div class="canvas-wrap"><canvas id="cohortAvgChart"></canvas></div>
     </div>
@@ -545,9 +545,9 @@
     <div class="card chart-box">
       <h3 data-i18n="h3_13">Analyse de cohortes (rétention)</h3>
       <p class="explainer">
-        <span class="line">Chaque ligne = un groupe de clients ayant acheté pour la première fois ce mois-là (la <span class="term term-cohort">cohorte</span>).</span>
-        <span class="line">Chaque colonne = combien de mois plus tard. La couleur montre le % de la cohorte encore active.</span>
-        <span class="line">C'est l'outil de référence pour mesurer la <span class="term term-retention">fidélisation</span> dans le temps.</span>
+        <span class="line" data-i18n-html="ln_19">Chaque ligne = un groupe de clients ayant acheté pour la première fois ce mois-là (la <span class="term term-cohort">cohorte</span>).</span>
+        <span class="line" data-i18n-html="ln_20">Chaque colonne = combien de mois plus tard. La couleur montre le % de la cohorte encore active.</span>
+        <span class="line" data-i18n-html="ln_21">C'est l'outil de référence pour mesurer la <span class="term term-retention">fidélisation</span> dans le temps.</span>
       </p>
       <div id="cohortTable" class="scroll" style="overflow-x:auto;"></div>
     </div>
@@ -555,8 +555,8 @@
     <div class="card chart-box">
       <h3 data-i18n="h3_14">CA généré par cohorte</h3>
       <p class="explainer">
-        <span class="line">Même lecture que le tableau de rétention, mais en <span class="term term-cohort">chiffre d'affaires</span> plutôt qu'en % de clients actifs.</span>
-        <span class="line">Deux cohortes avec la même rétention en % peuvent valoir très différemment si l'une regroupe des clients qui dépensent plus.</span>
+        <span class="line" data-i18n-html="ln_22">Même lecture que le tableau de rétention, mais en <span class="term term-cohort">chiffre d'affaires</span> plutôt qu'en % de clients actifs.</span>
+        <span class="line" data-i18n-html="ln_23">Deux cohortes avec la même rétention en % peuvent valoir très différemment si l'une regroupe des clients qui dépensent plus.</span>
       </p>
       <div id="cohortRevenueTable" class="scroll" style="overflow-x:auto;"></div>
     </div>
@@ -567,8 +567,8 @@
     <div class="card chart-box">
       <h3 data-i18n="h3_15">Prévision de CA (régression linéaire)</h3>
       <p class="explainer" id="forecastNote">
-        <span class="line">Projette les prochains mois à partir de la tendance historique (<span class="term term-forecast">régression linéaire simple</span>, sans librairie externe).</span>
-        <span class="line">La zone bleue est l'intervalle de confiance (~95%) : elle s'élargit avec l'horizon, une prévision lointaine étant statistiquement moins fiable qu'une prévision proche.</span>
+        <span class="line" data-i18n-html="ln_24">Projette les prochains mois à partir de la tendance historique (<span class="term term-forecast">régression linéaire simple</span>, sans librairie externe).</span>
+        <span class="line" data-i18n-html="ln_25">La zone bleue est l'intervalle de confiance (~95%) : elle s'élargit avec l'horizon, une prévision lointaine étant statistiquement moins fiable qu'une prévision proche.</span>
       </p>
       <div class="canvas-wrap"><canvas id="forecastChart"></canvas></div>
     </div>
@@ -576,8 +576,8 @@
     <div class="card chart-box">
       <h3 data-i18n="h3_16">Prévision du nombre de commandes</h3>
       <p class="explainer">
-        <span class="line">Même méthode que la prévision de CA, appliquée au <span class="term term-forecast">nombre de commandes</span> plutôt qu'au montant.</span>
-        <span class="line">Répond à « combien de ventes » plutôt qu'à « combien ça va rapporter » — les deux ne bougent pas forcément ensemble (ex : panier moyen qui grimpe).</span>
+        <span class="line" data-i18n-html="ln_26">Même méthode que la prévision de CA, appliquée au <span class="term term-forecast">nombre de commandes</span> plutôt qu'au montant.</span>
+        <span class="line" data-i18n-html="ln_27">Répond à « combien de ventes » plutôt qu'à « combien ça va rapporter » — les deux ne bougent pas forcément ensemble (ex : panier moyen qui grimpe).</span>
       </p>
       <div class="canvas-wrap"><canvas id="forecastOrdersChart"></canvas></div>
     </div>
@@ -585,8 +585,8 @@
     <div class="card chart-box">
       <h3 data-i18n="h3_17">Prévision de nouveaux clients</h3>
       <p class="explainer">
-        <span class="line">Projette le rythme d'<span class="term term-forecast">acquisition de nouveaux clients</span> par mois, à partir de la tendance historique.</span>
-        <span class="line">Utile pour anticiper si le rythme d'acquisition ralentit avant que ça se voie sur le CA.</span>
+        <span class="line" data-i18n-html="ln_28">Projette le rythme d'<span class="term term-forecast">acquisition de nouveaux clients</span> par mois, à partir de la tendance historique.</span>
+        <span class="line" data-i18n-html="ln_29">Utile pour anticiper si le rythme d'acquisition ralentit avant que ça se voie sur le CA.</span>
       </p>
       <div class="canvas-wrap"><canvas id="forecastNewCustomersChart"></canvas></div>
     </div>
@@ -597,7 +597,7 @@
     <div class="card chart-box">
       <h3 data-i18n="h3_18">Lexique des termes techniques</h3>
       <p class="explainer">
-        <span class="line">Chaque terme employé ailleurs dans le dashboard, expliqué simplement — pas besoin de tout connaître pour commencer.</span>
+        <span class="line" data-i18n-html="ln_30">Chaque terme employé ailleurs dans le dashboard, expliqué simplement — pas besoin de tout connaître pour commencer.</span>
       </p>
       <dl class="glossary">
         <dt><span class="term term-mom">MoM</span> (Month-over-Month)</dt>
@@ -757,6 +757,10 @@ const I18N = {
     kpi_ltv: 'LTV moyen (valeur vie client)', kpi_delay: 'Délai moyen entre 2 achats',
     kpi_atrisk: 'Clients à risque / perdus', kpi_repeat: 'Taux de clients récurrents',
     kpi_active_subs: 'Abonnements actifs',
+    th_country: 'Pays', th_customers: 'Clients', th_revenue: 'CA', th_customer: 'Client',
+    th_amount: 'Montant', th_month: 'Mois', th_recency: 'Récence (j)', th_frequency: 'Fréquence',
+    th_action: 'Action marketing suggérée', th_segment: 'Segment', th_cohort: 'Cohorte', th_size: 'Taille',
+    ln_0: 'Carte colorée selon le CA généré par pays de facturation.', ln_1: 'Plus la couleur est intense, plus ce pays représente une part importante du chiffre d\'affaires. Molette ou boutons +/- pour zoomer, glisser pour te déplacer une fois zoomé.', ln_2: 'Regroupe toutes les commandes par <span class="term term-mom">jour de la semaine</span>, toutes semaines confondues.', ln_3: 'Utile pour repérer un jour fort ou faible (ex : plus de ventes le vendredi).', ln_4: 'Illustre le <span class="term term-forecast">principe de Pareto</span> (souvent "80/20") : une petite part de tes clients fait-elle une grande part du CA ?', ln_5: 'Ici : part du CA venant des 20% de clients qui dépensent le plus, vs tous les autres.', ln_6: 'Basé sur tes <span class="term term-mom">abonnements Stripe actifs</span> (pas les paiements ponctuels analysés ailleurs) : combien ça représenterait si chaque abonnement était facturé tous les mois, quel que soit son cycle réel (annuel, hebdomadaire...).', ln_7: '<span class="term term-mom">MoM</span> (Month-over-Month) = variation vs le mois précédent.', ln_8: '<span class="term term-yoy">YoY</span> (Year-over-Year) = variation vs le même mois l\'année dernière.', ln_9: 'Ce sont les deux métriques de croissance les plus utilisées en BI.', ln_10: 'La <span class="term term-ma">moyenne mobile</span> lisse les pics/creux journaliers pour voir la vraie tendance.', ln_11: 'C\'est la technique de base pour lire un graphique de série temporelle.', ln_12: 'Chaque mois, quelle part du CA vient de <span class="term term-yoy">nouveaux clients</span> (1er achat ce mois-là) vs de <span class="term term-ma">clients qui reviennent</span> ?', ln_13: 'Beaucoup de "nouveaux" = tu acquiers. Beaucoup de "récurrents" = tu fidélises. Les deux comptent, mais pas pour les mêmes raisons.', ln_14: 'Combien de clients dans chaque segment RFM, en proportion.', ln_15: 'Technique de segmentation client classique en marketing/data : chaque client reçoit un score 1-4 sur trois axes.', ln_16: '<span class="term term-r">Récence</span> (il a acheté récemment ?) · <span class="term term-f">Fréquence</span> (il achète souvent ?) · <span class="term term-m">Montant</span> (il dépense beaucoup ?).', ln_17: 'Les scores combinés donnent un segment actionnable (Champions, À risque, Perdus...).', ln_18: 'Moyenne du % de rétention à chaque mois écoulé, sur toutes les cohortes — une seule courbe pour voir la tendance générale sans lire tout le tableau.', ln_19: 'Chaque ligne = un groupe de clients ayant acheté pour la première fois ce mois-là (la <span class="term term-cohort">cohorte</span>).', ln_20: 'Chaque colonne = combien de mois plus tard. La couleur montre le % de la cohorte encore active.', ln_21: 'C\'est l\'outil de référence pour mesurer la <span class="term term-retention">fidélisation</span> dans le temps.', ln_22: 'Même lecture que le tableau de rétention, mais en <span class="term term-cohort">chiffre d\'affaires</span> plutôt qu\'en % de clients actifs.', ln_23: 'Deux cohortes avec la même rétention en % peuvent valoir très différemment si l\'une regroupe des clients qui dépensent plus.', ln_24: 'Projette les prochains mois à partir de la tendance historique (<span class="term term-forecast">régression linéaire simple</span>, sans librairie externe).', ln_25: 'La zone bleue est l\'intervalle de confiance (~95%) : elle s\'élargit avec l\'horizon, une prévision lointaine étant statistiquement moins fiable qu\'une prévision proche.', ln_26: 'Même méthode que la prévision de CA, appliquée au <span class="term term-forecast">nombre de commandes</span> plutôt qu\'au montant.', ln_27: 'Répond à « combien de ventes » plutôt qu\'à « combien ça va rapporter » — les deux ne bougent pas forcément ensemble (ex : panier moyen qui grimpe).', ln_28: 'Projette le rythme d\'<span class="term term-forecast">acquisition de nouveaux clients</span> par mois, à partir de la tendance historique.', ln_29: 'Utile pour anticiper si le rythme d\'acquisition ralentit avant que ça se voie sur le CA.', ln_30: 'Chaque terme employé ailleurs dans le dashboard, expliqué simplement — pas besoin de tout connaître pour commencer.',
     h3_0: 'CA par pays', h3_1: 'Détail par pays', h3_2: 'CA par jour', h3_3: 'CA par jour de la semaine', h3_4: 'Concentration du CA', h3_5: 'Top clients', h3_6: 'MRR (revenu récurrent mensuel)', h3_7: 'CA mensuel & croissance', h3_8: 'CA quotidien + moyenne mobile 7 jours', h3_9: 'Nouveaux vs clients récurrents', h3_10: 'Répartition des clients par segment', h3_11: 'Segmentation RFM (Récence / Fréquence / Montant)', h3_12: 'Rétention moyenne toutes cohortes confondues', h3_13: 'Analyse de cohortes (rétention)', h3_14: 'CA généré par cohorte', h3_15: 'Prévision de CA (régression linéaire)', h3_16: 'Prévision du nombre de commandes', h3_17: 'Prévision de nouveaux clients', h3_18: 'Lexique des termes techniques',
   },
   en: {
@@ -786,6 +790,10 @@ const I18N = {
     kpi_ltv: 'Average LTV (lifetime value)', kpi_delay: 'Average time between purchases',
     kpi_atrisk: 'At-risk / lost customers', kpi_repeat: 'Repeat customer rate',
     kpi_active_subs: 'Active subscriptions',
+    th_country: 'Country', th_customers: 'Customers', th_revenue: 'Revenue', th_customer: 'Customer',
+    th_amount: 'Amount', th_month: 'Month', th_recency: 'Recency (d)', th_frequency: 'Frequency',
+    th_action: 'Suggested marketing action', th_segment: 'Segment', th_cohort: 'Cohort', th_size: 'Size',
+    ln_0: 'Colored map based on revenue generated per billing country.', ln_1: 'The more intense the color, the larger that country\'s share of revenue. Scroll wheel or +/- buttons to zoom, drag to move once zoomed.', ln_2: 'Groups all orders by <span class="term term-mom">day of the week</span>, across all weeks.', ln_3: 'Useful for spotting a strong or weak day (e.g. more sales on Fridays).', ln_4: 'Illustrates the <span class="term term-forecast">Pareto principle</span> (often "80/20"): does a small share of your customers generate a large share of revenue?', ln_5: 'Here: share of revenue coming from the top 20% of highest-spending customers, vs everyone else.', ln_6: 'Based on your <span class="term term-mom">active Stripe subscriptions</span> (not the one-off payments analyzed elsewhere): what it would represent if every subscription were billed monthly, regardless of its actual cycle (yearly, weekly...).', ln_7: '<span class="term term-mom">MoM</span> (Month-over-Month) = change vs the previous month.', ln_8: '<span class="term term-yoy">YoY</span> (Year-over-Year) = change vs the same month last year.', ln_9: 'These are the two most commonly used growth metrics in BI.', ln_10: 'The <span class="term term-ma">moving average</span> smooths daily peaks/dips to reveal the real trend.', ln_11: 'It\'s the basic technique for reading a time series chart.', ln_12: 'Each month, what share of revenue comes from <span class="term term-yoy">new customers</span> (first purchase that month) vs <span class="term term-ma">returning customers</span>?', ln_13: 'A lot of "new" = you\'re acquiring. A lot of "returning" = you\'re retaining. Both matter, but not for the same reasons.', ln_14: 'How many customers in each RFM segment, as a proportion.', ln_15: 'Classic marketing/data customer segmentation technique: each customer gets a 1-4 score on three axes.', ln_16: '<span class="term term-r">Recency</span> (did they buy recently?) · <span class="term term-f">Frequency</span> (do they buy often?) · <span class="term term-m">Monetary</span> (do they spend a lot?).', ln_17: 'The combined scores produce an actionable segment (Champions, At risk, Lost...).', ln_18: 'Average % retention at each elapsed month, across all cohorts — a single curve to see the overall trend without reading the whole table.', ln_19: 'Each row = a group of customers who made their first purchase that month (the <span class="term term-cohort">cohort</span>).', ln_20: 'Each column = how many months later. The color shows the % of the cohort still active.', ln_21: 'The reference tool for measuring <span class="term term-retention">retention</span> over time.', ln_22: 'Same reading as the retention table, but in <span class="term term-cohort">revenue</span> rather than % of active customers.', ln_23: 'Two cohorts with the same retention % can be worth very different amounts if one has higher-spending customers.', ln_24: 'Projects the coming months from the historical trend (<span class="term term-forecast">simple linear regression</span>, no external library).', ln_25: 'The blue band is the confidence interval (~95%): it widens with the horizon, since a far-off forecast is statistically less reliable than a near one.', ln_26: 'Same method as the revenue forecast, applied to the <span class="term term-forecast">order count</span> instead of the amount.', ln_27: 'Answers "how many sales" rather than "how much will it bring in" — the two don\'t necessarily move together (e.g. a rising average order value).', ln_28: 'Projects the monthly rate of <span class="term term-forecast">new customer acquisition</span> from the historical trend.', ln_29: 'Useful for anticipating a slowdown in acquisition before it shows up in revenue.', ln_30: 'Every term used elsewhere in the dashboard, explained simply — no need to know it all to get started.',
     h3_0: 'Revenue by country', h3_1: 'Country breakdown', h3_2: 'Revenue by day', h3_3: 'Revenue by day of the week', h3_4: 'Revenue concentration', h3_5: 'Top customers', h3_6: 'MRR (monthly recurring revenue)', h3_7: 'Monthly revenue & growth', h3_8: 'Daily revenue + 7-day moving average', h3_9: 'New vs returning customers', h3_10: 'Customer segment breakdown', h3_11: 'RFM segmentation (Recency / Frequency / Monetary)', h3_12: 'Average retention across all cohorts', h3_13: 'Cohort analysis (retention)', h3_14: 'Revenue by cohort', h3_15: 'Revenue forecast (linear regression)', h3_16: 'Order count forecast', h3_17: 'New customer forecast', h3_18: 'Glossary of technical terms',
   },
 };
@@ -1702,7 +1710,7 @@ async function loadCohorts() {
   const maxOffset = Math.max(0, ...cohorts.flatMap(c => c.retention.map(r => r.month_offset)));
 
   // --- Tableau de rétention (%) ---
-  let html = '<table class="data"><thead><tr><th>Cohorte</th><th class="num">Taille</th>';
+  let html = `<table class="data"><thead><tr><th>${t('th_cohort')}</th><th class="num">${t('th_size')}</th>`;
   for (let i = 0; i <= maxOffset; i++) html += `<th class="num">M+${i}</th>`;
   html += '</tr></thead><tbody>';
 
@@ -1720,7 +1728,7 @@ async function loadCohorts() {
 
   // --- Tableau CA par cohorte ---
   const maxRevenue = Math.max(1, ...cohorts.flatMap(c => c.retention.map(r => r.revenue)));
-  let revHtml = '<table class="data"><thead><tr><th>Cohorte</th><th class="num">Taille</th>';
+  let revHtml = `<table class="data"><thead><tr><th>${t('th_cohort')}</th><th class="num">${t('th_size')}</th>`;
   for (let i = 0; i <= maxOffset; i++) revHtml += `<th class="num">M+${i}</th>`;
   revHtml += '</tr></thead><tbody>';
 
