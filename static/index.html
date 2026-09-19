@@ -407,7 +407,14 @@
   .rfm-detail-panel .chc-action { align-items: flex-start; gap: var(--sp-3); }
   .rfm-detail-panel .chc-action span { flex-shrink: 0; }
   .rfm-detail-panel .chc-action b { font-weight: 400; text-align: right; color: var(--accent-text); }
-  #customersTable .hoverable-row, #rfmTable .hoverable-row, #monthlyTable .hoverable-row { cursor: pointer; }
+  #customersTable .hoverable-row, #rfmTable .hoverable-row, #monthlyTable .hoverable-row, #ltvTable .hoverable-row { cursor: pointer; }
+
+  /* Légende manuelle sous un graphique (waterfall, churn) : un point coloré
+     + un libellé par catégorie — même principe que .chc-rank-dot, mais pour
+     expliquer une couleur de graphique plutôt qu'un rang dans une liste. */
+  .chart-legend { display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-4); margin-top: var(--sp-3); font-size: var(--fs-small); color: var(--text-secondary); }
+  .chart-legend .legend-item { display: inline-flex; align-items: center; gap: 6px; }
+  .chart-legend .legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 
   /* Code couleur des cartes au survol (Top clients / CA mensuel) : un
      petit point coloré avant chaque nom de client, qui tourne sur les 4
@@ -675,6 +682,7 @@
       </p>
       <div id="waterfallNote" class="explainer" style="margin-bottom: var(--sp-3);"></div>
       <div class="canvas-wrap"><canvas id="waterfallChart"></canvas></div>
+      <div class="chart-legend" id="waterfallLegend"></div>
     </div>
 
     <div class="card chart-box">
@@ -713,6 +721,7 @@
       <p class="explainer">
         <span class="line" data-i18n-html="ln_31">La <span class="term term-forecast">LTV</span> (valeur vie client) est le montant total dépensé par un client sur toute la période observée — sert de repère pour savoir combien on peut dépenser en acquisition (publicité, commission) sans perdre d'argent sur ce client.</span>
         <span class="line" data-i18n-html="ln_32">Moyenne historique observée par segment RFM : un Champion vaut-il vraiment plus qu'un client occasionnel ?</span>
+        <span class="line" data-i18n="ltv_click_hint">Clique une ligne pour voir quels clients composent ce segment.</span>
       </p>
       <table class="data" id="ltvTable">
         <thead><tr><th data-i18n="th_segment">Segment</th><th class="num" data-i18n="th_avg_ltv">LTV moyenne</th><th class="num" data-i18n="th_customers">Clients</th></tr></thead>
@@ -747,6 +756,7 @@
         <span class="line" data-i18n-html="ln_34">Un taux qui grimpe mois après mois est un signal d'alerte précoce, avant même que ça se voie sur le CA global.</span>
       </p>
       <div class="canvas-wrap"><canvas id="churnChart"></canvas></div>
+      <div class="chart-legend" id="churnLegend"></div>
     </div>
 
     <div class="card chart-box">
@@ -914,6 +924,18 @@
         <span class="line" data-i18n="demo_profile_modal_p1">Chaque scénario simule une histoire de vente différente sur 8 mois (clients, montants, tendance) — utile pour voir comment le dashboard réagit à un business qui croît, décline ou reste stable.</span>
       </p>
       <div class="export-list" id="demoProfileList"></div>
+    </div>
+  </div>
+
+  <!-- Popup clients d'un segment LTV : clic sur une ligne du tableau LTV -->
+  <div class="modal-overlay" id="ltvModal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="ltvModalTitle">
+      <button class="modal-close" id="ltvModalClose" type="button" aria-label="Fermer">&times;</button>
+      <h3 id="ltvModalTitle"></h3>
+      <table class="data" id="ltvModalTable">
+        <thead><tr><th data-i18n="th_customer">Client</th><th class="num" data-i18n="th_avg_ltv">LTV moyenne</th></tr></thead>
+        <tbody></tbody>
+      </table>
     </div>
   </div>
 
@@ -1096,6 +1118,10 @@ const I18N = {
     waterfall_note: 'Entre {from} et {to} : {revFrom} → {revTo}',
     churn_legend: 'Taux de churn mensuel',
     ltv_no_data: 'Pas assez de données pour calculer une LTV.',
+    ltv_click_hint: 'Clique une ligne pour voir quels clients composent ce segment.',
+    ltv_modal_title: 'Clients du segment « {segment} »',
+    legend_waterfall_pos: 'Contribution positive (nouveaux clients, expansion)',
+    legend_waterfall_neg: 'Contribution négative (contraction, clients perdus)',
   },
   en: {
     theme_light: 'Light', theme_dark: 'Dark',
@@ -1202,6 +1228,10 @@ const I18N = {
     waterfall_note: 'Between {from} and {to}: {revFrom} → {revTo}',
     churn_legend: 'Monthly churn rate',
     ltv_no_data: 'Not enough data to compute an LTV.',
+    ltv_click_hint: 'Click a row to see which customers make up this segment.',
+    ltv_modal_title: 'Customers in segment "{segment}"',
+    legend_waterfall_pos: 'Positive contribution (new customers, expansion)',
+    legend_waterfall_neg: 'Negative contribution (contraction, churned customers)',
   },
 };
 
@@ -1621,6 +1651,29 @@ function closeDemoProfileModal() { demoProfileModal.hidden = true; }
 document.getElementById('demoProfileModalClose').addEventListener('click', closeDemoProfileModal);
 demoProfileModal.addEventListener('click', (e) => { if (e.target === demoProfileModal) closeDemoProfileModal(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !demoProfileModal.hidden) closeDemoProfileModal(); });
+
+// Popup "clients du segment" (tableau LTV) : rempli depuis ltvSegmentsCache,
+// pas de requête réseau supplémentaire — /api/ltv renvoie déjà la liste des
+// clients de chaque segment.
+let ltvSegmentsCache = [];
+const ltvModal = document.getElementById('ltvModal');
+function openLtvModal(segment) {
+  const bucket = ltvSegmentsCache.find(s => s.segment === segment);
+  if (!bucket) return;
+  document.getElementById('ltvModalTitle').textContent = t('ltv_modal_title').replace('{segment}', segmentDisplay(segment));
+  document.querySelector('#ltvModalTable tbody').innerHTML = bucket.customers.map(c =>
+    `<tr><td>${escapeHtml(c.name)}</td><td class="num">${fmtMoney(c.ltv)}</td></tr>`
+  ).join('');
+  ltvModal.hidden = false;
+}
+function closeLtvModal() { ltvModal.hidden = true; }
+document.getElementById('ltvModalClose').addEventListener('click', closeLtvModal);
+ltvModal.addEventListener('click', (e) => { if (e.target === ltvModal) closeLtvModal(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !ltvModal.hidden) closeLtvModal(); });
+document.querySelector('#ltvTable tbody').addEventListener('click', (e) => {
+  const row = e.target.closest('tr[data-segment]');
+  if (row) openLtvModal(row.dataset.segment);
+});
 
 async function renderDemoProfileList() {
   const profiles = await getDemoProfiles();
@@ -2748,13 +2801,14 @@ async function loadLtv() {
   const res = await fetch(apiUrl('/api/ltv'));
   if (!res.ok) return;
   const data = await res.json();
+  ltvSegmentsCache = data.by_segment;
   const tbody = document.querySelector('#ltvTable tbody');
   if (!data.by_segment.length) {
     tbody.innerHTML = `<tr><td colspan="3">${t('ltv_no_data')}</td></tr>`;
     return;
   }
   tbody.innerHTML = data.by_segment.map(s =>
-    `<tr><td><span class="badge ${SEGMENT_CLASS[s.segment] || 'loyal'}">${segmentDisplay(s.segment)}</span></td><td class="num">${fmtMoney(s.avg_ltv)}</td><td class="num">${s.customer_count}</td></tr>`
+    `<tr class="hoverable-row" data-segment="${escapeHtml(s.segment)}"><td><span class="badge ${SEGMENT_CLASS[s.segment] || 'loyal'}">${segmentDisplay(s.segment)}</span></td><td class="num">${fmtMoney(s.avg_ltv)}</td><td class="num">${s.customer_count}</td></tr>`
   ).join('');
 }
 
@@ -2785,6 +2839,9 @@ async function loadChurn() {
       },
     }
   });
+
+  document.getElementById('churnLegend').innerHTML =
+    `<span class="legend-item"><span class="legend-dot" style="background:var(--neg)"></span>${t('churn_legend')}</span>`;
 }
 
 async function loadRefunds() {
@@ -2812,6 +2869,7 @@ async function loadWaterfall() {
   if (!w.steps) {
     note.textContent = t('not_enough_months');
     destroyChart('waterfall');
+    document.getElementById('waterfallLegend').innerHTML = '';
     return;
   }
 
@@ -2834,6 +2892,10 @@ async function loadWaterfall() {
       },
     }
   });
+
+  document.getElementById('waterfallLegend').innerHTML =
+    `<span class="legend-item"><span class="legend-dot" style="background:var(--pos)"></span>${t('legend_waterfall_pos')}</span>` +
+    `<span class="legend-item"><span class="legend-dot" style="background:var(--neg)"></span>${t('legend_waterfall_neg')}</span>`;
 }
 
 async function loadAll() {

@@ -582,11 +582,15 @@ def ltv_metrics(records, as_of: datetime = None):
     n = len(values)
     median = values[n // 2] if n % 2 else (values[n // 2 - 1] + values[n // 2]) / 2
 
-    totals_by_segment = defaultdict(lambda: {"total": 0.0, "count": 0})
+    # "customers" (nom + LTV individuelle) alimente la popup du tableau LTV
+    # côté frontend — quels clients composent concrètement ce segment,
+    # pas juste sa moyenne.
+    totals_by_segment = defaultdict(lambda: {"total": 0.0, "count": 0, "customers": []})
     for s in segments:
         bucket = totals_by_segment[s["segment"]]
         bucket["total"] += s["monetary"]
         bucket["count"] += 1
+        bucket["customers"].append({"name": s["customer"], "ltv": s["monetary"]})
 
     by_segment = sorted(
         (
@@ -594,6 +598,7 @@ def ltv_metrics(records, as_of: datetime = None):
                 "segment": segment,
                 "avg_ltv": round(bucket["total"] / bucket["count"], 2),
                 "customer_count": bucket["count"],
+                "customers": sorted(bucket["customers"], key=lambda c: c["ltv"], reverse=True),
             }
             for segment, bucket in totals_by_segment.items()
         ),
