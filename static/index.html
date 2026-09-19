@@ -820,11 +820,25 @@ async function loadStatus() {
   const data = await res.json();
   const el = document.getElementById('status');
   const stripeIcon = '<img class="stripe-mark" src="icons8-stripe-100.png" alt="" aria-hidden="true">';
+  const connectBtn = data.connect_configured
+    ? `<a class="status-action status-action-primary" href="/auth/login">${stripeIcon}Connecter Stripe</a>`
+    : '';
+
   if (data.connected) {
+    // Authentifié (Google ou Stripe seul) + Stripe relié : données réelles.
     el.innerHTML = `${stripeIcon}<span class="status-dot"></span>Connecté à Stripe (${data.account})<a class="status-action" href="/auth/logout">Se déconnecter</a>`;
     el.className = 'status-pill';
-  } else if (data.connect_configured) {
-    el.innerHTML = `${stripeIcon}<a class="status-action status-action-primary" href="/auth/login">Se connecter avec Stripe</a>`;
+  } else if (data.authenticated) {
+    // Identifié via Google mais Stripe pas encore relié : mode démo + option de connexion.
+    const name = data.name || data.email || '';
+    el.innerHTML = `<span class="status-dot"></span>Bonjour ${name} — mode démo${connectBtn}<a class="status-action" href="/auth/logout">Se déconnecter</a>`;
+    el.className = 'status-pill error';
+  } else if (data.connect_configured || data.google_configured) {
+    // Personne non identifiée : propose Google (le plus large) puis Stripe seul.
+    const googleBtn = data.google_configured
+      ? `<a class="status-action status-action-primary" href="/auth/google/login">Se connecter avec Google</a>`
+      : '';
+    el.innerHTML = `${googleBtn}${connectBtn || `${stripeIcon}<a class="status-action" href="/auth/login">Se connecter avec Stripe</a>`}`;
     el.className = 'status-pill error';
   } else {
     el.innerHTML = `${stripeIcon}<span class="status-dot"></span>Non connecté — utilise le mode démo`;
