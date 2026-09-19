@@ -67,12 +67,44 @@
   .profile-email { color: var(--text-secondary); font-size: var(--fs-small); display: flex; align-items: center; gap: 6px; }
   .profile-email .google-mark { width: 14px; height: 14px; }
   #profileModalBody .line { display: flex; align-items: center; gap: var(--sp-2); }
+  .profile-conn { padding: 6px 12px; border-radius: var(--radius-pill); margin-bottom: 6px; width: fit-content; }
+  .profile-conn-on { background: var(--pos-soft); color: var(--pos-text); }
+  .profile-conn-off { background: var(--surface-2); color: var(--text-tertiary); }
+  .profile-conn-off img { opacity: .5; }
   #profileModalBody .line .google-mark, #profileModalBody .line .stripe-mark, #profileModalBody .line .shopify-mark { width: 18px; height: 18px; }
   #profileModalBody > a.status-action { display: inline-flex; align-items: center; gap: 6px; margin-top: var(--sp-2); }
   #profileModalBody > a.status-action .google-mark { width: 16px; height: 16px; }
   .shopify-mark { width: 20px; height: 20px; flex-shrink: 0; }
 
-  .connections-row { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin: var(--sp-5) 0 var(--sp-4); }
+  .connections-panel {
+    background: linear-gradient(135deg, var(--accent-soft), transparent 70%), var(--surface-2);
+    border: var(--border-w) solid var(--border-strong);
+    border-radius: var(--radius-lg, 16px);
+    padding: var(--sp-4) var(--sp-5);
+    margin: var(--sp-5) 0 var(--sp-6);
+  }
+  .connections-panel-label { font-size: var(--fs-small); font-weight: var(--fw-small); color: var(--text-secondary); text-transform: uppercase; letter-spacing: .04em; margin-bottom: var(--sp-3); }
+  .connections-panel-chips { display: flex; align-items: stretch; gap: var(--sp-3); flex-wrap: wrap; }
+
+  .conn-chip {
+    display: inline-flex; align-items: center; gap: var(--sp-2);
+    font-family: var(--font-sans); font-size: var(--fs-small); font-weight: var(--fw-small);
+    border-radius: var(--radius-pill); padding: 8px 16px 8px 10px;
+    border: var(--border-w) solid transparent; cursor: pointer; transition: var(--transition);
+    text-decoration: none; line-height: 1.25;
+  }
+  .conn-chip img { width: 22px; height: 22px; flex-shrink: 0; }
+  .conn-chip-text small { font-weight: 400; opacity: .8; }
+  .conn-chip-action, .conn-chip-action-btn { color: inherit; font-weight: 700; text-decoration: underline; margin-left: var(--sp-2); background: none; border: none; font-family: inherit; font-size: inherit; cursor: pointer; padding: 0; }
+
+  .conn-chip-connected { background: var(--pos-soft); border-color: var(--pos); color: var(--pos-text); }
+  .conn-chip-disconnected { background: var(--surface-1); border-color: var(--border-strong); color: var(--text-secondary); }
+  .conn-chip-disconnected:hover { border-color: var(--accent); color: var(--text-primary); }
+  .conn-chip-neutral { background: var(--surface-1); border-color: var(--border-strong); color: var(--text-primary); }
+  .conn-chip-neutral:hover { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-text); }
+
+  .shopify-connect input { font-family: var(--font-sans); font-size: var(--fs-small); color: var(--text-primary); background: var(--surface-2); border: var(--border-w) solid var(--border-strong); border-radius: var(--radius-pill); padding: 4px 10px; width: 260px; }
+  .shopify-connect input::placeholder { color: var(--text-tertiary); }
 
   .login-gate { display: flex; align-items: center; justify-content: center; min-height: 60vh; padding: var(--sp-5); }
   .login-gate-card { max-width: 480px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: var(--sp-4); }
@@ -85,9 +117,6 @@
   .login-gate-icons img { width: 28px; height: 28px; object-fit: contain; opacity: .85; }
   #gateError { color: var(--neg-text, #f87171); font-size: var(--fs-small); }
 
-  .shopify-connect { display: inline-flex; align-items: center; gap: var(--sp-2); }
-  .shopify-connect input { font-family: var(--font-sans); font-size: var(--fs-small); color: var(--text-primary); background: var(--surface-2); border: var(--border-w) solid var(--border-strong); border-radius: var(--radius-pill); padding: 6px 12px; width: 260px; }
-  .shopify-connect input::placeholder { color: var(--text-tertiary); }
 
   .toolbar-row { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin: 0 0 var(--sp-6); }
   .stripe-mark { width: 36px; height: 36px; object-fit: contain; flex-shrink: 0; }
@@ -278,13 +307,16 @@
   </div>
 
   <div id="appBody" style="display:none;">
-  <div class="connections-row">
-    <button class="powerbi-link" id="powerBiLink" type="button">
-      <img class="powerbi-mark" src="icons8-power-bi-2021-96.png" alt="" aria-hidden="true">
-      Connecter à Power BI
-    </button>
-    <div id="status" class="status-pill">Connexion à Stripe...</div>
-    <div id="shopifyStatus"></div>
+  <div class="connections-panel">
+    <div class="connections-panel-label">Vos connexions</div>
+    <div class="connections-panel-chips">
+      <button class="conn-chip conn-chip-neutral" id="powerBiLink" type="button">
+        <img class="powerbi-mark" src="icons8-power-bi-2021-96.png" alt="" aria-hidden="true">
+        <span class="conn-chip-text">Connecter à Power BI</span>
+      </button>
+      <div id="status"></div>
+      <div id="shopifyStatus"></div>
+    </div>
   </div>
 
   <div class="toolbar-row">
@@ -700,11 +732,11 @@ function openProfileModal() {
     : '—';
 
   const stripeLine = lastStatus.stripe_connected
-    ? `<span class="line">${stripeIcon} Stripe — ${lastStatus.account} <a class="status-action" href="/auth/stripe/disconnect">Déconnecter</a></span>`
-    : `<span class="line">${stripeIcon} Stripe — non connecté</span>`;
+    ? `<span class="line profile-conn profile-conn-on">${stripeIcon} Stripe — ${lastStatus.account} <a class="status-action" href="/auth/stripe/disconnect">Déconnecter</a></span>`
+    : `<span class="line profile-conn profile-conn-off">${stripeIcon} Stripe — non connecté</span>`;
   const shopifyLine = lastStatus.shopify_connected
-    ? `<span class="line">${shopifyIcon} Shopify — ${lastStatus.shop_domain} <a class="status-action" href="/auth/shopify/disconnect">Déconnecter</a></span>`
-    : `<span class="line">${shopifyIcon} Shopify — non connecté</span>`;
+    ? `<span class="line profile-conn profile-conn-on">${shopifyIcon} Shopify — ${lastStatus.shop_domain} <a class="status-action" href="/auth/shopify/disconnect">Déconnecter</a></span>`
+    : `<span class="line profile-conn profile-conn-off">${shopifyIcon} Shopify — non connecté</span>`;
 
   document.getElementById('profileModalBody').innerHTML = `
     <div class="profile-header">
@@ -986,28 +1018,29 @@ async function loadStatus() {
     googleEl.innerHTML = '';
   }
 
-  // Bloc accès aux données (corps de page) : Stripe relié ou non, à côté de Power BI.
+  // Bloc accès aux données (corps de page) : chips uniformes, colorées
+  // selon connecté (vert) / non connecté (neutre) — même gabarit pour
+  // Stripe et Shopify, plus lisible qu'un mélange de pilules/boutons/champ
+  // texte de tailles différentes.
   const el = document.getElementById('status');
   if (data.stripe_connected) {
-    el.innerHTML = `${stripeIcon}<span class="status-dot"></span>Connecté à Stripe (${data.account})<a class="status-action" href="/auth/stripe/disconnect">Déconnecter</a>`;
-    el.className = 'status-pill';
+    el.innerHTML = `<div class="conn-chip conn-chip-connected">${stripeIcon}<span class="conn-chip-text">Stripe<br><small>${data.account}</small></span><a class="conn-chip-action" href="/auth/stripe/disconnect">Déconnecter</a></div>`;
   } else if (data.connect_configured) {
-    el.innerHTML = `${stripeIcon}<a class="status-action status-action-primary" href="/auth/login">Connecter Stripe</a>`;
-    el.className = 'status-pill error';
+    el.innerHTML = `<a class="conn-chip conn-chip-disconnected" href="/auth/login">${stripeIcon}<span class="conn-chip-text">Connecter Stripe</span></a>`;
   } else {
-    el.innerHTML = `${stripeIcon}<span class="status-dot"></span>Non connecté — utilise le mode démo`;
-    el.className = 'status-pill error';
+    el.innerHTML = `<div class="conn-chip conn-chip-disconnected">${stripeIcon}<span class="conn-chip-text">Stripe indisponible</span></div>`;
   }
 
   // Bloc Shopify (corps de page) : deuxième canal de vente possible, indépendant de Stripe.
   const shopifyEl = document.getElementById('shopifyStatus');
   if (data.shopify_connected) {
-    shopifyEl.innerHTML = `<div class="status-pill">${shopifyIcon}<span class="status-dot"></span>Connecté à Shopify (${data.shop_domain})<a class="status-action" href="/auth/shopify/disconnect">Déconnecter</a></div>`;
+    shopifyEl.innerHTML = `<div class="conn-chip conn-chip-connected">${shopifyIcon}<span class="conn-chip-text">Shopify<br><small>${data.shop_domain}</small></span><a class="conn-chip-action" href="/auth/shopify/disconnect">Déconnecter</a></div>`;
   } else if (data.shopify_configured && data.authenticated) {
     shopifyEl.innerHTML = `
-      <form class="shopify-connect" id="shopifyConnectForm">
+      <form class="conn-chip conn-chip-disconnected shopify-connect" id="shopifyConnectForm">
+        ${shopifyIcon}
         <input type="text" id="shopifyDomainInput" placeholder="ma-boutique.myshopify.com" pattern="[a-z0-9-]+\\.myshopify\\.com">
-        <button class="powerbi-link" type="submit">${shopifyIcon}Connecter Shopify</button>
+        <button class="conn-chip-action conn-chip-action-btn" type="submit">Connecter</button>
       </form>`;
     document.getElementById('shopifyConnectForm').addEventListener('submit', (e) => {
       e.preventDefault();
