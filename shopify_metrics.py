@@ -12,6 +12,26 @@ import httpx
 _API_VERSION = "2024-01"
 
 
+def fetch_canonical_shop_domain(shop: str, access_token: str) -> str:
+    """Renvoie le domaine *.myshopify.com canonique via GET /shop.json, plutôt
+    que de faire confiance au `shop` saisi/redirigé par l'utilisateur au moment
+    du connect. Nécessaire car renommer une boutique dans l'admin Shopify
+    change son myshopify_domain, mais l'ancien domaine continue de fonctionner
+    pour l'autorisation OAuth (Shopify le redirige en interne) — sans cet
+    appel, on stockerait indéfiniment un domaine périmé. Retombe sur `shop`
+    si l'appel échoue, pour ne jamais bloquer la connexion sur ce détail."""
+    try:
+        response = httpx.get(
+            f"https://{shop}/admin/api/{_API_VERSION}/shop.json",
+            headers={"X-Shopify-Access-Token": access_token},
+            timeout=10,
+        )
+        response.raise_for_status()
+        return response.json()["shop"]["myshopify_domain"]
+    except Exception:
+        return shop
+
+
 def fetch_orders(shop_domain: str, access_token: str, limit_pages: int = 5) -> list[dict]:
     """Pulls up to `limit_pages` pages (250 each) of paid orders via l'API
     REST Admin de Shopify. La pagination Shopify se fait via l'en-tête `Link`

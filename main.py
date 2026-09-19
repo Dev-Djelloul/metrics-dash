@@ -19,7 +19,11 @@ import analytics
 import auth
 import db
 import demo_data
-from shopify_metrics import fetch_orders as fetch_shopify_orders, orders_to_records
+from shopify_metrics import (
+    fetch_canonical_shop_domain,
+    fetch_orders as fetch_shopify_orders,
+    orders_to_records,
+)
 from stripe_metrics import (
     charges_to_records,
     compute_metrics_from_records,
@@ -434,8 +438,13 @@ def auth_shopify_callback(request: Request, shop: str = None, code: str = None, 
         print(f"[metrics-dash] Échec de l'échange du code Shopify : {type(exc).__name__}: {exc}")
         return RedirectResponse("/?auth_error=oauth_failed")
 
+    # Le `shop` de l'URL peut être un domaine périmé (boutique renommée depuis) :
+    # Shopify continue d'accepter l'autorisation OAuth dessus, mais on veut
+    # stocker et utiliser le domaine canonique pour les appels API et l'affichage.
+    canonical_domain = fetch_canonical_shop_domain(shop, access_token)
+
     try:
-        db.link_shopify_connection(current_user["id"], shop, access_token)
+        db.link_shopify_connection(current_user["id"], canonical_domain, access_token)
     except Exception as exc:
         print(f"[metrics-dash] Échec de l'écriture en base D1 : {type(exc).__name__}: {exc}")
         return RedirectResponse("/?auth_error=db_failed")
