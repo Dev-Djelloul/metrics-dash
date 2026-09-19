@@ -765,6 +765,7 @@ async function renderSectorList(currentSector) {
         });
       }
       await updateSectorBadge(sector);
+      if (lastStatus) lastStatus.sector = sector;
       closeSectorModal();
       await loadAll();
     });
