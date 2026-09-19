@@ -151,7 +151,17 @@
   #gateError { color: var(--neg-text, #f87171); font-size: var(--fs-small); }
 
 
-  .toolbar-row { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin: 0 0 var(--sp-6); }
+  /* Une seule ligne, jamais de retour à la ligne : au lieu de laisser les
+     boutons (météo, mode démo, secteur…) passer à la ligne suivante dès que
+     leur somme dépasse la largeur de l'écran, la rangée défile
+     horizontalement — chaque bouton garde sa largeur naturelle (flex-shrink:0)
+     donc son texte reste lisible, jamais tronqué ni écrasé. */
+  .toolbar-row {
+    display: flex; align-items: center; gap: var(--sp-3); flex-wrap: nowrap;
+    margin: 0 0 var(--sp-6); overflow-x: auto; overflow-y: hidden;
+    -webkit-overflow-scrolling: touch; scrollbar-width: thin; padding-bottom: 4px;
+  }
+  .toolbar-row > * { flex-shrink: 0; }
   .stripe-mark { width: 36px; height: 36px; object-fit: contain; flex-shrink: 0; }
   #status.status-pill { padding: 8px 16px; gap: 10px; }
   .status-action { color: inherit; font-weight: 700; text-decoration: underline; margin-left: 4px; }
@@ -433,7 +443,6 @@
     .powerbi-link { font-size: 12px; padding: 6px 10px 6px 6px; }
     .connections-row { margin: var(--sp-4) 0; }
     .toolbar-row { margin: 0 0 var(--sp-5); }
-    .date-range { flex-wrap: wrap; }
     .cards { grid-template-columns: 1fr; }
     .tabs { gap: var(--sp-3); overflow-x: auto; }
     .tab { padding: 8px 2px; white-space: nowrap; }
