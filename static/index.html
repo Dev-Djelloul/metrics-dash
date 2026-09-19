@@ -57,6 +57,7 @@
   .google-status:empty { display: none; }
   .google-status .status-pill { padding: 6px 14px; gap: 8px; }
   .google-mark { width: 20px; height: 20px; flex-shrink: 0; }
+  .avatar-mark { border-radius: 50%; object-fit: cover; }
   .shopify-mark { width: 20px; height: 20px; flex-shrink: 0; }
 
   .connections-row { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin: var(--sp-5) 0 var(--sp-4); }
@@ -882,7 +883,13 @@ async function loadStatus() {
   const googleEl = document.getElementById('googleStatus');
   if (data.authenticated) {
     const name = data.name || data.email || 'Connecté';
-    googleEl.innerHTML = `<div class="status-pill">${googleIcon}<span class="status-dot"></span>Bonjour ${name}<a class="status-action" href="/auth/logout">Se déconnecter</a></div>`;
+    // Avatar Google si connu (photo de profil récupérée à la connexion),
+    // sinon l'icône générique en repli — ex: identité créée via le
+    // parcours Stripe seul (fallback), qui n'a jamais transité par Google.
+    const avatar = data.picture
+      ? `<img class="google-mark avatar-mark" src="${data.picture}" alt="" aria-hidden="true" referrerpolicy="no-referrer">`
+      : googleIcon;
+    googleEl.innerHTML = `<div class="status-pill">${avatar}<span class="status-dot"></span>Bonjour ${name}<a class="status-action" href="/auth/logout">Se déconnecter</a></div>`;
   } else {
     googleEl.innerHTML = '';
   }

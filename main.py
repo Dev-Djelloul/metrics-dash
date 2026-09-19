@@ -154,6 +154,7 @@ def status(user: dict | None = Depends(get_current_user)):
         "authenticated": True,
         "email": user.get("email"),
         "name": user.get("name"),
+        "picture": user.get("picture"),
         "connected": stripe_connected or shopify_connected,
         "stripe_connected": stripe_connected,
         "account": user.get("account_name") or user.get("stripe_user_id"),
@@ -361,7 +362,9 @@ def auth_google_callback(request: Request, code: str = None, error: str = None):
         return RedirectResponse("/?auth_error=oauth_failed")
 
     try:
-        user_id = db.upsert_google_user(profile["sub"], profile.get("email"), profile.get("name"))
+        user_id = db.upsert_google_user(
+            profile["sub"], profile.get("email"), profile.get("name"), profile.get("picture")
+        )
     except Exception as exc:
         print(f"[metrics-dash] Échec de l'écriture en base D1 : {type(exc).__name__}: {exc}")
         return RedirectResponse("/?auth_error=db_failed")

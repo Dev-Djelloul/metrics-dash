@@ -101,6 +101,11 @@ def ensure_schema():
     if not _table_exists("users"):
         query("ALTER TABLE users_v2 RENAME TO users")
 
+    if "picture" not in _column_names("users"):
+        # Photo de profil Google (URL), ajoutée après coup : migration
+        # simple, une seule colonne nullable, pas de table à réconcilier.
+        query("ALTER TABLE users ADD COLUMN picture TEXT")
+
     ensure_shopify_table()
 
 
@@ -117,6 +122,7 @@ _USER_SELECT = """
         users.google_sub AS google_sub,
         users.email AS email,
         users.name AS name,
+        users.picture AS picture,
         users.created_at AS created_at,
         stripe_connections.stripe_user_id AS stripe_user_id,
         stripe_connections.stripe_access_token AS stripe_access_token,
@@ -141,18 +147,21 @@ def get_user_by_stripe_id(stripe_user_id: str) -> dict | None:
     return rows[0] if rows else None
 
 
-def upsert_google_user(google_sub: str, email: str | None, name: str | None) -> int:
+def upsert_google_user(
+    google_sub: str, email: str | None, name: str | None, picture: str | None = None
+) -> int:
     """Crée ou retrouve l'utilisateur identifié par son compte Google.
     N'implique aucune connexion Stripe — juste une identité/session."""
     query(
         """
-        INSERT INTO users (google_sub, email, name)
-        VALUES (?, ?, ?)
+        INSERT INTO users (google_sub, email, name, picture)
+        VALUES (?, ?, ?, ?)
         ON CONFLICT(google_sub) DO UPDATE SET
             email = excluded.email,
-            name = excluded.name
+            name = excluded.name,
+            picture = excluded.picture
         """,
-        [google_sub, email, name],
+        [google_sub, email, name, picture],
     )
     rows = query("SELECT id FROM users WHERE google_sub = ?", [google_sub])
     return rows[0]["id"]
