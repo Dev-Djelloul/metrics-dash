@@ -54,7 +54,13 @@
   .powerbi-link:hover { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-text); }
   .powerbi-mark { width: 20px; height: 20px; flex-shrink: 0; }
 
-  .toolbar-row { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin: var(--sp-5) 0 var(--sp-6); }
+  .google-status:empty { display: none; }
+  .google-status .status-pill { padding: 6px 14px; gap: 8px; }
+  .google-mark { width: 18px; height: 18px; flex-shrink: 0; }
+
+  .connections-row { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin: var(--sp-5) 0 var(--sp-4); }
+
+  .toolbar-row { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin: 0 0 var(--sp-6); }
   .stripe-mark { width: 36px; height: 36px; object-fit: contain; flex-shrink: 0; }
   #status.status-pill { padding: 8px 16px; gap: 10px; }
   .status-action { color: inherit; font-weight: 700; text-decoration: underline; margin-left: 4px; }
@@ -171,7 +177,8 @@
     .stripe-mark { width: 28px; height: 28px; }
     .header-actions { width: 100%; justify-content: space-between; }
     .powerbi-link { font-size: 12px; padding: 6px 10px 6px 6px; }
-    .toolbar-row { margin: var(--sp-4) 0 var(--sp-5); }
+    .connections-row { margin: var(--sp-4) 0; }
+    .toolbar-row { margin: 0 0 var(--sp-5); }
     .date-range { flex-wrap: wrap; }
     .cards { grid-template-columns: 1fr; }
     .tabs { gap: var(--sp-3); overflow-x: auto; }
@@ -203,10 +210,7 @@
       <span class="brand-name"><span class="brand-blue">metrics</span><span class="brand-accent">-</span>dash</span>
     </div>
     <div class="header-actions">
-      <button class="powerbi-link" id="powerBiLink" type="button">
-        <img class="powerbi-mark" src="icons8-power-bi-2021-96.png" alt="" aria-hidden="true">
-        Connecter à Power BI
-      </button>
+      <div id="googleStatus" class="google-status"></div>
       <div class="theme-toggle">
         <span>Clair</span>
         <div class="switch" id="themeSwitch" role="button" aria-label="Changer de thème"><div class="switch-knob"></div></div>
@@ -215,8 +219,15 @@
     </div>
   </div>
 
-  <div class="toolbar-row">
+  <div class="connections-row">
+    <button class="powerbi-link" id="powerBiLink" type="button">
+      <img class="powerbi-mark" src="icons8-power-bi-2021-96.png" alt="" aria-hidden="true">
+      Connecter à Power BI
+    </button>
     <div id="status" class="status-pill">Connexion à Stripe...</div>
+  </div>
+
+  <div class="toolbar-row">
     <button class="demo-btn" id="sectorBadge" type="button" title="Secteur d'activité de ces données">
       <span class="demo-dot"></span>
       <span id="sectorBadgeLabel">Secteur non renseigné</span>
@@ -818,32 +829,33 @@ document.querySelectorAll('.tab').forEach(tab => {
 async function loadStatus() {
   const res = await fetch('/api/status');
   const data = await res.json();
-  const el = document.getElementById('status');
   const stripeIcon = '<img class="stripe-mark" src="icons8-stripe-100.png" alt="" aria-hidden="true">';
-  const connectBtn = data.connect_configured
-    ? `<a class="status-action status-action-primary" href="/auth/login">${stripeIcon}Connecter Stripe</a>`
-    : '';
+  const googleIcon = '<img class="google-mark" src="icons8-google-100.png" alt="" aria-hidden="true">';
 
+  // Bloc identité (header) : qui es-tu ? Google en priorité, indépendant de Stripe.
+  const googleEl = document.getElementById('googleStatus');
+  if (data.authenticated) {
+    const name = data.name || data.email || 'Connecté';
+    googleEl.innerHTML = `<div class="status-pill">${googleIcon}<span class="status-dot"></span>Bonjour ${name}<a class="status-action" href="/auth/logout">Se déconnecter</a></div>`;
+  } else if (data.google_configured) {
+    googleEl.innerHTML = `<a class="status-action status-action-primary" href="/auth/google/login">${googleIcon}Se connecter avec Google</a>`;
+  } else {
+    googleEl.innerHTML = '';
+  }
+
+  // Bloc accès aux données (corps de page) : Stripe relié ou non, à côté de Power BI.
+  const el = document.getElementById('status');
   if (data.connected) {
-    // Authentifié (Google ou Stripe seul) + Stripe relié : données réelles.
-    el.innerHTML = `${stripeIcon}<span class="status-dot"></span>Connecté à Stripe (${data.account})<a class="status-action" href="/auth/logout">Se déconnecter</a>`;
+    el.innerHTML = `${stripeIcon}<span class="status-dot"></span>Connecté à Stripe (${data.account})`;
     el.className = 'status-pill';
-  } else if (data.authenticated) {
-    // Identifié via Google mais Stripe pas encore relié : mode démo + option de connexion.
-    const name = data.name || data.email || '';
-    el.innerHTML = `<span class="status-dot"></span>Bonjour ${name} — mode démo${connectBtn}<a class="status-action" href="/auth/logout">Se déconnecter</a>`;
-    el.className = 'status-pill error';
-  } else if (data.connect_configured || data.google_configured) {
-    // Personne non identifiée : propose Google (le plus large) puis Stripe seul.
-    const googleBtn = data.google_configured
-      ? `<a class="status-action status-action-primary" href="/auth/google/login">Se connecter avec Google</a>`
-      : '';
-    el.innerHTML = `${googleBtn}${connectBtn || `${stripeIcon}<a class="status-action" href="/auth/login">Se connecter avec Stripe</a>`}`;
+  } else if (data.connect_configured) {
+    el.innerHTML = `${stripeIcon}<a class="status-action status-action-primary" href="/auth/login">Connecter Stripe</a>`;
     el.className = 'status-pill error';
   } else {
     el.innerHTML = `${stripeIcon}<span class="status-dot"></span>Non connecté — utilise le mode démo`;
     el.className = 'status-pill error';
   }
+
   await updateSectorBadge(isDemo() ? localStorage.getItem(DEMO_SECTOR_KEY) : data.sector);
   return data.connected;
 }
