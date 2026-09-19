@@ -313,9 +313,14 @@
     <div class="header-actions">
       <div id="googleStatus" class="google-status"></div>
       <div class="theme-toggle">
-        <span>Clair</span>
+        <span>FR</span>
+        <div class="switch" id="langSwitch" role="button" aria-label="Changer de langue"><div class="switch-knob"></div></div>
+        <span>EN</span>
+      </div>
+      <div class="theme-toggle">
+        <span data-i18n="theme_light">Clair</span>
         <div class="switch" id="themeSwitch" role="button" aria-label="Changer de thème"><div class="switch-knob"></div></div>
-        <span>Sombre</span>
+        <span data-i18n="theme_dark">Sombre</span>
       </div>
     </div>
   </div>
@@ -327,14 +332,14 @@
   <div id="loginGate" class="login-gate">
     <div class="login-gate-card">
       <img class="google-mark" src="icons8-google-100.png" alt="" aria-hidden="true">
-      <h2>Connectez-vous pour accéder à votre dashboard</h2>
+      <h2 data-i18n="gate_title">Connectez-vous pour accéder à votre dashboard</h2>
       <p class="explainer">
-        <span class="line">La connexion avec Google sert uniquement à vous identifier. Elle est indépendante des données que vous choisirez ensuite d'analyser dans metrics-dash.</span>
-        <span class="line">Une fois connecté, vous pourrez :</span>
-        <span class="line">• connecter vos propres sources de données comme Stripe, Shopify ou Power BI ;</span>
-        <span class="line">• analyser vos données directement depuis le dashboard ;</span>
-        <span class="line">• ou explorer metrics-dash en mode démo, avec des données simulées.</span>
-        <span class="line">Vos données d'analyse restent distinctes de votre compte de connexion.</span>
+        <span class="line" data-i18n="gate_p1">La connexion avec Google sert uniquement à vous identifier. Elle est indépendante des données que vous choisirez ensuite d'analyser dans metrics-dash.</span>
+        <span class="line" data-i18n="gate_p2">Une fois connecté, vous pourrez :</span>
+        <span class="line" data-i18n="gate_p3">• connecter vos propres sources de données comme Stripe, Shopify ou Power BI ;</span>
+        <span class="line" data-i18n="gate_p4">• analyser vos données directement depuis le dashboard ;</span>
+        <span class="line" data-i18n="gate_p5">• ou explorer metrics-dash en mode démo, avec des données simulées.</span>
+        <span class="line" data-i18n="gate_p6">Vos données d'analyse restent distinctes de votre compte de connexion.</span>
       </p>
       <div class="login-gate-icons" aria-hidden="true">
         <img src="icons8-stripe-100.png" alt="">
@@ -343,7 +348,7 @@
       </div>
       <a class="powerbi-link login-gate-btn" id="gateGoogleLink" href="/auth/google/login">
         <img class="google-mark" src="icons8-google-100.png" alt="" aria-hidden="true">
-        Se connecter avec Google
+        <span data-i18n="gate_btn">Se connecter avec Google</span>
       </a>
       <div id="gateError" style="display:none;"></div>
     </div>
@@ -351,11 +356,11 @@
 
   <div id="appBody" style="display:none;">
   <div class="connections-panel">
-    <div class="connections-panel-label">Vos connexions</div>
+    <div class="connections-panel-label" data-i18n="connections_label">Vos connexions</div>
     <div class="connections-panel-chips">
       <button class="conn-chip conn-chip-neutral" id="powerBiLink" type="button">
         <img class="powerbi-mark" src="icons8-power-bi-2021-96.png" alt="" aria-hidden="true">
-        <span class="conn-chip-text">Connecter à Power BI</span>
+        <span class="conn-chip-text" data-i18n="connect_powerbi">Connecter à Power BI</span>
       </button>
       <div id="status"></div>
       <div id="shopifyStatus"></div>
@@ -364,22 +369,22 @@
 
   <div class="toolbar-row">
     <div class="date-range">
-      <label for="dateStart">Du</label>
+      <label for="dateStart" data-i18n="date_from">Du</label>
       <input type="date" id="dateStart">
-      <label for="dateEnd">au</label>
+      <label for="dateEnd" data-i18n="date_to">au</label>
       <input type="date" id="dateEnd">
-      <button class="btn" id="dateReset" type="button">Réinitialiser</button>
+      <button class="btn" id="dateReset" type="button" data-i18n="date_reset">Réinitialiser</button>
     </div>
-    <button class="demo-btn" id="demoToggle" data-on="false" type="button" aria-pressed="false" title="8 mois de données simulées, pour voir cohortes/tendances/prévision avec du volume">
+    <button class="demo-btn" id="demoToggle" data-on="false" type="button" aria-pressed="false" title="8 mois de données simulées, pour voir cohortes/tendances/prévision avec du volume" data-i18n-title="demo_toggle_title">
       <span class="demo-dot"></span>
-      Mode démo
+      <span data-i18n="demo_toggle">Mode démo</span>
     </button>
-    <button class="demo-btn" id="sectorBadge" type="button" title="Secteur d'activité de ces données">
+    <button class="demo-btn" id="sectorBadge" type="button" title="Secteur d'activité de ces données" data-i18n-title="sector_badge_title">
       <span class="demo-dot"></span>
-      <span id="sectorBadgeLabel">Secteur non renseigné</span>
+      <span id="sectorBadgeLabel" data-i18n="sector_unset">Secteur non renseigné</span>
     </button>
     <div class="date-range" id="currencyPicker" style="display:none;">
-      <label for="currencySelect">Devise</label>
+      <label for="currencySelect" data-i18n="currency_label">Devise</label>
       <select id="currencySelect"></select>
     </div>
   </div>
@@ -387,12 +392,12 @@
   <div id="alertsBanner" style="display:none;"></div>
 
   <div class="tabs">
-    <button class="tab" data-tab="overview" data-active="true">Vue d'ensemble</button>
-    <button class="tab" data-tab="growth" data-active="false">Croissance</button>
-    <button class="tab" data-tab="rfm" data-active="false">Clients (RFM)</button>
-    <button class="tab" data-tab="cohorts" data-active="false">Rétention (cohortes)</button>
-    <button class="tab" data-tab="forecast" data-active="false">Prévision</button>
-    <button class="tab" data-tab="lexique" data-active="false">Lexique</button>
+    <button class="tab" data-tab="overview" data-active="true" data-i18n="tab_overview">Vue d'ensemble</button>
+    <button class="tab" data-tab="growth" data-active="false" data-i18n="tab_growth">Croissance</button>
+    <button class="tab" data-tab="rfm" data-active="false" data-i18n="tab_rfm">Clients (RFM)</button>
+    <button class="tab" data-tab="cohorts" data-active="false" data-i18n="tab_cohorts">Rétention (cohortes)</button>
+    <button class="tab" data-tab="forecast" data-active="false" data-i18n="tab_forecast">Prévision</button>
+    <button class="tab" data-tab="lexique" data-active="false" data-i18n="tab_lexique">Lexique</button>
   </div>
 
   <!-- Overview -->
@@ -649,10 +654,10 @@
   <div class="modal-overlay" id="powerBiModal" hidden>
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="powerBiModalTitle">
       <button class="modal-close" id="powerBiModalClose" type="button" aria-label="Fermer">&times;</button>
-      <h3 id="powerBiModalTitle">Connecter tes données à Power BI</h3>
+      <h3 id="powerBiModalTitle" data-i18n="powerbi_modal_title">Connecter tes données à Power BI</h3>
       <p class="explainer">
-        <span class="line">Power BI n'a pas besoin d'un connecteur spécial : sa fonction native « Obtenir les données &gt; Web » lit un fichier CSV en ligne directement, sans code.</span>
-        <span class="line">Dans Power BI Desktop : <b>Accueil → Obtenir les données → Web</b>, colle l'une des URL ci-dessous, valide — la table apparaît, prête à être mise en forme.</span>
+        <span class="line" data-i18n="powerbi_modal_p1">Power BI n'a pas besoin d'un connecteur spécial : sa fonction native « Obtenir les données &gt; Web » lit un fichier CSV en ligne directement, sans code.</span>
+        <span class="line" data-i18n-html="powerbi_modal_p2">Dans Power BI Desktop : <b>Accueil → Obtenir les données → Web</b>, colle l'une des URL ci-dessous, valide — la table apparaît, prête à être mise en forme.</span>
       </p>
       <div class="export-list" id="exportList"></div>
     </div>
@@ -662,9 +667,9 @@
   <div class="modal-overlay" id="sectorModal" hidden>
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="sectorModalTitle">
       <button class="modal-close" id="sectorModalClose" type="button" aria-label="Fermer">&times;</button>
-      <h3 id="sectorModalTitle">Quel est ton secteur d'activité ?</h3>
+      <h3 id="sectorModalTitle" data-i18n="sector_modal_title">Quel est ton secteur d'activité ?</h3>
       <p class="explainer">
-        <span class="line">Stripe ne transmet aucune info sur ton activité (une transaction, c'est juste un montant, un client, une date) — cette info sert uniquement à situer tes métriques dans leur contexte.</span>
+        <span class="line" data-i18n="sector_modal_p1">Stripe ne transmet aucune info sur ton activité (une transaction, c'est juste un montant, un client, une date) — cette info sert uniquement à situer tes métriques dans leur contexte.</span>
       </p>
       <div class="export-list" id="sectorList"></div>
     </div>
@@ -676,7 +681,7 @@
       <button class="modal-close" id="profileModalClose" type="button" aria-label="Fermer">&times;</button>
       <div class="profile-modal-banner" style="background-image: url('profile-banner.jpg');"></div>
       <div class="profile-modal-content">
-        <h3 id="profileModalTitle">Mon profil</h3>
+        <h3 id="profileModalTitle" data-i18n="profile_modal_title">Mon profil</h3>
         <div id="profileModalBody"></div>
       </div>
     </div>
@@ -714,6 +719,92 @@ function applyTheme(theme) {
 document.getElementById('themeSwitch').addEventListener('click', () => {
   const current = document.documentElement.getAttribute('data-theme');
   applyTheme(current === 'light' ? 'dark' : 'light');
+});
+
+/* --- Langue (FR/EN) --- */
+// Couvre toute la coquille statique (nav, boutons, écran de connexion,
+// panneaux, popups) via data-i18n/data-i18n-title sur les éléments HTML.
+// Ne couvre PAS (pour l'instant) le contenu généré dynamiquement en JS —
+// libellés des cartes KPI, en-têtes de tableaux, infobulles des
+// graphiques, textes d'alerte — qui restent en français quel que soit le
+// réglage : ce sont des dizaines d'appels séparés (card(), les fonctions
+// loadX()) à traiter dans une passe ultérieure dédiée.
+const I18N = {
+  fr: {
+    theme_light: 'Clair', theme_dark: 'Sombre',
+    tab_overview: "Vue d'ensemble", tab_growth: 'Croissance', tab_rfm: 'Clients (RFM)',
+    tab_cohorts: 'Rétention (cohortes)', tab_forecast: 'Prévision', tab_lexique: 'Lexique',
+    connections_label: 'Vos connexions', connect_powerbi: 'Connecter à Power BI',
+    date_from: 'Du', date_to: 'au', date_reset: 'Réinitialiser',
+    demo_toggle: 'Mode démo', demo_toggle_title: '8 mois de données simulées, pour voir cohortes/tendances/prévision avec du volume',
+    sector_badge_title: "Secteur d'activité de ces données", sector_unset: 'Secteur non renseigné',
+    currency_label: 'Devise',
+    gate_title: 'Connectez-vous pour accéder à votre dashboard',
+    gate_p1: "La connexion avec Google sert uniquement à vous identifier. Elle est indépendante des données que vous choisirez ensuite d'analyser dans metrics-dash.",
+    gate_p2: 'Une fois connecté, vous pourrez :',
+    gate_p3: '• connecter vos propres sources de données comme Stripe, Shopify ou Power BI ;',
+    gate_p4: '• analyser vos données directement depuis le dashboard ;',
+    gate_p5: '• ou explorer metrics-dash en mode démo, avec des données simulées.',
+    gate_p6: "Vos données d'analyse restent distinctes de votre compte de connexion.",
+    gate_btn: 'Se connecter avec Google',
+    powerbi_modal_title: 'Connecter tes données à Power BI',
+    powerbi_modal_p1: "Power BI n'a pas besoin d'un connecteur spécial : sa fonction native « Obtenir les données > Web » lit un fichier CSV en ligne directement, sans code.",
+    powerbi_modal_p2: 'Dans Power BI Desktop : <b>Accueil → Obtenir les données → Web</b>, colle l\'une des URL ci-dessous, valide — la table apparaît, prête à être mise en forme.',
+    sector_modal_title: "Quel est ton secteur d'activité ?",
+    sector_modal_p1: "Stripe ne transmet aucune info sur ton activité (une transaction, c'est juste un montant, un client, une date) — cette info sert uniquement à situer tes métriques dans leur contexte.",
+    profile_modal_title: 'Mon profil',
+  },
+  en: {
+    theme_light: 'Light', theme_dark: 'Dark',
+    tab_overview: 'Overview', tab_growth: 'Growth', tab_rfm: 'Customers (RFM)',
+    tab_cohorts: 'Retention (cohorts)', tab_forecast: 'Forecast', tab_lexique: 'Glossary',
+    connections_label: 'Your connections', connect_powerbi: 'Connect to Power BI',
+    date_from: 'From', date_to: 'to', date_reset: 'Reset',
+    demo_toggle: 'Demo mode', demo_toggle_title: '8 months of simulated data, to see cohorts/trends/forecast with volume',
+    sector_badge_title: 'Business sector for this data', sector_unset: 'Sector not set',
+    currency_label: 'Currency',
+    gate_title: 'Sign in to access your dashboard',
+    gate_p1: "Signing in with Google only identifies you. It's independent from the data you'll choose to analyze afterwards in metrics-dash.",
+    gate_p2: "Once signed in, you'll be able to:",
+    gate_p3: '• connect your own data sources like Stripe, Shopify or Power BI;',
+    gate_p4: '• analyze your data directly from the dashboard;',
+    gate_p5: '• or explore metrics-dash in demo mode, with simulated data.',
+    gate_p6: "Your analytics data stays separate from your login account.",
+    gate_btn: 'Sign in with Google',
+    powerbi_modal_title: 'Connect your data to Power BI',
+    powerbi_modal_p1: "Power BI doesn't need a special connector: its native \"Get Data > Web\" feature reads an online CSV file directly, no code needed.",
+    powerbi_modal_p2: 'In Power BI Desktop: <b>Home → Get Data → Web</b>, paste one of the URLs below, confirm — the table appears, ready to be shaped.',
+    sector_modal_title: "What's your business sector?",
+    sector_modal_p1: "Stripe doesn't send any info about your activity (a transaction is just an amount, a customer, a date) — this info is only used to put your metrics in context.",
+    profile_modal_title: 'My profile',
+  },
+};
+
+function applyLang(lang) {
+  document.querySelectorAll('[data-i18n]').forEach((el) => {
+    const key = el.getAttribute('data-i18n');
+    if (I18N[lang][key] !== undefined) el.textContent = I18N[lang][key];
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach((el) => {
+    const key = el.getAttribute('data-i18n-html');
+    if (I18N[lang][key] !== undefined) el.innerHTML = I18N[lang][key];
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach((el) => {
+    const key = el.getAttribute('data-i18n-title');
+    if (I18N[lang][key] !== undefined) el.setAttribute('title', I18N[lang][key]);
+  });
+  document.getElementById('langSwitch').setAttribute('data-on', lang === 'en' ? 'true' : 'false');
+  document.documentElement.setAttribute('lang', lang === 'en' ? 'en' : 'fr');
+  localStorage.setItem('lang', lang);
+}
+
+(function initLang() {
+  const saved = localStorage.getItem('lang');
+  applyLang(saved === 'en' ? 'en' : 'fr');
+})();
+
+document.getElementById('langSwitch').addEventListener('click', () => {
+  applyLang(localStorage.getItem('lang') === 'en' ? 'fr' : 'en');
 });
 
 const powerBiModal = document.getElementById('powerBiModal');
@@ -1058,7 +1149,7 @@ async function loadStatus() {
     const avatar = data.picture
       ? `<img class="google-mark avatar-mark" src="${data.picture}" alt="" aria-hidden="true" referrerpolicy="no-referrer">`
       : googleIcon;
-    googleEl.innerHTML = `<div class="status-pill status-pill-clickable" id="openProfile" title="Voir mon profil">${avatar}<span class="status-dot"></span>Bonjour ${name}</div><a class="disconnect-btn" href="/auth/logout" title="Se déconnecter" aria-label="Se déconnecter">✕</a>`;
+    googleEl.innerHTML = `<div class="status-pill status-pill-clickable" id="openProfile" title="Voir mon profil">${avatar}<span class="status-dot"></span>Bonjour ${name}</div>`;
     document.getElementById('openProfile').addEventListener('click', openProfileModal);
   } else {
     googleEl.innerHTML = '';
