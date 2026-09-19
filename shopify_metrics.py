@@ -28,7 +28,8 @@ def fetch_canonical_shop_domain(shop: str, access_token: str) -> str:
         )
         response.raise_for_status()
         return response.json()["shop"]["myshopify_domain"]
-    except Exception:
+    except Exception as exc:
+        print(f"[metrics-dash] Échec de résolution du domaine Shopify canonique pour {shop} : {type(exc).__name__}: {exc}")
         return shop
 
 
