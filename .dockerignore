@@ -1,0 +1,9 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.env
+.git/
+node_modules/
+scripts/
+README.md

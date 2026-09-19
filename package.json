@@ -1,0 +1,16 @@
+{
+  "name": "metrics-dash-worker",
+  "private": true,
+  "description": "Worker Cloudflare qui route vers le conteneur FastAPI (main.py)",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@cloudflare/containers": "^0.3.7"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260917.1",
+    "wrangler": "^4.0.0"
+  }
+}

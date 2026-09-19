@@ -9,14 +9,20 @@ from datetime import datetime, timezone
 import stripe
 
 
-def fetch_recent_charges(limit_pages: int = 5):
-    """Pulls up to `limit_pages` pages (100 each) of succeeded charges."""
+def fetch_recent_charges(api_key: str, limit_pages: int = 5):
+    """Pulls up to `limit_pages` pages (100 each) of succeeded charges.
+
+    `api_key` is passed explicitly (rather than relying on the module-level
+    `stripe.api_key`) because this now runs per logged-in user: mutating a
+    shared global would race between concurrent requests from different
+    users."""
     charges = []
     starting_after = None
     for _ in range(limit_pages):
         page = stripe.Charge.list(
             limit=100,
             starting_after=starting_after,
+            api_key=api_key,
         )
         charges.extend(page.data)
         if not page.has_more:
@@ -25,68 +31,16 @@ def fetch_recent_charges(limit_pages: int = 5):
     return [c for c in charges if c.status == "succeeded" and not c.refunded]
 
 
-def compute_metrics(charges):
-    if not charges:
-        return {
-            "total_revenue": 0,
-            "order_count": 0,
-            "avg_order_value": 0,
-            "currency": "usd",
-            "revenue_by_day": [],
-            "top_customers": [],
-        }
-
-    currency = charges[0].currency
-    total_cents = sum(c.amount for c in charges)
-    order_count = len(charges)
-
-    revenue_per_day = defaultdict(int)
-    revenue_per_customer = defaultdict(int)
-
-    for c in charges:
-        day = datetime.fromtimestamp(c.created, tz=timezone.utc).strftime("%Y-%m-%d")
-        revenue_per_day[day] += c.amount
-
-        label = (
-            c.billing_details.name
-            or c.billing_details.email
-            or c.customer
-            or "Unknown"
-        )
-        revenue_per_customer[label] += c.amount
-
-    revenue_by_day = [
-        {"date": day, "amount": cents / 100}
-        for day, cents in sorted(revenue_per_day.items())
-    ]
-
-    top_customers = sorted(
-        (
-            {"name": name, "amount": cents / 100}
-            for name, cents in revenue_per_customer.items()
-        ),
-        key=lambda x: x["amount"],
-        reverse=True,
-    )[:5]
-
-    return {
-        "total_revenue": total_cents / 100,
-        "order_count": order_count,
-        "avg_order_value": (total_cents / order_count) / 100,
-        "currency": currency,
-        "revenue_by_day": revenue_by_day,
-        "top_customers": top_customers,
-    }
-
-
 def compute_metrics_from_records(records, currency="eur"):
-    """Same output shape as compute_metrics(), but works on the normalized
-    record format shared with the analytics module (used by demo mode)."""
+    """Computes the Overview tab's headline metrics from the normalized
+    record format shared with the analytics module."""
     if not records:
         return {
             "total_revenue": 0,
             "order_count": 0,
             "avg_order_value": 0,
+            "period_start": None,
+            "period_end": None,
             "currency": currency,
             "revenue_by_day": [],
             "top_customers": [],
@@ -97,28 +51,111 @@ def compute_metrics_from_records(records, currency="eur"):
 
     revenue_per_day = defaultdict(float)
     revenue_per_customer = defaultdict(float)
+    orders_per_customer = defaultdict(int)
+    last_purchase_per_customer = {}
     for r in records:
         revenue_per_day[r["created"].strftime("%Y-%m-%d")] += r["amount"]
         revenue_per_customer[r["customer"]] += r["amount"]
+        orders_per_customer[r["customer"]] += 1
+        prev = last_purchase_per_customer.get(r["customer"])
+        if prev is None or r["created"] > prev:
+            last_purchase_per_customer[r["customer"]] = r["created"]
 
     revenue_by_day = [
         {"date": day, "amount": round(amount, 2)}
         for day, amount in sorted(revenue_per_day.items())
     ]
+    # order_count/last_purchase/share_pct viennent des mêmes records déjà
+    # normalisés (Stripe + Shopify + démo) que le montant — pas d'appel API
+    # supplémentaire, ça alimente la carte de détail au survol du tableau.
     top_customers = sorted(
-        ({"name": name, "amount": round(amount, 2)} for name, amount in revenue_per_customer.items()),
+        (
+            {
+                "name": name,
+                "amount": round(amount, 2),
+                "order_count": orders_per_customer[name],
+                "last_purchase": last_purchase_per_customer[name].strftime("%Y-%m-%d"),
+                "share_pct": round((amount / total) * 100, 1) if total else 0,
+            }
+            for name, amount in revenue_per_customer.items()
+        ),
         key=lambda x: x["amount"],
         reverse=True,
     )[:5]
+
+    # Première et dernière vente de la période affichée (pas forcément les
+    # bornes du date range picker : en mode démo/sans filtre, ce sont les
+    # dates réelles couvertes par les données générées/récupérées).
+    period_start = min(r["created"] for r in records).strftime("%Y-%m-%d")
+    period_end = max(r["created"] for r in records).strftime("%Y-%m-%d")
 
     return {
         "total_revenue": round(total, 2),
         "order_count": order_count,
         "avg_order_value": round(total / order_count, 2),
+        "period_start": period_start,
+        "period_end": period_end,
         "currency": currency,
         "revenue_by_day": revenue_by_day,
         "top_customers": top_customers,
     }
+
+
+def fetch_active_subscriptions(api_key: str, limit_pages: int = 5):
+    """Pulls active + trialing subscriptions, with their price expanded (on a
+    besoin de price.unit_amount et price.recurring pour calculer le MRR sans
+    un second aller-retour API par abonnement)."""
+    subscriptions = []
+    starting_after = None
+    for _ in range(limit_pages):
+        page = stripe.Subscription.list(
+            status="all",
+            limit=100,
+            starting_after=starting_after,
+            expand=["data.items.data.price"],
+            api_key=api_key,
+        )
+        subscriptions.extend(page.data)
+        if not page.has_more:
+            break
+        starting_after = page.data[-1].id
+    return [s for s in subscriptions if s.status in ("active", "trialing")]
+
+
+# Convertit n'importe quel intervalle de facturation Stripe (jour, semaine,
+# mois x N, année) en équivalent mensuel — c'est la définition même du MRR
+# (Monthly Recurring Revenue) : "si ce prix était facturé tous les mois,
+# combien ça representerait ?".
+_MONTHS_PER_INTERVAL = {"day": 1 / 30, "week": 1 / (52 / 12), "month": 1, "year": 12}
+
+
+def compute_mrr(subscriptions):
+    """Calcule le MRR à partir d'abonnements Stripe actifs/en essai.
+
+    Regroupé par devise plutôt que sommé globalement : un abonnement à 10 USD
+    et un à 10 EUR ne valent pas "20", ce sont deux montants dans deux
+    unités différentes (même logique que pour les paiements ponctuels)."""
+    by_currency = defaultdict(lambda: {"mrr": 0.0, "subscriptions": 0})
+
+    for sub in subscriptions:
+        for item in sub["items"]["data"]:
+            price = item["price"]
+            recurring = price.get("recurring") or {}
+            interval = recurring.get("interval", "month")
+            interval_count = recurring.get("interval_count", 1) or 1
+            months = _MONTHS_PER_INTERVAL.get(interval, 1) * interval_count
+
+            amount = (price.get("unit_amount") or 0) / 100 * item.get("quantity", 1)
+            monthly_amount = amount / months if months else 0
+
+            bucket = by_currency[price.get("currency", "eur")]
+            bucket["mrr"] += monthly_amount
+        by_currency[sub["items"]["data"][0]["price"].get("currency", "eur")]["subscriptions"] += 1
+
+    return [
+        {"currency": currency, "mrr": round(data["mrr"], 2), "active_subscriptions": data["subscriptions"]}
+        for currency, data in sorted(by_currency.items())
+    ]
 
 
 def charges_to_records(charges):
@@ -135,11 +172,19 @@ def charges_to_records(charges):
             or c.customer
             or "unknown"
         )
+        # Pays de facturation (ISO 3166-1 alpha-2, ex: "FR"). Absent si le
+        # client n'a pas renseigné d'adresse complète à l'achat — pas toujours
+        # garanti selon comment le checkout Stripe est configuré.
+        country = None
+        if c.billing_details.address:
+            country = c.billing_details.address.country
         records.append(
             {
                 "customer": customer_key,
                 "amount": c.amount / 100,
                 "created": datetime.fromtimestamp(c.created, tz=timezone.utc),
+                "country": country,
+                "currency": c.currency,
             }
         )
     return records
