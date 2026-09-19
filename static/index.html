@@ -165,11 +165,35 @@
      plutôt qu'une vraie météo — pas de dépendance à une API externe. */
   .weather-badge { font-size: 15px; }
   .weather-badge #weatherIcon { font-size: 18px; line-height: 1; }
+  /* Modale météo : fond translucide bleu ciel (glass), même esprit que
+     .modal-card-profile mais teinté plutôt que neutre, pour évoquer un
+     vrai bulletin météo plutôt qu'un popup générique du design system. */
+  #weatherModal .modal-card {
+    background: linear-gradient(160deg, rgba(56,150,224,.30), rgba(20,20,28,.85) 70%);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border-color: rgba(120,190,240,.35);
+  }
+  [data-theme="light"] #weatherModal .modal-card {
+    background: linear-gradient(160deg, rgba(135,206,250,.45), rgba(255,255,255,.85) 70%);
+  }
   .weather-months { display: flex; flex-direction: column; gap: var(--sp-2); max-height: 50vh; overflow-y: auto; }
-  .weather-month-row { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3); background: var(--surface-2); border-radius: var(--radius-sm); }
+  .weather-month-row {
+    display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3);
+    background: var(--surface-2); border-radius: var(--radius-sm);
+    border-left: 3px solid var(--border-strong);
+  }
   .weather-month-icon { font-size: 22px; flex-shrink: 0; }
   .weather-month-name { font-weight: 700; color: var(--text-primary); flex-shrink: 0; width: 90px; }
-  .weather-month-detail { color: var(--text-secondary); font-size: var(--fs-small); }
+  .weather-month-detail { color: var(--text-secondary); font-size: var(--fs-small); flex: 1; }
+  .weather-month-arrow { font-weight: 700; font-size: 16px; flex-shrink: 0; }
+  /* Même code couleur que growthArrow()/.kpi-delta ailleurs dans le
+     dashboard : vert = ça monte, orange = léger recul, rouge = net recul. */
+  .weather-month-row.weather-pos { background: var(--pos-soft); border-left-color: var(--pos); }
+  .weather-month-row.weather-pos .weather-month-arrow { color: var(--pos-text); }
+  .weather-month-row.weather-warn { background: var(--warn-soft); border-left-color: var(--warn); }
+  .weather-month-row.weather-warn .weather-month-arrow { color: var(--warn-text); }
+  .weather-month-row.weather-neg { background: var(--neg-soft); border-left-color: var(--neg); }
+  .weather-month-row.weather-neg .weather-month-arrow { color: var(--neg-text); }
   .demo-btn:hover { border-color: var(--accent); color: var(--text-primary); }
   .demo-btn[data-on="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-text); }
   .demo-btn .demo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-tertiary); transition: var(--transition); }
@@ -2092,14 +2116,17 @@ function updateWeatherDate() {
     new Date().toLocaleDateString(dateLang, { weekday: 'long', day: 'numeric', month: 'long' });
 }
 
-// {icon, key} pour un MoM donné — factorisé pour être utilisé à la fois par
-// le badge (dernier mois) et la modale de détail (tous les mois du tableau).
+// {icon, key, cls, arrow} pour un MoM donné — factorisé pour être utilisé à
+// la fois par le badge (dernier mois) et la modale de détail (tous les mois
+// du tableau). cls reprend le même code couleur pos/warn/neg que le reste
+// du dashboard (growthArrow(), kpi-delta...), arrow donne le même repère
+// visuel ▲/▼ qu'ailleurs plutôt qu'un symbole propre à la météo.
 function weatherFor(momGrowthPct) {
-  if (momGrowthPct === null || momGrowthPct === undefined) return { icon: '🌫️', key: 'weather_unknown' };
-  if (momGrowthPct >= 10) return { icon: '☀️', key: 'weather_sunny' };
-  if (momGrowthPct >= 0) return { icon: '🌤️', key: 'weather_partly' };
-  if (momGrowthPct >= -10) return { icon: '⛅', key: 'weather_cloudy' };
-  return { icon: '⛈️', key: 'weather_stormy' };
+  if (momGrowthPct === null || momGrowthPct === undefined) return { icon: '🌫️', key: 'weather_unknown', cls: 'neutral', arrow: '' };
+  if (momGrowthPct >= 10) return { icon: '☀️', key: 'weather_sunny', cls: 'pos', arrow: '▲' };
+  if (momGrowthPct >= 0) return { icon: '🌤️', key: 'weather_partly', cls: 'pos', arrow: '▲' };
+  if (momGrowthPct >= -10) return { icon: '⛅', key: 'weather_cloudy', cls: 'warn', arrow: '▼' };
+  return { icon: '⛈️', key: 'weather_stormy', cls: 'neg', arrow: '▼' };
 }
 
 function updateWeatherIcon(momGrowthPct) {
@@ -2117,13 +2144,14 @@ let growthMonthlyCache = [];
 const weatherModal = document.getElementById('weatherModal');
 function openWeatherModal() {
   document.getElementById('weatherModalMonths').innerHTML = growthMonthlyCache.map(m => {
-    const { icon, key } = weatherFor(m.mom_growth_pct);
+    const { icon, key, cls, arrow } = weatherFor(m.mom_growth_pct);
     const detail = key === 'weather_unknown' ? t('weather_unknown') : t(key).replace('{pct}', m.mom_growth_pct);
     return `
-      <div class="weather-month-row">
+      <div class="weather-month-row weather-${cls}">
         <span class="weather-month-icon" aria-hidden="true">${icon}</span>
         <span class="weather-month-name">${m.month}</span>
         <span class="weather-month-detail">${detail}</span>
+        ${arrow ? `<span class="weather-month-arrow">${arrow}</span>` : ''}
       </div>`;
   }).join('') || `<p class="explainer">${t('weather_unknown')}</p>`;
   weatherModal.hidden = false;
