@@ -127,13 +127,18 @@ def _label_segment(r, f, m):
 def rfm_segments(records, as_of: datetime = None):
     as_of = as_of or datetime.now(timezone.utc)
 
-    per_customer = defaultdict(lambda: {"last_purchase": None, "count": 0, "total": 0.0})
+    per_customer = defaultdict(lambda: {"last_purchase": None, "count": 0, "total": 0.0, "country": None})
     for r in records:
         c = per_customer[r["customer"]]
         c["count"] += 1
         c["total"] += r["amount"]
         if c["last_purchase"] is None or r["created"] > c["last_purchase"]:
             c["last_purchase"] = r["created"]
+            # Le pays du client RFM suit sa commande la plus récente — un
+            # client a en pratique presque toujours le même pays sur toutes
+            # ses commandes, mais s'il en change, on garde le plus à jour
+            # plutôt qu'un pays périmé (même logique que last_purchase).
+            c["country"] = r.get("country")
 
     if not per_customer:
         return []
@@ -152,6 +157,7 @@ def rfm_segments(records, as_of: datetime = None):
         results.append(
             {
                 "customer": name,
+                "country": c["country"],
                 "recency_days": recency_days,
                 "frequency": c["count"],
                 "monetary": round(c["total"], 2),

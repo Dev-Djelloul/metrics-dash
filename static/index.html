@@ -189,6 +189,23 @@
   .sector-note.sector-note-c3 { background: var(--warn-soft); border-left-color: var(--warn); color: var(--warn-text); }
   .sector-note.sector-note-c4 { background: var(--seg-new-soft); border-left-color: var(--seg-new); color: var(--seg-new); }
 
+  /* Badge de filtre pays sur le tableau RFM, posé quand on arrive depuis un
+     clic sur une ligne de "Détail par pays" — même gabarit pilule que
+     .demo-btn, avec un bouton × intégré pour revenir à la vue complète. */
+  .rfm-filter-badge {
+    display: inline-flex; align-items: center; gap: var(--sp-2);
+    font-size: var(--fs-small); color: var(--accent-text);
+    background: var(--accent-soft); border: var(--border-w) solid var(--accent);
+    border-radius: var(--radius-pill); padding: 6px 8px 6px 14px; margin-bottom: var(--sp-4);
+  }
+  .rfm-filter-badge button {
+    display: flex; align-items: center; justify-content: center; width: 20px; height: 20px;
+    border-radius: 50%; border: none; background: transparent; color: inherit;
+    font-size: 15px; line-height: 1; cursor: pointer; transition: var(--transition);
+  }
+  .rfm-filter-badge button:hover { background: rgba(0,0,0,.15); }
+  #geoTable tbody tr { cursor: pointer; }
+
   .date-range { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-small); color: var(--text-secondary); }
   .date-range input[type="date"] { font-family: var(--font-sans); font-size: var(--fs-small); color: var(--text-primary); background: var(--surface-2); border: var(--border-w) solid var(--border-strong); border-radius: var(--radius-sm); padding: 6px 10px; color-scheme: dark; }
   [data-theme="light"] .date-range input[type="date"] { color-scheme: light; }
@@ -567,6 +584,7 @@
         <span class="line" data-i18n-html="ln_16"><span class="term term-r">Récence</span> (il a acheté récemment ?) · <span class="term term-f">Fréquence</span> (il achète souvent ?) · <span class="term term-m">Montant</span> (il dépense beaucoup ?).</span>
         <span class="line" data-i18n-html="ln_17">Les scores combinés donnent un segment actionnable (Champions, À risque, Perdus...).</span>
       </p>
+      <div id="rfmCountryFilterBadge" class="rfm-filter-badge" hidden></div>
       <div class="scroll" style="overflow-x:auto;">
         <table class="data" id="rfmTable">
           <thead><tr><th data-i18n="th_customer">Client</th><th class="num" data-i18n="th_recency">Récence (j)</th><th class="num" data-i18n="th_frequency">Fréquence</th><th class="num" data-i18n="th_amount">Montant</th><th class="num">R</th><th class="num">F</th><th class="num">M</th><th data-i18n="th_action">Action marketing suggérée</th><th data-i18n="th_segment">Segment</th></tr></thead>
@@ -808,6 +826,7 @@ const I18N = {
     th_action: 'Action marketing suggérée', th_segment: 'Segment', th_cohort: 'Cohorte', th_size: 'Taille',
     hover_share: 'Part du CA', hover_orders: 'Commandes', hover_last_purchase: 'Dernier achat', hover_no_segment: 'Segment non calculé',
     th_aov: 'Panier moyen', th_share: 'Part du CA',
+    rfm_filter_label: 'Filtré par pays : {country}',
     alert_revenue_drop: 'CA de {month} en baisse de {pct}% vs le mois précédent.',
     alert_churn_risk: '{pct}% des clients sont à risque ou perdus ({count}/{total}).',
     auth_err_oauth_failed: 'La connexion à Stripe a échoué (code refusé ou expiré). Réessaie.',
@@ -883,6 +902,7 @@ const I18N = {
     th_action: 'Suggested marketing action', th_segment: 'Segment', th_cohort: 'Cohort', th_size: 'Size',
     hover_share: 'Share of revenue', hover_orders: 'Orders', hover_last_purchase: 'Last purchase', hover_no_segment: 'Segment not computed',
     th_aov: 'Average order value', th_share: 'Share of revenue',
+    rfm_filter_label: 'Filtered by country: {country}',
     alert_revenue_drop: 'Revenue for {month} dropped {pct}% vs the previous month.',
     alert_churn_risk: '{pct}% of customers are at risk or lost ({count}/{total}).',
     auth_err_oauth_failed: 'The connection to Stripe failed (code rejected or expired). Please try again.',
@@ -1117,6 +1137,8 @@ let currentSector = null;
 // peu importe lequel a fini en premier.
 let topCustomersCache = {};
 let rfmByCustomer = {};
+let rfmRowsCache = [];
+let rfmCountryFilter = null;
 
 function escapeHtml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -1305,13 +1327,14 @@ document.getElementById('demoToggle').addEventListener('click', async (e) => {
   if (connected || next) await loadAll();
 });
 
+function activateTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.setAttribute('data-active', String(t.dataset.tab === name)));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
 document.querySelectorAll('.tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(t => t.setAttribute('data-active', 'false'));
-    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    tab.setAttribute('data-active', 'true');
-    document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
-  });
+  tab.addEventListener('click', () => activateTab(tab.dataset.tab));
 });
 
 async function loadStatus() {
@@ -1516,6 +1539,14 @@ document.querySelector('#customersTable tbody').addEventListener('mouseout', (e)
   if (!e.relatedTarget || !e.relatedTarget.closest('tr[data-customer]')) hideCustomerHoverCard();
 });
 
+document.querySelector('#geoTable tbody').addEventListener('click', (e) => {
+  const row = e.target.closest('tr[data-country]');
+  if (!row) return;
+  rfmCountryFilter = row.dataset.country;
+  activateTab('rfm');
+  renderRfmTable();
+});
+
 async function loadWeekday() {
   const res = await fetch(apiUrl('/api/weekday'));
   if (!res.ok) return;
@@ -1621,8 +1652,11 @@ async function loadGeo() {
   if (!res.ok) return;
   const geo = await res.json();
 
+  // Chaque ligne est cliquable : bascule sur l'onglet RFM filtré sur ce
+  // pays (renderRfmTable() lit rfmRowsCache, déjà chargé par loadAll(),
+  // donc pas de nouvelle requête réseau au clic).
   document.querySelector('#geoTable tbody').innerHTML = geo.countries.map(c =>
-    `<tr><td title="${countryName(c.country)}">${c.country}</td><td class="num">${c.customer_count}</td><td class="num">${fmtMoney(c.revenue)}</td><td class="num">${fmtMoney(c.avg_order_value)}</td><td class="num">${c.share_pct}%</td></tr>`
+    `<tr data-country="${c.country}" title="${countryName(c.country)}"><td>${c.country}</td><td class="num">${c.customer_count}</td><td class="num">${fmtMoney(c.revenue)}</td><td class="num">${fmtMoney(c.avg_order_value)}</td><td class="num">${c.share_pct}%</td></tr>`
   ).join('');
 
   const noteEl = document.getElementById('geoUnknownNote');
@@ -1926,13 +1960,27 @@ function segmentActionDisplay(segment) {
   return SEGMENT_ACTION_I18N_KEY[segment] ? t(SEGMENT_ACTION_I18N_KEY[segment]) : (SEGMENT_ACTION[segment] || '—');
 }
 
-async function loadRfm() {
-  const res = await fetch(apiUrl('/api/rfm'));
-  if (!res.ok) return;
-  const rows = await res.json();
+// Rendu du tableau seul (pas le camembert, qui reste sur la répartition
+// globale) : appelé par loadRfm() après chargement, et par le filtre pays
+// (clic sur une ligne de "Détail par pays") sans refaire de requête réseau,
+// rfmRowsCache étant déjà là dès que loadAll() a tourné une fois.
+function renderRfmTable() {
+  const badge = document.getElementById('rfmCountryFilterBadge');
+  const rows = rfmCountryFilter
+    ? rfmRowsCache.filter(r => r.country === rfmCountryFilter)
+    : rfmRowsCache;
 
-  rfmByCustomer = {};
-  rows.forEach(r => { rfmByCustomer[r.customer] = r; });
+  if (rfmCountryFilter) {
+    badge.hidden = false;
+    badge.innerHTML = `<span>${t('rfm_filter_label').replace('{country}', countryName(rfmCountryFilter))}</span><button type="button" aria-label="×">&times;</button>`;
+    badge.querySelector('button').addEventListener('click', () => {
+      rfmCountryFilter = null;
+      renderRfmTable();
+    });
+  } else {
+    badge.hidden = true;
+    badge.innerHTML = '';
+  }
 
   document.querySelector('#rfmTable tbody').innerHTML = rows.map(r =>
     `<tr>
@@ -1942,6 +1990,18 @@ async function loadRfm() {
       <td><span class="badge ${SEGMENT_CLASS[r.segment] || 'loyal'}">${segmentDisplay(r.segment)}</span></td>
     </tr>`
   ).join('');
+}
+
+async function loadRfm() {
+  const res = await fetch(apiUrl('/api/rfm'));
+  if (!res.ok) return;
+  const rows = await res.json();
+
+  rfmRowsCache = rows;
+  rfmByCustomer = {};
+  rows.forEach(r => { rfmByCustomer[r.customer] = r; });
+
+  renderRfmTable();
 
   const counts = {};
   for (const r of rows) counts[r.segment] = (counts[r.segment] || 0) + 1;
