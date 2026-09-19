@@ -406,7 +406,7 @@
 
     <div class="chart-row chart-row-wide">
       <div class="card chart-box">
-        <h3>CA par pays</h3>
+        <h3 data-i18n="h3_0">CA par pays</h3>
         <p class="explainer">
           <span class="line">Carte colorée selon le CA généré par pays de facturation.</span>
           <span class="line">Plus la couleur est intense, plus ce pays représente une part importante du chiffre d'affaires. Molette ou boutons +/- pour zoomer, glisser pour te déplacer une fois zoomé.</span>
@@ -421,7 +421,7 @@
         </div>
       </div>
       <div class="card chart-box">
-        <h3>Détail par pays</h3>
+        <h3 data-i18n="h3_1">Détail par pays</h3>
         <table class="data" id="geoTable">
           <thead><tr><th>Pays</th><th class="num">Clients</th><th class="num">CA</th></tr></thead>
           <tbody></tbody>
@@ -431,12 +431,12 @@
     </div>
 
     <div class="card chart-box">
-      <h3>CA par jour</h3>
+      <h3 data-i18n="h3_2">CA par jour</h3>
       <div class="canvas-wrap"><canvas id="revenueChart"></canvas></div>
     </div>
 
     <div class="card chart-box">
-      <h3>CA par jour de la semaine</h3>
+      <h3 data-i18n="h3_3">CA par jour de la semaine</h3>
       <p class="explainer">
         <span class="line">Regroupe toutes les commandes par <span class="term term-mom">jour de la semaine</span>, toutes semaines confondues.</span>
         <span class="line">Utile pour repérer un jour fort ou faible (ex : plus de ventes le vendredi).</span>
@@ -445,7 +445,7 @@
     </div>
 
     <div class="card chart-box">
-      <h3>Concentration du CA</h3>
+      <h3 data-i18n="h3_4">Concentration du CA</h3>
       <p class="explainer">
         <span class="line">Illustre le <span class="term term-forecast">principe de Pareto</span> (souvent "80/20") : une petite part de tes clients fait-elle une grande part du CA ?</span>
         <span class="line">Ici : part du CA venant des 20% de clients qui dépensent le plus, vs tous les autres.</span>
@@ -455,7 +455,7 @@
     </div>
 
     <div class="card chart-box">
-      <h3>Top clients</h3>
+      <h3 data-i18n="h3_5">Top clients</h3>
       <table class="data" id="customersTable">
         <thead><tr><th>Client</th><th class="num">Montant</th></tr></thead>
         <tbody></tbody>
@@ -466,7 +466,7 @@
   <!-- Growth -->
   <div class="panel" id="panel-growth">
     <div class="card chart-box" id="mrrCard" style="display:none;">
-      <h3>MRR (revenu récurrent mensuel)</h3>
+      <h3 data-i18n="h3_6">MRR (revenu récurrent mensuel)</h3>
       <p class="explainer">
         <span class="line">Basé sur tes <span class="term term-mom">abonnements Stripe actifs</span> (pas les paiements ponctuels analysés ailleurs) : combien ça représenterait si chaque abonnement était facturé tous les mois, quel que soit son cycle réel (annuel, hebdomadaire...).</span>
       </p>
@@ -474,7 +474,7 @@
     </div>
 
     <div class="card chart-box">
-      <h3>CA mensuel & croissance</h3>
+      <h3 data-i18n="h3_7">CA mensuel & croissance</h3>
       <p class="explainer">
         <span class="line"><span class="term term-mom">MoM</span> (Month-over-Month) = variation vs le mois précédent.</span>
         <span class="line"><span class="term term-yoy">YoY</span> (Year-over-Year) = variation vs le même mois l'année dernière.</span>
@@ -486,7 +486,7 @@
       </table>
     </div>
     <div class="card chart-box">
-      <h3>CA quotidien + moyenne mobile 7 jours</h3>
+      <h3 data-i18n="h3_8">CA quotidien + moyenne mobile 7 jours</h3>
       <p class="explainer">
         <span class="line">La <span class="term term-ma">moyenne mobile</span> lisse les pics/creux journaliers pour voir la vraie tendance.</span>
         <span class="line">C'est la technique de base pour lire un graphique de série temporelle.</span>
@@ -495,7 +495,7 @@
     </div>
 
     <div class="card chart-box">
-      <h3>Nouveaux vs clients récurrents</h3>
+      <h3 data-i18n="h3_9">Nouveaux vs clients récurrents</h3>
       <p class="explainer">
         <span class="line">Chaque mois, quelle part du CA vient de <span class="term term-yoy">nouveaux clients</span> (1er achat ce mois-là) vs de <span class="term term-ma">clients qui reviennent</span> ?</span>
         <span class="line">Beaucoup de "nouveaux" = tu acquiers. Beaucoup de "récurrents" = tu fidélises. Les deux comptent, mais pas pour les mêmes raisons.</span>
@@ -509,7 +509,7 @@
     <div class="cards" id="loyaltyCards"></div>
 
     <div class="card chart-box">
-      <h3>Répartition des clients par segment</h3>
+      <h3 data-i18n="h3_10">Répartition des clients par segment</h3>
       <p class="explainer">
         <span class="line">Combien de clients dans chaque segment RFM, en proportion.</span>
       </p>
@@ -517,7 +517,7 @@
     </div>
 
     <div class="card chart-box">
-      <h3>Segmentation RFM (Récence / Fréquence / Montant)</h3>
+      <h3 data-i18n="h3_11">Segmentation RFM (Récence / Fréquence / Montant)</h3>
       <p class="explainer">
         <span class="line">Technique de segmentation client classique en marketing/data : chaque client reçoit un score 1-4 sur trois axes.</span>
         <span class="line"><span class="term term-r">Récence</span> (il a acheté récemment ?) · <span class="term term-f">Fréquence</span> (il achète souvent ?) · <span class="term term-m">Montant</span> (il dépense beaucoup ?).</span>
@@ -535,7 +535,7 @@
   <!-- Cohorts -->
   <div class="panel" id="panel-cohorts">
     <div class="card chart-box">
-      <h3>Rétention moyenne toutes cohortes confondues</h3>
+      <h3 data-i18n="h3_12">Rétention moyenne toutes cohortes confondues</h3>
       <p class="explainer">
         <span class="line">Moyenne du % de rétention à chaque mois écoulé, sur toutes les cohortes — une seule courbe pour voir la tendance générale sans lire tout le tableau.</span>
       </p>
@@ -543,7 +543,7 @@
     </div>
 
     <div class="card chart-box">
-      <h3>Analyse de cohortes (rétention)</h3>
+      <h3 data-i18n="h3_13">Analyse de cohortes (rétention)</h3>
       <p class="explainer">
         <span class="line">Chaque ligne = un groupe de clients ayant acheté pour la première fois ce mois-là (la <span class="term term-cohort">cohorte</span>).</span>
         <span class="line">Chaque colonne = combien de mois plus tard. La couleur montre le % de la cohorte encore active.</span>
@@ -553,7 +553,7 @@
     </div>
 
     <div class="card chart-box">
-      <h3>CA généré par cohorte</h3>
+      <h3 data-i18n="h3_14">CA généré par cohorte</h3>
       <p class="explainer">
         <span class="line">Même lecture que le tableau de rétention, mais en <span class="term term-cohort">chiffre d'affaires</span> plutôt qu'en % de clients actifs.</span>
         <span class="line">Deux cohortes avec la même rétention en % peuvent valoir très différemment si l'une regroupe des clients qui dépensent plus.</span>
@@ -565,7 +565,7 @@
   <!-- Forecast -->
   <div class="panel" id="panel-forecast">
     <div class="card chart-box">
-      <h3>Prévision de CA (régression linéaire)</h3>
+      <h3 data-i18n="h3_15">Prévision de CA (régression linéaire)</h3>
       <p class="explainer" id="forecastNote">
         <span class="line">Projette les prochains mois à partir de la tendance historique (<span class="term term-forecast">régression linéaire simple</span>, sans librairie externe).</span>
         <span class="line">La zone bleue est l'intervalle de confiance (~95%) : elle s'élargit avec l'horizon, une prévision lointaine étant statistiquement moins fiable qu'une prévision proche.</span>
@@ -574,7 +574,7 @@
     </div>
 
     <div class="card chart-box">
-      <h3>Prévision du nombre de commandes</h3>
+      <h3 data-i18n="h3_16">Prévision du nombre de commandes</h3>
       <p class="explainer">
         <span class="line">Même méthode que la prévision de CA, appliquée au <span class="term term-forecast">nombre de commandes</span> plutôt qu'au montant.</span>
         <span class="line">Répond à « combien de ventes » plutôt qu'à « combien ça va rapporter » — les deux ne bougent pas forcément ensemble (ex : panier moyen qui grimpe).</span>
@@ -583,7 +583,7 @@
     </div>
 
     <div class="card chart-box">
-      <h3>Prévision de nouveaux clients</h3>
+      <h3 data-i18n="h3_17">Prévision de nouveaux clients</h3>
       <p class="explainer">
         <span class="line">Projette le rythme d'<span class="term term-forecast">acquisition de nouveaux clients</span> par mois, à partir de la tendance historique.</span>
         <span class="line">Utile pour anticiper si le rythme d'acquisition ralentit avant que ça se voie sur le CA.</span>
@@ -595,7 +595,7 @@
   <!-- Lexique -->
   <div class="panel" id="panel-lexique">
     <div class="card chart-box">
-      <h3>Lexique des termes techniques</h3>
+      <h3 data-i18n="h3_18">Lexique des termes techniques</h3>
       <p class="explainer">
         <span class="line">Chaque terme employé ailleurs dans le dashboard, expliqué simplement — pas besoin de tout connaître pour commencer.</span>
       </p>
@@ -753,6 +753,11 @@ const I18N = {
     sector_modal_title: "Quel est ton secteur d'activité ?",
     sector_modal_p1: "Stripe ne transmet aucune info sur ton activité (une transaction, c'est juste un montant, un client, une date) — cette info sert uniquement à situer tes métriques dans leur contexte.",
     profile_modal_title: 'Mon profil',
+    kpi_revenue: "Chiffre d'affaires", kpi_orders: 'Commandes', kpi_aov: 'Panier moyen',
+    kpi_ltv: 'LTV moyen (valeur vie client)', kpi_delay: 'Délai moyen entre 2 achats',
+    kpi_atrisk: 'Clients à risque / perdus', kpi_repeat: 'Taux de clients récurrents',
+    kpi_active_subs: 'Abonnements actifs',
+    h3_0: 'CA par pays', h3_1: 'Détail par pays', h3_2: 'CA par jour', h3_3: 'CA par jour de la semaine', h3_4: 'Concentration du CA', h3_5: 'Top clients', h3_6: 'MRR (revenu récurrent mensuel)', h3_7: 'CA mensuel & croissance', h3_8: 'CA quotidien + moyenne mobile 7 jours', h3_9: 'Nouveaux vs clients récurrents', h3_10: 'Répartition des clients par segment', h3_11: 'Segmentation RFM (Récence / Fréquence / Montant)', h3_12: 'Rétention moyenne toutes cohortes confondues', h3_13: 'Analyse de cohortes (rétention)', h3_14: 'CA généré par cohorte', h3_15: 'Prévision de CA (régression linéaire)', h3_16: 'Prévision du nombre de commandes', h3_17: 'Prévision de nouveaux clients', h3_18: 'Lexique des termes techniques',
   },
   en: {
     theme_light: 'Light', theme_dark: 'Dark',
@@ -777,8 +782,20 @@ const I18N = {
     sector_modal_title: "What's your business sector?",
     sector_modal_p1: "Stripe doesn't send any info about your activity (a transaction is just an amount, a customer, a date) — this info is only used to put your metrics in context.",
     profile_modal_title: 'My profile',
+    kpi_revenue: 'Revenue', kpi_orders: 'Orders', kpi_aov: 'Average order value',
+    kpi_ltv: 'Average LTV (lifetime value)', kpi_delay: 'Average time between purchases',
+    kpi_atrisk: 'At-risk / lost customers', kpi_repeat: 'Repeat customer rate',
+    kpi_active_subs: 'Active subscriptions',
+    h3_0: 'Revenue by country', h3_1: 'Country breakdown', h3_2: 'Revenue by day', h3_3: 'Revenue by day of the week', h3_4: 'Revenue concentration', h3_5: 'Top customers', h3_6: 'MRR (monthly recurring revenue)', h3_7: 'Monthly revenue & growth', h3_8: 'Daily revenue + 7-day moving average', h3_9: 'New vs returning customers', h3_10: 'Customer segment breakdown', h3_11: 'RFM segmentation (Recency / Frequency / Monetary)', h3_12: 'Average retention across all cohorts', h3_13: 'Cohort analysis (retention)', h3_14: 'Revenue by cohort', h3_15: 'Revenue forecast (linear regression)', h3_16: 'Order count forecast', h3_17: 'New customer forecast', h3_18: 'Glossary of technical terms',
   },
 };
+
+// t() : traduit une clé pour le contenu généré en JS (cartes KPI...),
+// pendant du data-i18n pour le HTML statique — même dictionnaire I18N.
+function t(key) {
+  const lang = localStorage.getItem('lang') === 'en' ? 'en' : 'fr';
+  return (I18N[lang] && I18N[lang][key]) || key;
+}
 
 function applyLang(lang) {
   document.querySelectorAll('[data-i18n]').forEach((el) => {
@@ -796,6 +813,10 @@ function applyLang(lang) {
   document.getElementById('langSwitch').setAttribute('data-on', lang === 'en' ? 'true' : 'false');
   document.documentElement.setAttribute('lang', lang === 'en' ? 'en' : 'fr');
   localStorage.setItem('lang', lang);
+  // Le contenu généré en JS (cartes KPI via t(), tableaux, alertes) est
+  // "figé" au moment du rendu — il faut tout recharger pour qu'il
+  // reflète la nouvelle langue, même logique que le changement de thème.
+  if (typeof loadAll === 'function' && document.getElementById('appBody').style.display !== 'none') loadAll();
 }
 
 (function initLang() {
@@ -1238,9 +1259,9 @@ async function loadOverview() {
   currentCurrency = m.currency.toUpperCase();
 
   document.getElementById('cards').innerHTML =
-    card('Chiffre d\'affaires', fmtMoney(m.total_revenue)) +
-    card('Commandes', m.order_count) +
-    card('Panier moyen', fmtMoney(m.avg_order_value));
+    card(t('kpi_revenue'), fmtMoney(m.total_revenue)) +
+    card(t('kpi_orders'), m.order_count) +
+    card(t('kpi_aov'), fmtMoney(m.avg_order_value));
 
   destroyChart('revenue');
   charts.revenue = new Chart(document.getElementById('revenueChart'), {
@@ -1509,10 +1530,10 @@ async function loadLoyaltyCards() {
     : null;
 
   document.getElementById('loyaltyCards').innerHTML =
-    card('LTV moyen (valeur vie client)', fmtMoney(loyalty.avg_ltv)) +
-    card('Délai moyen entre 2 achats', delayText, delaySub) +
-    card('Clients à risque / perdus', `${atRiskPct}%`) +
-    card('Taux de clients récurrents', `${loyalty.repeat_customer_pct}%`, repeatSub);
+    card(t('kpi_ltv'), fmtMoney(loyalty.avg_ltv)) +
+    card(t('kpi_delay'), delayText, delaySub) +
+    card(t('kpi_atrisk'), `${atRiskPct}%`) +
+    card(t('kpi_repeat'), `${loyalty.repeat_customer_pct}%`, repeatSub);
 
   if (!benchmark) {
     document.getElementById('loyaltyCards').insertAdjacentHTML('beforeend',
@@ -1544,7 +1565,7 @@ async function loadMrr() {
   document.getElementById('mrrCards').innerHTML = data.by_currency.map(c => {
     const symbol = CURRENCY_SYMBOL[c.currency.toUpperCase()] || c.currency.toUpperCase();
     return card(`MRR (${c.currency.toUpperCase()})`, `${c.mrr.toFixed(2)} ${symbol}`) +
-      card(`Abonnements actifs (${c.currency.toUpperCase()})`, c.active_subscriptions);
+      card(`${t('kpi_active_subs')} (${c.currency.toUpperCase()})`, c.active_subscriptions);
   }).join('');
 }
 
