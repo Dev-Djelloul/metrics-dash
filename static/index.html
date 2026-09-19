@@ -2081,12 +2081,24 @@ async function loadRfm() {
    une modale séparée — tout ce que faisait la modale (méthodologie déjà
    dans l'explainer de la carte, jauges R/F/M, action marketing) vit
    maintenant au même endroit que le tableau. --- */
-function rfmGauge(labelKey, score) {
+// Mêmes couleurs que les termes R/F/M du lexique (.term-r/.term-f/.term-m)
+// et de l'explainer juste au-dessus du tableau — la fiche reprend le code
+// couleur déjà établi ailleurs plutôt que d'en inventer un nouveau.
+function rfmGauge(labelKey, score, colorVar) {
   return `
     <div class="rfm-score-gauge">
-      <div class="rfm-score-gauge-label"><span>${t(labelKey)}</span><b>${score}/4</b></div>
-      <div class="rfm-score-gauge-track"><div class="rfm-score-gauge-fill" style="width:${score * 25}%"></div></div>
+      <div class="rfm-score-gauge-label"><span style="color:var(${colorVar})">${t(labelKey)}</span><b style="color:var(${colorVar})">${score}/4</b></div>
+      <div class="rfm-score-gauge-track"><div class="rfm-score-gauge-fill" style="width:${score * 25}%; background:var(${colorVar})"></div></div>
     </div>`;
+}
+
+// Fraîcheur du dernier achat : vert si récent, orange si ça date un peu,
+// rouge si ça fait longtemps — même logique de lecture rapide que les
+// jauges, appliquée à une donnée qui n'était jusqu'ici qu'un chiffre brut.
+function recencyColorVar(days) {
+  if (days <= 30) return '--pos-text';
+  if (days <= 90) return '--warn-text';
+  return '--neg-text';
 }
 
 function showRfmDetail(customerName, row) {
@@ -2096,12 +2108,12 @@ function showRfmDetail(customerName, row) {
   detail.innerHTML = `
     <div class="rfm-hover-name">${escapeHtml(customerName)} <span class="badge ${SEGMENT_CLASS[r.segment] || 'loyal'}">${segmentDisplay(r.segment)}</span></div>
     <div class="rfm-score-gauge-stack">
-      ${rfmGauge('rfm_gauge_recency', r.r_score)}
-      ${rfmGauge('rfm_gauge_frequency', r.f_score)}
-      ${rfmGauge('rfm_gauge_monetary', r.m_score)}
+      ${rfmGauge('rfm_gauge_recency', r.r_score, '--accent')}
+      ${rfmGauge('rfm_gauge_frequency', r.f_score, '--seg-new')}
+      ${rfmGauge('rfm_gauge_monetary', r.m_score, '--warn')}
     </div>
-    <div class="chc-row"><span>${t('rfm_detail_last_purchase').replace('{days}', r.recency_days)}</span></div>
-    <div class="chc-row"><span>${t('rfm_detail_frequency').replace('{count}', r.frequency)}</span><b>${fmtMoney(r.monetary)}</b></div>
+    <div class="chc-row"><span style="color:var(${recencyColorVar(r.recency_days)})">${t('rfm_detail_last_purchase').replace('{days}', r.recency_days)}</span></div>
+    <div class="chc-row"><span>${t('rfm_detail_frequency').replace('{count}', r.frequency)}</span><b style="color:var(--pos-text)">${fmtMoney(r.monetary)}</b></div>
     <div class="chc-row chc-action">
       <span>${t('th_action')}</span>
       <b>${segmentActionDisplay(r.segment)}</b>
