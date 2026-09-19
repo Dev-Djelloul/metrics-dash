@@ -226,7 +226,14 @@
      laisser s'étirer sur toute la largeur de la page. */
   .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); margin-bottom: var(--sp-8); align-items: start; }
   .chart-row .chart-box { margin-bottom: 0; }
-  .chart-row-wide { grid-template-columns: 2fr 1fr; }
+  .chart-row-wide { grid-template-columns: 2fr 1fr; align-items: stretch; }
+  /* La carte du monde (CA par pays) était toujours plus courte que son
+     voisin "Détail par pays", dont la hauteur grandit avec le nombre de
+     pays listés — plutôt que fixer une hauteur en dur (qui redeviendrait
+     fausse dès que la liste change), le duo s'étire ensemble (stretch
+     ci-dessus) et la carte remplit l'espace disponible via flex. */
+  .chart-row-wide .chart-box { display: flex; flex-direction: column; }
+  #geoMapWrap { flex: 1; height: auto; min-height: 260px; }
 
   /* Hauteur fixe pour tous les graphiques Chart.js : évite qu'un camembert
      (ratio carré par défaut) ne s'étire à la largeur de sa carte et devienne
