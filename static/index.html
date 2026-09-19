@@ -64,7 +64,12 @@
   .profile-header { display: flex; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-4); }
   .profile-avatar { width: 48px; height: 48px; }
   .profile-name { font-weight: 700; font-size: 16px; }
-  .profile-email { color: var(--text-secondary); font-size: var(--fs-small); }
+  .profile-email { color: var(--text-secondary); font-size: var(--fs-small); display: flex; align-items: center; gap: 6px; }
+  .profile-email .google-mark { width: 14px; height: 14px; }
+  #profileModalBody .line { display: flex; align-items: center; gap: var(--sp-2); }
+  #profileModalBody .line .google-mark, #profileModalBody .line .stripe-mark, #profileModalBody .line .shopify-mark { width: 18px; height: 18px; }
+  #profileModalBody > a.status-action { display: inline-flex; align-items: center; gap: 6px; margin-top: var(--sp-2); }
+  #profileModalBody > a.status-action .google-mark { width: 16px; height: 16px; }
   .shopify-mark { width: 20px; height: 20px; flex-shrink: 0; }
 
   .connections-row { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin: var(--sp-5) 0 var(--sp-4); }
@@ -260,7 +265,7 @@
         <span class="line">Vos données d'analyse restent distinctes de votre compte de connexion.</span>
       </p>
       <div class="login-gate-icons" aria-hidden="true">
-        <img src="icons8-google-100.png" alt="">
+        <img src="icons8-stripe-100.png" alt="">
         <img src="icons8-shopify-96.png" alt="">
         <img src="icons8-power-bi-2021-96.png" alt="">
       </div>
@@ -685,6 +690,8 @@ let lastStatus = null;
 function openProfileModal() {
   if (!lastStatus) return;
   const googleIcon = '<img class="google-mark" src="icons8-google-100.png" alt="" aria-hidden="true">';
+  const stripeIcon = '<img class="stripe-mark profile-mini-icon" src="icons8-stripe-100.png" alt="" aria-hidden="true">';
+  const shopifyIcon = '<img class="shopify-mark" src="icons8-shopify-96.png" alt="" aria-hidden="true">';
   const avatar = lastStatus.picture
     ? `<img class="google-mark avatar-mark profile-avatar" src="${lastStatus.picture}" alt="" aria-hidden="true" referrerpolicy="no-referrer">`
     : googleIcon;
@@ -693,18 +700,18 @@ function openProfileModal() {
     : '—';
 
   const stripeLine = lastStatus.stripe_connected
-    ? `<span class="line">✅ Stripe — ${lastStatus.account} <a class="status-action" href="/auth/stripe/disconnect">Déconnecter</a></span>`
-    : `<span class="line">◻️ Stripe — non connecté</span>`;
+    ? `<span class="line">${stripeIcon} Stripe — ${lastStatus.account} <a class="status-action" href="/auth/stripe/disconnect">Déconnecter</a></span>`
+    : `<span class="line">${stripeIcon} Stripe — non connecté</span>`;
   const shopifyLine = lastStatus.shopify_connected
-    ? `<span class="line">✅ Shopify — ${lastStatus.shop_domain} <a class="status-action" href="/auth/shopify/disconnect">Déconnecter</a></span>`
-    : `<span class="line">◻️ Shopify — non connecté</span>`;
+    ? `<span class="line">${shopifyIcon} Shopify — ${lastStatus.shop_domain} <a class="status-action" href="/auth/shopify/disconnect">Déconnecter</a></span>`
+    : `<span class="line">${shopifyIcon} Shopify — non connecté</span>`;
 
   document.getElementById('profileModalBody').innerHTML = `
     <div class="profile-header">
       ${avatar}
       <div>
         <div class="profile-name">${lastStatus.name || lastStatus.email || 'Connecté'}</div>
-        <div class="profile-email">${lastStatus.email || ''}</div>
+        <div class="profile-email">${googleIcon} ${lastStatus.email || ''}</div>
       </div>
     </div>
     <p class="explainer">
@@ -715,7 +722,7 @@ function openProfileModal() {
       ${stripeLine}
       ${shopifyLine}
     </p>
-    <a class="status-action" href="/auth/logout">Se déconnecter entièrement (Google)</a>
+    <a class="status-action" href="/auth/logout">${googleIcon} Se déconnecter</a>
   `;
   profileModal.hidden = false;
 }
