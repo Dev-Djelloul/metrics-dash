@@ -676,6 +676,8 @@ def alerts(demo: bool = False, start: str = None, end: str = None, currency: str
                 {
                     "type": "revenue_drop",
                     "severity": "warning",
+                    "month": last["month"],
+                    "pct": abs(last["mom_growth_pct"]),
                     "message": f"CA de {last['month']} en baisse de {abs(last['mom_growth_pct'])}% vs le mois précédent.",
                 }
             )
@@ -688,6 +690,9 @@ def alerts(demo: bool = False, start: str = None, end: str = None, currency: str
             {
                 "type": "churn_risk",
                 "severity": "warning",
+                "pct": pct,
+                "at_risk_count": len(at_risk),
+                "total": len(rfm_rows),
                 "message": f"{pct}% des clients sont à risque ou perdus ({len(at_risk)}/{len(rfm_rows)}).",
             }
         )
