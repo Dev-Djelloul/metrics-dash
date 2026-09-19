@@ -767,6 +767,41 @@ const I18N = {
     auth_err_login_required_before_stripe: "Connecte-toi d'abord avec Google avant de relier Stripe.",
     auth_err_login_required_before_shopify: "Connecte-toi d'abord avec Google avant de relier Shopify.",
     auth_err_default: 'La connexion a échoué. Réessaie.',
+    hello_user: 'Bonjour {name}', hello_default: 'Connecté', view_profile: 'Voir mon profil',
+    profile_member_since: 'Membre depuis le {date}', profile_not_set: 'non renseigné',
+    profile_sector_prefix: 'Secteur : ', profile_not_connected: 'non connecté', disconnect_title: 'Déconnecter',
+    conn_connect_stripe: 'Connecter Stripe', conn_connect: 'Connecter', conn_stripe_unavailable: 'Stripe indisponible',
+    concentration_top: 'Top {pct}% clients', concentration_rest: 'Autres clients',
+    concentration_note: 'Repère secteur ({sector}) : le top {topPct}% des clients y pèse en général {benchPct}% du CA (toi : {observedPct}%).',
+    benchmark_vs_sector: '{arrow} {sign}{pct}% vs secteur ({label})',
+    legend_new_customers: 'Nouveaux clients', legend_returning_customers: 'Clients récurrents',
+    legend_daily_revenue: 'CA quotidien', legend_moving_avg: 'Moyenne mobile 7j',
+    legend_avg_retention: 'Rétention moyenne', legend_history: 'Historique', legend_forecast: 'Prévision',
+    legend_interval: 'Intervalle ~95%', legend_interval_low: 'Intervalle bas',
+    legend_revenue_by_day: 'CA par jour', legend_revenue_by_weekday: 'CA', legend_revenue_by_country: 'CA par pays',
+    pct_tooltip: '{label}: {pct}%',
+    export_monthly: 'CA mensuel', export_rfm: 'Segmentation RFM', export_cohorts: 'Cohortes de rétention',
+    weekday_0: 'Lundi', weekday_1: 'Mardi', weekday_2: 'Mercredi', weekday_3: 'Jeudi',
+    weekday_4: 'Vendredi', weekday_5: 'Samedi', weekday_6: 'Dimanche',
+    geo_map_unavailable: 'Carte indisponible pour le moment. Le détail par pays reste affiché à côté.',
+    geo_unknown_note: '{count} commande(s) sans pays de facturation connu, non comptabilisée(s) sur la carte.',
+    not_enough_data: 'Pas assez de données', days_unit: '{n} jours',
+    set_sector_prompt: "Renseigne ton secteur d'activité (badge en haut) pour comparer ces chiffres à des repères sectoriels.",
+    sector_ecommerce: 'E-commerce / vente au détail', sector_saas: 'SaaS / logiciel',
+    sector_conseil: 'Conseil / services professionnels', sector_formation: 'Formation / éducation',
+    sector_restauration: 'Restauration / hôtellerie', sector_sante: 'Santé / bien-être',
+    sector_media: 'Média / création de contenu', sector_asso: 'Association / non lucratif', sector_autre: 'Autre',
+    seg_champions: 'Champions', seg_loyal: 'Clients fidèles', seg_new: 'Nouveaux clients',
+    seg_atrisk_big: 'À risque (gros clients)', seg_atrisk: 'À risque', seg_occasional: 'Clients occasionnels',
+    seg_atrisk_lost: 'À risque / Perdus', seg_lost: 'Perdus',
+    seg_action_champions: 'Programme VIP, avant-première, avantages exclusifs',
+    seg_action_loyal: 'Email/SMS de fidélisation, offres régulières',
+    seg_action_new: 'Email de bienvenue, accompagnement des premiers achats',
+    seg_action_atrisk_big: 'Contact prioritaire + offre personnalisée (forte valeur à ne pas perdre)',
+    seg_action_atrisk: 'Offre personnalisée ou rappel pour prévenir le désengagement',
+    seg_action_occasional: 'Offre incitative pour encourager la récurrence',
+    seg_action_atrisk_lost: 'Campagne de réactivation (email marketing)',
+    seg_action_lost: 'Campagne de réactivation (email marketing)',
     ln_0: 'Carte colorée selon le CA généré par pays de facturation.', ln_1: 'Plus la couleur est intense, plus ce pays représente une part importante du chiffre d\'affaires. Molette ou boutons +/- pour zoomer, glisser pour te déplacer une fois zoomé.', ln_2: 'Regroupe toutes les commandes par <span class="term term-mom">jour de la semaine</span>, toutes semaines confondues.', ln_3: 'Utile pour repérer un jour fort ou faible (ex : plus de ventes le vendredi).', ln_4: 'Illustre le <span class="term term-forecast">principe de Pareto</span> (souvent "80/20") : une petite part de tes clients fait-elle une grande part du CA ?', ln_5: 'Ici : part du CA venant des 20% de clients qui dépensent le plus, vs tous les autres.', ln_6: 'Basé sur tes <span class="term term-mom">abonnements Stripe actifs</span> (pas les paiements ponctuels analysés ailleurs) : combien ça représenterait si chaque abonnement était facturé tous les mois, quel que soit son cycle réel (annuel, hebdomadaire...).', ln_7: '<span class="term term-mom">MoM</span> (Month-over-Month) = variation vs le mois précédent.', ln_8: '<span class="term term-yoy">YoY</span> (Year-over-Year) = variation vs le même mois l\'année dernière.', ln_9: 'Ce sont les deux métriques de croissance les plus utilisées en BI.', ln_10: 'La <span class="term term-ma">moyenne mobile</span> lisse les pics/creux journaliers pour voir la vraie tendance.', ln_11: 'C\'est la technique de base pour lire un graphique de série temporelle.', ln_12: 'Chaque mois, quelle part du CA vient de <span class="term term-yoy">nouveaux clients</span> (1er achat ce mois-là) vs de <span class="term term-ma">clients qui reviennent</span> ?', ln_13: 'Beaucoup de "nouveaux" = tu acquiers. Beaucoup de "récurrents" = tu fidélises. Les deux comptent, mais pas pour les mêmes raisons.', ln_14: 'Combien de clients dans chaque segment RFM, en proportion.', ln_15: 'Technique de segmentation client classique en marketing/data : chaque client reçoit un score 1-4 sur trois axes.', ln_16: '<span class="term term-r">Récence</span> (il a acheté récemment ?) · <span class="term term-f">Fréquence</span> (il achète souvent ?) · <span class="term term-m">Montant</span> (il dépense beaucoup ?).', ln_17: 'Les scores combinés donnent un segment actionnable (Champions, À risque, Perdus...).', ln_18: 'Moyenne du % de rétention à chaque mois écoulé, sur toutes les cohortes — une seule courbe pour voir la tendance générale sans lire tout le tableau.', ln_19: 'Chaque ligne = un groupe de clients ayant acheté pour la première fois ce mois-là (la <span class="term term-cohort">cohorte</span>).', ln_20: 'Chaque colonne = combien de mois plus tard. La couleur montre le % de la cohorte encore active.', ln_21: 'C\'est l\'outil de référence pour mesurer la <span class="term term-retention">fidélisation</span> dans le temps.', ln_22: 'Même lecture que le tableau de rétention, mais en <span class="term term-cohort">chiffre d\'affaires</span> plutôt qu\'en % de clients actifs.', ln_23: 'Deux cohortes avec la même rétention en % peuvent valoir très différemment si l\'une regroupe des clients qui dépensent plus.', ln_24: 'Projette les prochains mois à partir de la tendance historique (<span class="term term-forecast">régression linéaire simple</span>, sans librairie externe).', ln_25: 'La zone bleue est l\'intervalle de confiance (~95%) : elle s\'élargit avec l\'horizon, une prévision lointaine étant statistiquement moins fiable qu\'une prévision proche.', ln_26: 'Même méthode que la prévision de CA, appliquée au <span class="term term-forecast">nombre de commandes</span> plutôt qu\'au montant.', ln_27: 'Répond à « combien de ventes » plutôt qu\'à « combien ça va rapporter » — les deux ne bougent pas forcément ensemble (ex : panier moyen qui grimpe).', ln_28: 'Projette le rythme d\'<span class="term term-forecast">acquisition de nouveaux clients</span> par mois, à partir de la tendance historique.', ln_29: 'Utile pour anticiper si le rythme d\'acquisition ralentit avant que ça se voie sur le CA.', ln_30: 'Chaque terme employé ailleurs dans le dashboard, expliqué simplement — pas besoin de tout connaître pour commencer.', glo_dt_0: '<span class="term term-mom">MoM</span> (Month-over-Month)', glo_dt_1: '<span class="term term-yoy">YoY</span> (Year-over-Year)', glo_dt_2: '<span class="term term-ma">Moyenne mobile</span>', glo_dt_3: 'RFM (<span class="term term-r">Récence</span> / <span class="term term-f">Fréquence</span> / <span class="term term-m">Montant</span>)', glo_dt_4: '<span class="term term-cohort">Cohorte</span>', glo_dt_5: '<span class="term term-retention">Rétention / fidélisation</span>', glo_dt_6: '<span class="term term-forecast">Régression linéaire</span>', glo_dt_7: 'Pareto (règle du « 80/20 »)', glo_dt_8: 'LTV (Lifetime Value / valeur vie client)', glo_dt_9: 'Churn (taux d\'attrition)', glo_dt_10: 'API', glo_dt_11: 'CSV', glo_dd_0: 'Variation du CA vs le mois précédent. Répond à : « est-ce qu\'on progresse court terme ? »', glo_dd_1: 'Variation vs le même mois l\'an dernier. Neutralise la saisonnalité (ex : pic de décembre comparé au décembre précédent, pas à novembre).', glo_dd_2: 'Moyenne calculée sur une fenêtre glissante (ex : les 7 derniers jours), qui lisse le bruit journalier pour voir la vraie tendance.', glo_dd_3: '\n          Méthode CRM qui segmente les clients sur 3 dimensions comportementales : <b>quand</b> ils ont acheté pour la dernière fois (Récence), <b>à quelle fréquence</b> ils achètent, et <b>combien</b> ils dépensent (Montant). Chaque client reçoit un score 1-4 sur chaque axe, combinés en un segment actionnable.\n          <br><br>\n          L\'intérêt pratique : relier chaque segment à une action marketing concrète (visible dans la colonne dédiée de l\'onglet RFM) — <i>segment → intention → action</i> :\n          <ul style="margin:8px 0 0; padding-left:20px;">\n            <li><b>Champions</b> : fidéliser → programme VIP, avantages exclusifs</li>\n            <li><b>Clients fidèles</b> : entretenir → offres régulières</li>\n            <li><b>Nouveaux clients</b> : accompagner → email de bienvenue</li>\n            <li><b>À risque</b> : prévenir le désengagement → offre personnalisée ou rappel</li>\n            <li><b>Perdus</b> : récupérer → campagne de réactivation</li>\n          </ul>\n        ', glo_dd_4: 'Groupe de clients qui partagent un point de départ commun — ici, le mois de leur tout premier achat — suivi dans le temps.', glo_dd_5: '% d\'une cohorte encore active N mois après son premier achat. Mesure si les clients reviennent, pas juste s\'ils achètent une fois.', glo_dd_6: 'Méthode statistique qui trace la droite collant au mieux à des points historiques, pour projeter la tendance dans le futur. Simple, mais fragile sur peu de données.', glo_dd_7: 'Observation empirique : une petite part des causes (ex : 20% des clients) produit souvent une grande part des effets (ex : 80% du CA).', glo_dd_8: 'CA moyen généré par un client sur toute sa relation avec toi. Sert à savoir combien tu peux dépenser pour en acquérir un nouveau sans perdre d\'argent.', glo_dd_9: 'Part des clients qui arrêtent d\'acheter. Approximé ici par le % de clients dans les segments RFM « À risque » et « Perdus ».', glo_dd_10: 'Interface de Programmation d\'Application : la façon dont deux logiciels échangent des données — ici, ton dashboard interroge l\'API de Stripe.', glo_dd_11: 'Fichier texte tabulaire (Comma-Separated Values) : le format le plus simple pour faire passer des données d\'un outil à un autre — ex : vers Excel ou Power BI.', h3_0: 'CA par pays', h3_1: 'Détail par pays', h3_2: 'CA par jour', h3_3: 'CA par jour de la semaine', h3_4: 'Concentration du CA', h3_5: 'Top clients', h3_6: 'MRR (revenu récurrent mensuel)', h3_7: 'CA mensuel & croissance', h3_8: 'CA quotidien + moyenne mobile 7 jours', h3_9: 'Nouveaux vs clients récurrents', h3_10: 'Répartition des clients par segment', h3_11: 'Segmentation RFM (Récence / Fréquence / Montant)', h3_12: 'Rétention moyenne toutes cohortes confondues', h3_13: 'Analyse de cohortes (rétention)', h3_14: 'CA généré par cohorte', h3_15: 'Prévision de CA (régression linéaire)', h3_16: 'Prévision du nombre de commandes', h3_17: 'Prévision de nouveaux clients', h3_18: 'Lexique des termes techniques',
   },
   en: {
@@ -806,6 +841,41 @@ const I18N = {
     auth_err_login_required_before_stripe: 'Sign in with Google first before connecting Stripe.',
     auth_err_login_required_before_shopify: 'Sign in with Google first before connecting Shopify.',
     auth_err_default: 'The connection failed. Please try again.',
+    hello_user: 'Hello {name}', hello_default: 'Signed in', view_profile: 'View my profile',
+    profile_member_since: 'Member since {date}', profile_not_set: 'not set',
+    profile_sector_prefix: 'Sector: ', profile_not_connected: 'not connected', disconnect_title: 'Disconnect',
+    conn_connect_stripe: 'Connect Stripe', conn_connect: 'Connect', conn_stripe_unavailable: 'Stripe unavailable',
+    concentration_top: 'Top {pct}% customers', concentration_rest: 'Other customers',
+    concentration_note: 'Sector benchmark ({sector}): the top {topPct}% of customers usually accounts for {benchPct}% of revenue (yours: {observedPct}%).',
+    benchmark_vs_sector: '{arrow} {sign}{pct}% vs sector ({label})',
+    legend_new_customers: 'New customers', legend_returning_customers: 'Returning customers',
+    legend_daily_revenue: 'Daily revenue', legend_moving_avg: '7-day moving average',
+    legend_avg_retention: 'Average retention', legend_history: 'History', legend_forecast: 'Forecast',
+    legend_interval: '~95% interval', legend_interval_low: 'Lower interval',
+    legend_revenue_by_day: 'Revenue by day', legend_revenue_by_weekday: 'Revenue', legend_revenue_by_country: 'Revenue by country',
+    pct_tooltip: '{label}: {pct}%',
+    export_monthly: 'Monthly revenue', export_rfm: 'RFM segmentation', export_cohorts: 'Retention cohorts',
+    weekday_0: 'Monday', weekday_1: 'Tuesday', weekday_2: 'Wednesday', weekday_3: 'Thursday',
+    weekday_4: 'Friday', weekday_5: 'Saturday', weekday_6: 'Sunday',
+    geo_map_unavailable: 'Map unavailable right now. The country breakdown is still shown alongside it.',
+    geo_unknown_note: '{count} order(s) with no known billing country, not included on the map.',
+    not_enough_data: 'Not enough data', days_unit: '{n} days',
+    set_sector_prompt: 'Set your business sector (badge above) to compare these numbers to sector benchmarks.',
+    sector_ecommerce: 'E-commerce / retail', sector_saas: 'SaaS / software',
+    sector_conseil: 'Consulting / professional services', sector_formation: 'Training / education',
+    sector_restauration: 'Restaurant / hospitality', sector_sante: 'Health / wellness',
+    sector_media: 'Media / content creation', sector_asso: 'Non-profit / association', sector_autre: 'Other',
+    seg_champions: 'Champions', seg_loyal: 'Loyal customers', seg_new: 'New customers',
+    seg_atrisk_big: 'At risk (high value)', seg_atrisk: 'At risk', seg_occasional: 'Occasional customers',
+    seg_atrisk_lost: 'At risk / Lost', seg_lost: 'Lost',
+    seg_action_champions: 'VIP program, early access, exclusive perks',
+    seg_action_loyal: 'Loyalty email/SMS, regular offers',
+    seg_action_new: 'Welcome email, support for first purchases',
+    seg_action_atrisk_big: 'Priority contact + personalized offer (high value, worth keeping)',
+    seg_action_atrisk: 'Personalized offer or reminder to prevent churn',
+    seg_action_occasional: 'Incentive offer to encourage repeat purchases',
+    seg_action_atrisk_lost: 'Reactivation campaign (email marketing)',
+    seg_action_lost: 'Reactivation campaign (email marketing)',
     ln_0: 'Colored map based on revenue generated per billing country.', ln_1: 'The more intense the color, the larger that country\'s share of revenue. Scroll wheel or +/- buttons to zoom, drag to move once zoomed.', ln_2: 'Groups all orders by <span class="term term-mom">day of the week</span>, across all weeks.', ln_3: 'Useful for spotting a strong or weak day (e.g. more sales on Fridays).', ln_4: 'Illustrates the <span class="term term-forecast">Pareto principle</span> (often "80/20"): does a small share of your customers generate a large share of revenue?', ln_5: 'Here: share of revenue coming from the top 20% of highest-spending customers, vs everyone else.', ln_6: 'Based on your <span class="term term-mom">active Stripe subscriptions</span> (not the one-off payments analyzed elsewhere): what it would represent if every subscription were billed monthly, regardless of its actual cycle (yearly, weekly...).', ln_7: '<span class="term term-mom">MoM</span> (Month-over-Month) = change vs the previous month.', ln_8: '<span class="term term-yoy">YoY</span> (Year-over-Year) = change vs the same month last year.', ln_9: 'These are the two most commonly used growth metrics in BI.', ln_10: 'The <span class="term term-ma">moving average</span> smooths daily peaks/dips to reveal the real trend.', ln_11: 'It\'s the basic technique for reading a time series chart.', ln_12: 'Each month, what share of revenue comes from <span class="term term-yoy">new customers</span> (first purchase that month) vs <span class="term term-ma">returning customers</span>?', ln_13: 'A lot of "new" = you\'re acquiring. A lot of "returning" = you\'re retaining. Both matter, but not for the same reasons.', ln_14: 'How many customers in each RFM segment, as a proportion.', ln_15: 'Classic marketing/data customer segmentation technique: each customer gets a 1-4 score on three axes.', ln_16: '<span class="term term-r">Recency</span> (did they buy recently?) · <span class="term term-f">Frequency</span> (do they buy often?) · <span class="term term-m">Monetary</span> (do they spend a lot?).', ln_17: 'The combined scores produce an actionable segment (Champions, At risk, Lost...).', ln_18: 'Average % retention at each elapsed month, across all cohorts — a single curve to see the overall trend without reading the whole table.', ln_19: 'Each row = a group of customers who made their first purchase that month (the <span class="term term-cohort">cohort</span>).', ln_20: 'Each column = how many months later. The color shows the % of the cohort still active.', ln_21: 'The reference tool for measuring <span class="term term-retention">retention</span> over time.', ln_22: 'Same reading as the retention table, but in <span class="term term-cohort">revenue</span> rather than % of active customers.', ln_23: 'Two cohorts with the same retention % can be worth very different amounts if one has higher-spending customers.', ln_24: 'Projects the coming months from the historical trend (<span class="term term-forecast">simple linear regression</span>, no external library).', ln_25: 'The blue band is the confidence interval (~95%): it widens with the horizon, since a far-off forecast is statistically less reliable than a near one.', ln_26: 'Same method as the revenue forecast, applied to the <span class="term term-forecast">order count</span> instead of the amount.', ln_27: 'Answers "how many sales" rather than "how much will it bring in" — the two don\'t necessarily move together (e.g. a rising average order value).', ln_28: 'Projects the monthly rate of <span class="term term-forecast">new customer acquisition</span> from the historical trend.', ln_29: 'Useful for anticipating a slowdown in acquisition before it shows up in revenue.', ln_30: 'Every term used elsewhere in the dashboard, explained simply — no need to know it all to get started.', glo_dt_0: '<span class="term term-mom">MoM</span> (Month-over-Month)', glo_dt_1: '<span class="term term-yoy">YoY</span> (Year-over-Year)', glo_dt_2: '<span class="term term-ma">Moving average</span>', glo_dt_3: 'RFM (<span class="term term-r">Recency</span> / <span class="term term-f">Frequency</span> / <span class="term term-m">Monetary</span>)', glo_dt_4: '<span class="term term-cohort">Cohort</span>', glo_dt_5: '<span class="term term-retention">Retention</span>', glo_dt_6: '<span class="term term-forecast">Linear regression</span>', glo_dt_7: 'Pareto (the "80/20" rule)', glo_dt_8: 'LTV (Lifetime Value)', glo_dt_9: 'Churn', glo_dt_10: 'API', glo_dt_11: 'CSV', glo_dd_0: 'Revenue change vs the previous month. Answers: "are we growing short-term?"', glo_dd_1: 'Change vs the same month last year. Cancels out seasonality (e.g. a December peak compared to the previous December, not to November).', glo_dd_2: 'Average calculated over a rolling window (e.g. the last 7 days), which smooths daily noise to reveal the real trend.', glo_dd_3: '\n          CRM method that segments customers on 3 behavioral dimensions: <b>when</b> they last bought (Recency), <b>how often</b> they buy (Frequency), and <b>how much</b> they spend (Monetary). Each customer gets a 1-4 score on each axis, combined into an actionable segment.\n          <br><br>\n          The practical value: linking each segment to a concrete marketing action (visible in the dedicated column of the RFM tab) — <i>segment → intent → action</i>:\n          <ul style="margin:8px 0 0; padding-left:20px;">\n            <li><b>Champions</b>: retain → VIP program, exclusive perks</li>\n            <li><b>Loyal customers</b>: maintain → regular offers</li>\n            <li><b>New customers</b>: onboard → welcome email</li>\n            <li><b>At risk</b>: prevent churn → personalized offer or reminder</li>\n            <li><b>Lost</b>: win back → reactivation campaign</li>\n          </ul>', glo_dd_4: 'A group of customers who share a common starting point — here, the month of their very first purchase — tracked over time.', glo_dd_5: 'The % of a cohort still active N months after their first purchase. Measures whether customers come back, not just whether they buy once.', glo_dd_6: 'A statistical method that draws the line that best fits historical data points, to project the trend into the future. Simple, but fragile with little data.', glo_dd_7: 'Empirical observation: a small share of causes (e.g. 20% of customers) often produces a large share of effects (e.g. 80% of revenue).', glo_dd_8: 'Average revenue generated by a customer over their whole relationship with you. Used to know how much you can spend acquiring a new one without losing money.', glo_dd_9: 'The share of customers who stop buying. Approximated here by the % of customers in the "At risk" and "Lost" RFM segments.', glo_dd_10: 'Application Programming Interface: the way two pieces of software exchange data — here, your dashboard queries Stripe\'s API.', glo_dd_11: 'Tabular text file (Comma-Separated Values): the simplest format for moving data from one tool to another — e.g. to Excel or Power BI.',
     h3_0: 'Revenue by country', h3_1: 'Country breakdown', h3_2: 'Revenue by day', h3_3: 'Revenue by day of the week', h3_4: 'Revenue concentration', h3_5: 'Top customers', h3_6: 'MRR (monthly recurring revenue)', h3_7: 'Monthly revenue & growth', h3_8: 'Daily revenue + 7-day moving average', h3_9: 'New vs returning customers', h3_10: 'Customer segment breakdown', h3_11: 'RFM segmentation (Recency / Frequency / Monetary)', h3_12: 'Average retention across all cohorts', h3_13: 'Cohort analysis (retention)', h3_14: 'Revenue by cohort', h3_15: 'Revenue forecast (linear regression)', h3_16: 'Order count forecast', h3_17: 'New customer forecast', h3_18: 'Glossary of technical terms',
   },
@@ -834,9 +904,11 @@ function applyLang(lang) {
   document.getElementById('langSwitch').setAttribute('data-on', lang === 'en' ? 'true' : 'false');
   document.documentElement.setAttribute('lang', lang === 'en' ? 'en' : 'fr');
   localStorage.setItem('lang', lang);
-  // Le contenu généré en JS (cartes KPI via t(), tableaux, alertes) est
-  // "figé" au moment du rendu — il faut tout recharger pour qu'il
+  // Le contenu généré en JS (cartes KPI via t(), tableaux, alertes, mais
+  // aussi le bandeau "Bonjour" et les puces de connexion de loadStatus())
+  // est "figé" au moment du rendu — il faut tout recharger pour qu'il
   // reflète la nouvelle langue, même logique que le changement de thème.
+  if (typeof loadStatus === 'function') loadStatus();
   if (typeof loadAll === 'function' && document.getElementById('appBody').style.display !== 'none') loadAll();
 }
 
@@ -906,29 +978,30 @@ function openProfileModal() {
   const avatar = lastStatus.picture
     ? `<img class="google-mark avatar-mark profile-avatar" src="${lastStatus.picture}" alt="" aria-hidden="true" referrerpolicy="no-referrer">`
     : googleIcon;
+  const dateLang = localStorage.getItem('lang') === 'en' ? 'en-US' : 'fr-FR';
   const memberSince = lastStatus.member_since
-    ? new Date(lastStatus.member_since.replace(' ', 'T') + 'Z').toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })
+    ? new Date(lastStatus.member_since.replace(' ', 'T') + 'Z').toLocaleDateString(dateLang, { year: 'numeric', month: 'long', day: 'numeric' })
     : '—';
 
   // Icône × (plutôt que le mot "Déconnecter") sur chaque ligne connectée —
   // title porte le texte accessible pour lecteurs d'écran/tooltip natif.
-  const disconnectIcon = (href) => `<a class="disconnect-btn" href="${href}" title="Déconnecter" aria-label="Déconnecter">✕</a>`;
+  const disconnectIcon = (href) => `<a class="disconnect-btn" href="${href}" title="${t('disconnect_title')}" aria-label="${t('disconnect_title')}">✕</a>`;
   const stripeRow = lastStatus.stripe_connected
     ? `<span class="profile-conn profile-conn-on">${stripeIcon}<span class="profile-conn-text">${lastStatus.account || ''}</span>${disconnectIcon('/auth/stripe/disconnect')}</span>`
-    : `<span class="profile-conn profile-conn-off">${stripeIcon}<span class="profile-conn-text">non connecté</span></span>`;
+    : `<span class="profile-conn profile-conn-off">${stripeIcon}<span class="profile-conn-text">${t('profile_not_connected')}</span></span>`;
   const shopifyRow = lastStatus.shopify_connected
     ? `<span class="profile-conn profile-conn-on">${shopifyIcon}<span class="profile-conn-text">${lastStatus.shop_domain || ''}</span>${disconnectIcon('/auth/shopify/disconnect')}</span>`
-    : `<span class="profile-conn profile-conn-off">${shopifyIcon}<span class="profile-conn-text">non connecté</span></span>`;
+    : `<span class="profile-conn profile-conn-off">${shopifyIcon}<span class="profile-conn-text">${t('profile_not_connected')}</span></span>`;
 
   document.getElementById('profileModalBody').innerHTML = `
     <div class="profile-header">
       ${avatar}
-      <div class="profile-name">${lastStatus.name || lastStatus.email || 'Connecté'}</div>
+      <div class="profile-name">${lastStatus.name || lastStatus.email || t('hello_default')}</div>
       <span class="profile-conn profile-conn-google">${googleIcon}<span class="profile-conn-text">${lastStatus.email || ''}</span>${disconnectIcon('/auth/logout')}</span>
     </div>
     <p class="explainer">
-      <span class="line">Membre depuis le ${memberSince}</span>
-      <span class="line">Secteur : ${lastStatus.sector ? sectorLabelSpan(lastStatus.sector, lastStatus.sector) : 'non renseigné'}</span>
+      <span class="line">${t('profile_member_since').replace('{date}', memberSince)}</span>
+      <span class="line">${t('profile_sector_prefix')}${lastStatus.sector ? sectorLabelSpan(lastStatus.sector, lastStatus.sector) : t('profile_not_set')}</span>
     </p>
     <div class="profile-conns">
       ${stripeRow}
@@ -961,7 +1034,7 @@ async function renderSectorList(currentSector) {
   const list = document.getElementById('sectorList');
   list.innerHTML = sectors.map((s, i) => {
     const cls = 'export-link c' + ((i % 4) + 1) + (s === currentSector ? ' active' : '');
-    return `<button class="${cls}" type="button" data-sector="${s}">${s}</button>`;
+    return `<button class="${cls}" type="button" data-sector="${s}">${sectorDisplay(s)}</button>`;
   }).join('');
   list.querySelectorAll('[data-sector]').forEach((btn) => {
     btn.addEventListener('click', async () => {
@@ -996,19 +1069,32 @@ function sectorColorClass(sector) {
   return idx >= 0 ? SECTOR_COLOR_CLASSES[idx % 4] : null;
 }
 
+// Le secteur est stocké et comparé en français (SECTORS côté backend) même
+// en anglais — seul l'affichage change, via l'index dans sectorsCache.
+const SECTOR_I18N_KEYS = [
+  'sector_ecommerce', 'sector_saas', 'sector_conseil', 'sector_formation',
+  'sector_restauration', 'sector_sante', 'sector_media', 'sector_asso', 'sector_autre',
+];
+function sectorDisplay(sector) {
+  if (!sector || !sectorsCache) return sector;
+  const idx = sectorsCache.indexOf(sector);
+  return idx >= 0 && SECTOR_I18N_KEYS[idx] ? t(SECTOR_I18N_KEYS[idx]) : sector;
+}
+
 function sectorLabelSpan(sector, text) {
   const cls = sectorColorClass(sector);
-  return cls ? `<span class="sector-label-${cls}">${text}</span>` : text;
+  const display = sectorDisplay(sector) ?? text;
+  return cls ? `<span class="sector-label-${cls}">${display}</span>` : display;
 }
 
 async function updateSectorBadge(sector) {
   currentSector = sector || null;
-  document.getElementById('sectorBadgeLabel').textContent = sector || 'Secteur non renseigné';
+  if (sector) await getSectors(); // s'assure que sectorsCache est rempli pour résoudre le libellé et la couleur
+  document.getElementById('sectorBadgeLabel').textContent = sector ? sectorDisplay(sector) : t('sector_unset');
 
   const badge = document.getElementById('sectorBadge');
   badge.classList.remove('sector-c1', 'sector-c2', 'sector-c3', 'sector-c4');
   if (sector) {
-    await getSectors(); // s'assure que sectorsCache est rempli pour résoudre la couleur
     const cls = sectorColorClass(sector);
     if (cls) badge.classList.add('sector-' + cls);
   }
@@ -1035,8 +1121,7 @@ function benchmarkLine(label, yours, sectorValue, unit) {
 }
 
 document.getElementById('sectorBadge').addEventListener('click', async () => {
-  const current = document.getElementById('sectorBadgeLabel').textContent;
-  await renderSectorList(current === 'Secteur non renseigné' ? null : current);
+  await renderSectorList(currentSector);
   openSectorModal();
 });
 
@@ -1184,14 +1269,14 @@ async function loadStatus() {
   // vit dans #loginGate, pas la peine de le dupliquer dans le header.
   const googleEl = document.getElementById('googleStatus');
   if (data.authenticated) {
-    const name = data.name || data.email || 'Connecté';
+    const name = data.name || data.email || t('hello_default');
     // Avatar Google si connu (photo de profil récupérée à la connexion),
     // sinon l'icône générique en repli — ex: identité créée via le
     // parcours Stripe seul (fallback), qui n'a jamais transité par Google.
     const avatar = data.picture
       ? `<img class="google-mark avatar-mark" src="${data.picture}" alt="" aria-hidden="true" referrerpolicy="no-referrer">`
       : googleIcon;
-    googleEl.innerHTML = `<div class="status-pill status-pill-clickable" id="openProfile" title="Voir mon profil">${avatar}<span class="status-dot"></span>Bonjour ${name}</div>`;
+    googleEl.innerHTML = `<div class="status-pill status-pill-clickable" id="openProfile" title="${t('view_profile')}">${avatar}<span class="status-dot"></span>${t('hello_user').replace('{name}', name)}</div>`;
     document.getElementById('openProfile').addEventListener('click', openProfileModal);
   } else {
     googleEl.innerHTML = '';
@@ -1206,9 +1291,9 @@ async function loadStatus() {
     el.innerHTML = `<div class="conn-chip conn-chip-connected" id="openProfileFromStripe">${stripeIcon}<span class="conn-chip-text">Stripe</span></div>`;
     document.getElementById('openProfileFromStripe').addEventListener('click', openProfileModal);
   } else if (data.connect_configured) {
-    el.innerHTML = `<a class="conn-chip conn-chip-disconnected" href="/auth/login">${stripeIcon}<span class="conn-chip-text">Connecter Stripe</span></a>`;
+    el.innerHTML = `<a class="conn-chip conn-chip-disconnected" href="/auth/login">${stripeIcon}<span class="conn-chip-text">${t('conn_connect_stripe')}</span></a>`;
   } else {
-    el.innerHTML = `<div class="conn-chip conn-chip-disconnected">${stripeIcon}<span class="conn-chip-text">Stripe indisponible</span></div>`;
+    el.innerHTML = `<div class="conn-chip conn-chip-disconnected">${stripeIcon}<span class="conn-chip-text">${t('conn_stripe_unavailable')}</span></div>`;
   }
 
   // Bloc Shopify (corps de page) : deuxième canal de vente possible, indépendant de Stripe.
@@ -1221,7 +1306,7 @@ async function loadStatus() {
       <form class="conn-chip conn-chip-disconnected shopify-connect" id="shopifyConnectForm">
         ${shopifyIcon}
         <input type="text" id="shopifyDomainInput" placeholder="ma-boutique.myshopify.com" pattern="[a-z0-9-]+\\.myshopify\\.com">
-        <button class="conn-chip-action conn-chip-action-btn" type="submit">Connecter</button>
+        <button class="conn-chip-action conn-chip-action-btn" type="submit">${t('conn_connect')}</button>
       </form>`;
     document.getElementById('shopifyConnectForm').addEventListener('submit', (e) => {
       e.preventDefault();
@@ -1247,7 +1332,7 @@ function benchmarkDelta(value, benchmarkValue, direction, label) {
   const sign = diffPct > 0 ? '+' : '';
   return {
     cls: isBetter ? 'pos' : 'neg',
-    text: `${arrow} ${sign}${diffPct}% vs secteur (${label})`,
+    text: t('benchmark_vs_sector').replace('{arrow}', arrow).replace('{sign}', sign).replace('{pct}', diffPct).replace('{label}', label),
   };
 }
 
@@ -1290,7 +1375,7 @@ async function loadOverview() {
     data: {
       labels: m.revenue_by_day.map(d => d.date),
       datasets: [{
-        label: 'CA par jour', data: m.revenue_by_day.map(d => d.amount),
+        label: t('legend_revenue_by_day'), data: m.revenue_by_day.map(d => d.amount),
         borderColor: cssVar('--chart-line-1'), backgroundColor: cssVar('--accent-soft'), fill: true, tension: 0.3,
       }]
     },
@@ -1318,9 +1403,9 @@ async function loadWeekday() {
   charts.weekday = new Chart(document.getElementById('weekdayChart'), {
     type: 'bar',
     data: {
-      labels: days.map(d => d.weekday),
+      labels: days.map(d => t('weekday_' + d.weekday_index)),
       datasets: [{
-        label: 'CA', data: days.map(d => d.revenue),
+        label: t('legend_revenue_by_weekday'), data: days.map(d => d.revenue),
         backgroundColor: cssVar('--chart-line-1'), borderRadius: 4,
       }]
     },
@@ -1346,7 +1431,11 @@ async function loadConcentration() {
     if (benchmark && c.segments[0]) {
       const observedPct = Math.round((c.segments[0].amount / (c.segments[0].amount + c.segments[1].amount)) * 100);
       noteEl.style.display = 'block';
-      noteEl.innerHTML = `Repère secteur (${sectorLabelSpan(currentSector, currentSector)}) : le top ${c.top_share_pct}% des clients y pèse en général ${benchmark.top_share_pct}% du CA (toi : ${observedPct}%).`;
+      noteEl.innerHTML = t('concentration_note')
+        .replace('{sector}', sectorLabelSpan(currentSector, currentSector))
+        .replace('{topPct}', c.top_share_pct)
+        .replace('{benchPct}', benchmark.top_share_pct)
+        .replace('{observedPct}', observedPct);
     } else {
       noteEl.style.display = 'none';
     }
@@ -1356,7 +1445,7 @@ async function loadConcentration() {
   charts.concentration = new Chart(document.getElementById('concentrationChart'), {
     type: 'pie',
     data: {
-      labels: c.segments.map(s => s.label),
+      labels: [t('concentration_top').replace('{pct}', c.top_share_pct), t('concentration_rest')],
       datasets: [{
         data: c.segments.map(s => s.amount),
         backgroundColor: [cssVar('--accent'), cssVar('--surface-3')],
@@ -1394,9 +1483,12 @@ async function getWorldFeatures() {
 // Convertit un code ISO alpha-2 ("FR") en nom de pays complet ("France"),
 // via l'API navigateur standard Intl.DisplayNames — pas de table à
 // maintenir à la main, couvre tous les pays automatiquement.
-const countryNameFormatter = new Intl.DisplayNames(['fr'], { type: 'region' });
+function countryNameFormatter() {
+  const lang = localStorage.getItem('lang') === 'en' ? 'en' : 'fr';
+  return new Intl.DisplayNames([lang], { type: 'region' });
+}
 function countryName(code) {
-  try { return countryNameFormatter.of(code); } catch { return code; }
+  try { return countryNameFormatter().of(code); } catch { return code; }
 }
 
 async function loadGeo() {
@@ -1411,7 +1503,7 @@ async function loadGeo() {
   const noteEl = document.getElementById('geoUnknownNote');
   if (geo.unknown_count > 0) {
     noteEl.style.display = 'block';
-    noteEl.innerHTML = `<span class="line">${geo.unknown_count} commande(s) sans pays de facturation connu, non comptabilisée(s) sur la carte.</span>`;
+    noteEl.innerHTML = `<span class="line">${t('geo_unknown_note').replace('{count}', geo.unknown_count)}</span>`;
   } else {
     noteEl.style.display = 'none';
   }
@@ -1436,7 +1528,7 @@ async function loadGeo() {
       data: {
         labels: features.map(f => f.properties.name),
         datasets: [{
-          label: 'CA par pays',
+          label: t('legend_revenue_by_country'),
           data: features.map(f => ({ feature: f, value: byIsoNumeric[f.id] || 0 })),
           backgroundColor: (ctx) => {
             const d = ctx.dataset && ctx.dataset.data && ctx.dataset.data[ctx.dataIndex];
@@ -1493,7 +1585,7 @@ async function loadGeo() {
   } catch (err) {
     console.error('Carte géographique indisponible :', err);
     const wrap = document.getElementById('geoMapWrap');
-    if (wrap) wrap.innerHTML = '<p class="explainer">Carte indisponible pour le moment. Le détail par pays reste affiché à côté.</p>';
+    if (wrap) wrap.innerHTML = `<p class="explainer">${t('geo_map_unavailable')}</p>`;
   }
 }
 
@@ -1508,8 +1600,8 @@ async function loadNewVsReturning() {
     data: {
       labels: rows.map(r => r.month),
       datasets: [
-        { label: 'Nouveaux clients', data: rows.map(r => r.new_revenue), backgroundColor: cssVar('--chart-line-2') },
-        { label: 'Clients récurrents', data: rows.map(r => r.returning_revenue), backgroundColor: cssVar('--chart-line-3') },
+        { label: t('legend_new_customers'), data: rows.map(r => r.new_revenue), backgroundColor: cssVar('--chart-line-2') },
+        { label: t('legend_returning_customers'), data: rows.map(r => r.returning_revenue), backgroundColor: cssVar('--chart-line-3') },
       ]
     },
     options: {
@@ -1536,8 +1628,8 @@ async function loadLoyaltyCards() {
   const atRiskCount = rfmRows.filter(r => r.segment.includes('risque') || r.segment.includes('Perdus')).length;
   const atRiskPct = rfmRows.length ? Math.round((atRiskCount / rfmRows.length) * 100) : 0;
   const delayText = loyalty.avg_days_between_purchases === null
-    ? 'Pas assez de données'
-    : `${loyalty.avg_days_between_purchases} jours`;
+    ? t('not_enough_data')
+    : t('days_unit').replace('{n}', loyalty.avg_days_between_purchases);
 
   // Flèche +/- : matérialise si la métrique du compte connecté est
   // au-dessus ou en dessous du repère sectoriel, avec le bon sens de
@@ -1558,7 +1650,7 @@ async function loadLoyaltyCards() {
 
   if (!benchmark) {
     document.getElementById('loyaltyCards').insertAdjacentHTML('beforeend',
-      '<p class="explainer full-width"><span class="line">Renseigne ton secteur d\'activité (badge en haut) pour comparer ces chiffres à des repères sectoriels.</span></p>');
+      `<p class="explainer full-width"><span class="line">${t('set_sector_prompt')}</span></p>`);
   }
 }
 
@@ -1602,10 +1694,10 @@ async function loadMrr() {
 
 function renderExportLinks() {
   const links = [
-    { label: 'CA mensuel', path: '/api/export/monthly.csv', color: 'c1' },
-    { label: 'CA quotidien', path: '/api/export/daily.csv', color: 'c2' },
-    { label: 'Segmentation RFM', path: '/api/export/rfm.csv', color: 'c3' },
-    { label: 'Cohortes de rétention', path: '/api/export/cohorts.csv', color: 'c4' },
+    { label: t('export_monthly'), path: '/api/export/monthly.csv', color: 'c1' },
+    { label: t('legend_daily_revenue'), path: '/api/export/daily.csv', color: 'c2' },
+    { label: t('export_rfm'), path: '/api/export/rfm.csv', color: 'c3' },
+    { label: t('export_cohorts'), path: '/api/export/cohorts.csv', color: 'c4' },
   ];
   document.getElementById('exportList').innerHTML = links.map(l =>
     `<a class="export-link ${l.color}" href="${apiUrl(l.path)}" download>${l.label} (.csv)</a>`
@@ -1634,8 +1726,8 @@ async function loadGrowth() {
     data: {
       labels: g.daily.map(d => d.date),
       datasets: [
-        { label: 'CA quotidien', data: g.daily.map(d => d.revenue), borderColor: cssVar('--border-strong'), borderDash: [4,4], pointRadius: 2 },
-        { label: 'Moyenne mobile 7j', data: g.daily.map(d => d.moving_avg_7d), borderColor: cssVar('--chart-line-3'), borderWidth: 2, tension: 0.3 },
+        { label: t('legend_daily_revenue'), data: g.daily.map(d => d.revenue), borderColor: cssVar('--border-strong'), borderDash: [4,4], pointRadius: 2 },
+        { label: t('legend_moving_avg'), data: g.daily.map(d => d.moving_avg_7d), borderColor: cssVar('--chart-line-3'), borderWidth: 2, tension: 0.3 },
       ]
     },
     options: {
@@ -1679,6 +1771,36 @@ const SEGMENT_ACTION = {
   'Perdus': 'Campagne de réactivation (email marketing)',
 };
 
+// Le backend (analytics.py) calcule et renvoie ces segments en français —
+// ces deux maps ne servent qu'à l'affichage traduit, la clé de recherche
+// dans SEGMENT_CLASS/SEGMENT_ACTION ci-dessus reste toujours le français.
+const SEGMENT_I18N_KEY = {
+  'Champions': 'seg_champions',
+  'Clients fidèles': 'seg_loyal',
+  'Nouveaux clients': 'seg_new',
+  'À risque (gros clients)': 'seg_atrisk_big',
+  'À risque': 'seg_atrisk',
+  'Clients occasionnels': 'seg_occasional',
+  'À risque / Perdus': 'seg_atrisk_lost',
+  'Perdus': 'seg_lost',
+};
+const SEGMENT_ACTION_I18N_KEY = {
+  'Champions': 'seg_action_champions',
+  'Clients fidèles': 'seg_action_loyal',
+  'Nouveaux clients': 'seg_action_new',
+  'À risque (gros clients)': 'seg_action_atrisk_big',
+  'À risque': 'seg_action_atrisk',
+  'Clients occasionnels': 'seg_action_occasional',
+  'À risque / Perdus': 'seg_action_atrisk_lost',
+  'Perdus': 'seg_action_lost',
+};
+function segmentDisplay(segment) {
+  return SEGMENT_I18N_KEY[segment] ? t(SEGMENT_I18N_KEY[segment]) : segment;
+}
+function segmentActionDisplay(segment) {
+  return SEGMENT_ACTION_I18N_KEY[segment] ? t(SEGMENT_ACTION_I18N_KEY[segment]) : (SEGMENT_ACTION[segment] || '—');
+}
+
 async function loadRfm() {
   const res = await fetch(apiUrl('/api/rfm'));
   if (!res.ok) return;
@@ -1688,8 +1810,8 @@ async function loadRfm() {
     `<tr>
       <td>${r.customer}</td><td class="num">${r.recency_days}</td><td class="num">${r.frequency}</td><td class="num">${fmtMoney(r.monetary)}</td>
       <td class="num">${r.r_score}</td><td class="num">${r.f_score}</td><td class="num">${r.m_score}</td>
-      <td class="explainer" style="margin:0;">${SEGMENT_ACTION[r.segment] || '—'}</td>
-      <td><span class="badge ${SEGMENT_CLASS[r.segment] || 'loyal'}">${r.segment}</span></td>
+      <td class="explainer" style="margin:0;">${segmentActionDisplay(r.segment)}</td>
+      <td><span class="badge ${SEGMENT_CLASS[r.segment] || 'loyal'}">${segmentDisplay(r.segment)}</span></td>
     </tr>`
   ).join('');
 
@@ -1701,7 +1823,7 @@ async function loadRfm() {
   charts.segment = new Chart(document.getElementById('segmentChart'), {
     type: 'pie',
     data: {
-      labels: segments,
+      labels: segments.map(segmentDisplay),
       datasets: [{
         data: segments.map(s => counts[s]),
         backgroundColor: segments.map(s => cssVar(SEGMENT_COLOR_VAR[s] || '--seg-loyal')),
@@ -1791,7 +1913,7 @@ async function loadCohorts() {
     data: {
       labels: avgLabels,
       datasets: [{
-        label: 'Rétention moyenne', data: avgData,
+        label: t('legend_avg_retention'), data: avgData,
         borderColor: cssVar('--chart-line-1'), backgroundColor: cssVar('--accent-soft'), fill: true, tension: 0.3,
       }]
     },
@@ -1799,7 +1921,7 @@ async function loadCohorts() {
       maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: (ctx) => ctx.parsed.y === null ? '' : `Rétention moyenne: ${ctx.parsed.y}%` } },
+        tooltip: { callbacks: { label: (ctx) => ctx.parsed.y === null ? '' : t('pct_tooltip').replace('{label}', t('legend_avg_retention')).replace('{pct}', ctx.parsed.y) } },
       },
       scales: {
         x: { grid: { display: false }, ticks: { color: cssVar('--text-secondary') } },
@@ -1838,20 +1960,20 @@ function renderForecastChart(canvasId, chartKey, history, forecast, historyValue
     data: {
       labels,
       datasets: [
-        { label: 'Intervalle bas', data: lowData, borderWidth: 0, pointRadius: 0, fill: false },
-        { label: 'Intervalle ~95%', data: highData, borderWidth: 0, pointRadius: 0, fill: '-1', backgroundColor: hexToRgba(cssVar('--chart-line-2'), 0.15) },
-        { label: 'Historique', data: historyData, borderColor: cssVar('--chart-line-1'), tension: 0.2 },
-        { label: 'Prévision', data: forecastData, borderColor: cssVar('--chart-line-2'), borderDash: [6, 4], tension: 0.2 },
+        { label: t('legend_interval_low'), data: lowData, borderWidth: 0, pointRadius: 0, fill: false },
+        { label: t('legend_interval'), data: highData, borderWidth: 0, pointRadius: 0, fill: '-1', backgroundColor: hexToRgba(cssVar('--chart-line-2'), 0.15) },
+        { label: t('legend_history'), data: historyData, borderColor: cssVar('--chart-line-1'), tension: 0.2 },
+        { label: t('legend_forecast'), data: forecastData, borderColor: cssVar('--chart-line-2'), borderDash: [6, 4], tension: 0.2 },
       ]
     },
     options: {
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          labels: { color: cssVar('--text-secondary'), filter: (item) => item.text !== 'Intervalle bas' },
+          labels: { color: cssVar('--text-secondary'), filter: (item) => item.text !== t('legend_interval_low') },
         },
         tooltip: {
-          filter: (item) => item.dataset.label === 'Historique' || item.dataset.label === 'Prévision',
+          filter: (item) => item.dataset.label === t('legend_history') || item.dataset.label === t('legend_forecast'),
           callbacks: { label: tooltipFmt },
         },
       },

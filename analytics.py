@@ -368,6 +368,7 @@ def revenue_by_weekday(records):
     return [
         {
             "weekday": WEEKDAY_LABELS[i],
+            "weekday_index": i,
             "revenue": round(revenue.get(i, 0), 2),
             "orders": orders.get(i, 0),
         }
