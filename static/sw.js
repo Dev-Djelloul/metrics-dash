@@ -1,7 +1,12 @@
 // Service worker minimal : cache uniquement l'app shell (HTML/CSS/icônes),
 // jamais les appels /api/* — les métriques doivent toujours venir du
 // réseau, une version en cache serait trompeuse (faux CA, faux graphiques).
-const CACHE_NAME = "metrics-dash-shell-v1";
+//
+// v2 : le nom de cache change à chaque fois qu'on veut forcer les navigateurs
+// à purger l'ancien app shell (l'activate handler ci-dessous supprime tout
+// cache dont le nom ne correspond plus). Incrémenter ce suffixe est le seul
+// moyen fiable de "casser" un cache déjà posé chez un visiteur.
+const CACHE_NAME = "metrics-dash-shell-v2";
 const APP_SHELL = [
   "/",
   "/design-system.css",
@@ -36,9 +41,21 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // App shell : cache-first (rapide au rechargement), avec repli réseau
-  // si jamais un fichier n'était pas encore en cache.
+  // App shell : network-first — toujours essayer d'avoir la dernière
+  // version en ligne (le HTML change à chaque déploiement, contrairement à
+  // une vraie appli statique versionnée), et ne retomber sur le cache que
+  // si le réseau est indisponible (mode hors-ligne). L'inverse (cache-first)
+  // servait indéfiniment une version figée du site tant que ce fichier
+  // sw.js lui-même ne changeait pas — un rechargement normal ne suffisait
+  // plus à voir les mises à jour, seul un rechargement forcé (Cmd+Shift+R)
+  // contournant le service worker les révélait.
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
+    fetch(event.request)
+      .then((response) => {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
