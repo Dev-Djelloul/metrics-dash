@@ -343,6 +343,11 @@
   .customer-hover-card .chc-row, .rfm-detail-panel .chc-row { display: flex; justify-content: space-between; align-items: center; font-size: var(--fs-small); color: var(--text-secondary); padding: 4px 0; }
   .customer-hover-card .chc-row + .chc-row, .rfm-detail-panel .chc-row + .chc-row { border-top: var(--border-w) solid var(--border); }
   .customer-hover-card .chc-row b, .rfm-detail-panel .chc-row b { color: var(--text-primary); font-weight: 700; }
+  /* Action marketing suggérée : phrase complète, pas une valeur courte —
+     empilée sous son libellé (comme les autres .chc-row, mais verticalement)
+     plutôt qu'alignée à droite, pour rester lisible sans se couper. */
+  .rfm-detail-panel .chc-action { flex-direction: column; align-items: flex-start; gap: 4px; }
+  .rfm-detail-panel .chc-action b { font-weight: 400; }
   #customersTable .hoverable-row, #rfmTable .hoverable-row { cursor: pointer; }
 
   @media (max-width: 640px) {
@@ -2097,8 +2102,10 @@ function showRfmDetail(customerName, row) {
     </div>
     <div class="chc-row"><span>${t('rfm_detail_last_purchase').replace('{days}', r.recency_days)}</span></div>
     <div class="chc-row"><span>${t('rfm_detail_frequency').replace('{count}', r.frequency)}</span><b>${fmtMoney(r.monetary)}</b></div>
-    <div class="chc-row"><span>${t('th_action')}</span></div>
-    <div class="chc-row">${segmentActionDisplay(r.segment)}</div>
+    <div class="chc-row chc-action">
+      <span>${t('th_action')}</span>
+      <b>${segmentActionDisplay(r.segment)}</b>
+    </div>
   `;
   detail.classList.add('visible');
 
