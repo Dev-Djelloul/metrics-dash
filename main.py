@@ -155,6 +155,7 @@ def status(user: dict | None = Depends(get_current_user)):
         "email": user.get("email"),
         "name": user.get("name"),
         "picture": user.get("picture"),
+        "member_since": user.get("created_at"),
         "connected": stripe_connected or shopify_connected,
         "stripe_connected": stripe_connected,
         "account": user.get("account_name") or user.get("stripe_user_id"),

@@ -55,9 +55,16 @@
   .powerbi-mark { width: 20px; height: 20px; flex-shrink: 0; }
 
   .google-status:empty { display: none; }
+  .google-status { display: flex; align-items: center; gap: var(--sp-2); }
   .google-status .status-pill { padding: 6px 14px; gap: 8px; }
   .google-mark { width: 20px; height: 20px; flex-shrink: 0; }
   .avatar-mark { border-radius: 50%; object-fit: cover; }
+  .status-pill-clickable { cursor: pointer; }
+  .status-pill-clickable:hover { filter: brightness(1.1); }
+  .profile-header { display: flex; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-4); }
+  .profile-avatar { width: 48px; height: 48px; }
+  .profile-name { font-weight: 700; font-size: 16px; }
+  .profile-email { color: var(--text-secondary); font-size: var(--fs-small); }
   .shopify-mark { width: 20px; height: 20px; flex-shrink: 0; }
 
   .connections-row { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin: var(--sp-5) 0 var(--sp-4); }
@@ -571,6 +578,15 @@
       <div class="export-list" id="sectorList"></div>
     </div>
   </div>
+
+  <!-- Popup profil du compte connecté -->
+  <div class="modal-overlay" id="profileModal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="profileModalTitle">
+      <button class="modal-close" id="profileModalClose" type="button" aria-label="Fermer">&times;</button>
+      <h3 id="profileModalTitle">Mon profil</h3>
+      <div id="profileModalBody"></div>
+    </div>
+  </div>
   </div>
 
 <script>
@@ -646,6 +662,61 @@ sectorModal.addEventListener('click', (e) => {
 });
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && !sectorModal.hidden) closeSectorModal();
+});
+
+// Popup profil : centralise l'identité + l'état de chaque connexion
+// (Stripe/Shopify) au même endroit, avec leurs actions de déconnexion —
+// les dernières données /api/status connues (lastStatus) évitent un
+// second aller-retour réseau à l'ouverture.
+const profileModal = document.getElementById('profileModal');
+let lastStatus = null;
+
+function openProfileModal() {
+  if (!lastStatus) return;
+  const googleIcon = '<img class="google-mark" src="icons8-google-100.png" alt="" aria-hidden="true">';
+  const avatar = lastStatus.picture
+    ? `<img class="google-mark avatar-mark profile-avatar" src="${lastStatus.picture}" alt="" aria-hidden="true" referrerpolicy="no-referrer">`
+    : googleIcon;
+  const memberSince = lastStatus.member_since
+    ? new Date(lastStatus.member_since.replace(' ', 'T') + 'Z').toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })
+    : '—';
+
+  const stripeLine = lastStatus.stripe_connected
+    ? `<span class="line">✅ Stripe — ${lastStatus.account} <a class="status-action" href="/auth/stripe/disconnect">Déconnecter</a></span>`
+    : `<span class="line">◻️ Stripe — non connecté</span>`;
+  const shopifyLine = lastStatus.shopify_connected
+    ? `<span class="line">✅ Shopify — ${lastStatus.shop_domain} <a class="status-action" href="/auth/shopify/disconnect">Déconnecter</a></span>`
+    : `<span class="line">◻️ Shopify — non connecté</span>`;
+
+  document.getElementById('profileModalBody').innerHTML = `
+    <div class="profile-header">
+      ${avatar}
+      <div>
+        <div class="profile-name">${lastStatus.name || lastStatus.email || 'Connecté'}</div>
+        <div class="profile-email">${lastStatus.email || ''}</div>
+      </div>
+    </div>
+    <p class="explainer">
+      <span class="line">Membre depuis le ${memberSince}.</span>
+      <span class="line">Secteur : ${lastStatus.sector || 'non renseigné'}.</span>
+    </p>
+    <p class="explainer">
+      ${stripeLine}
+      ${shopifyLine}
+    </p>
+    <a class="status-action" href="/auth/logout">Se déconnecter entièrement (Google)</a>
+  `;
+  profileModal.hidden = false;
+}
+function closeProfileModal() {
+  profileModal.hidden = true;
+}
+document.getElementById('profileModalClose').addEventListener('click', closeProfileModal);
+profileModal.addEventListener('click', (e) => {
+  if (e.target === profileModal) closeProfileModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !profileModal.hidden) closeProfileModal();
 });
 
 async function getSectors() {
@@ -867,6 +938,7 @@ document.querySelectorAll('.tab').forEach(tab => {
 async function loadStatus() {
   const res = await fetch('/api/status');
   const data = await res.json();
+  lastStatus = data;
   const stripeIcon = '<img class="stripe-mark" src="icons8-stripe-100.png" alt="" aria-hidden="true">';
   const googleIcon = '<img class="google-mark" src="icons8-google-100.png" alt="" aria-hidden="true">';
   const shopifyIcon = '<img class="shopify-mark" src="icons8-shopify-96.png" alt="" aria-hidden="true">';
@@ -889,7 +961,8 @@ async function loadStatus() {
     const avatar = data.picture
       ? `<img class="google-mark avatar-mark" src="${data.picture}" alt="" aria-hidden="true" referrerpolicy="no-referrer">`
       : googleIcon;
-    googleEl.innerHTML = `<div class="status-pill">${avatar}<span class="status-dot"></span>Bonjour ${name}<a class="status-action" href="/auth/logout">Se déconnecter</a></div>`;
+    googleEl.innerHTML = `<div class="status-pill status-pill-clickable" id="openProfile" title="Voir mon profil">${avatar}<span class="status-dot"></span>Bonjour ${name}</div><a class="status-action" href="/auth/logout">Se déconnecter</a>`;
+    document.getElementById('openProfile').addEventListener('click', openProfileModal);
   } else {
     googleEl.innerHTML = '';
   }
