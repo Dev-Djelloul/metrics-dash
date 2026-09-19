@@ -1055,6 +1055,21 @@ async function loadStatus() {
   return data.connected;
 }
 
+// Construit le badge de comparaison au repère sectoriel : flèche ▲/▼ +
+// l'écart en %, colorée selon si l'écart va dans le bon sens pour cet
+// indicateur (direction = 'higher_is_better' ou 'lower_is_better').
+function benchmarkDelta(value, benchmarkValue, direction, label) {
+  if (!benchmarkValue) return null;
+  const diffPct = Math.round(((value - benchmarkValue) / benchmarkValue) * 100);
+  const isBetter = direction === 'higher_is_better' ? value >= benchmarkValue : value <= benchmarkValue;
+  const arrow = diffPct === 0 ? '●' : (diffPct > 0 ? '▲' : '▼');
+  const sign = diffPct > 0 ? '+' : '';
+  return {
+    cls: isBetter ? 'pos' : 'neg',
+    text: `${arrow} ${sign}${diffPct}% vs secteur (${label})`,
+  };
+}
+
 function card(label, value, sub) {
   const subHtml = sub ? `<div class="kpi-delta ${sub.cls}">${sub.text}</div>` : '';
   return `<div class="card kpi-card"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div>${subHtml}</div>`;
@@ -1343,13 +1358,15 @@ async function loadLoyaltyCards() {
     ? 'Pas assez de données'
     : `${loyalty.avg_days_between_purchases} jours`;
 
+  // Flèche +/- : matérialise si la métrique du compte connecté est
+  // au-dessus ou en dessous du repère sectoriel, avec le bon sens de
+  // lecture selon l'indicateur (un délai plus court est "mieux", un taux
+  // de fidélité plus élevé aussi — l'un descend quand l'autre monte).
   const delaySub = (benchmark && loyalty.avg_days_between_purchases !== null)
-    ? { cls: loyalty.avg_days_between_purchases <= benchmark.avg_days_between_purchases ? 'pos' : 'neg',
-        text: `${sectorLabelSpan(currentSector, currentSector)} : ${benchmark.avg_days_between_purchases} j` }
+    ? benchmarkDelta(loyalty.avg_days_between_purchases, benchmark.avg_days_between_purchases, 'lower_is_better', `${benchmark.avg_days_between_purchases} j`)
     : null;
   const repeatSub = benchmark
-    ? { cls: loyalty.repeat_customer_pct >= benchmark.repeat_customer_pct ? 'pos' : 'neg',
-        text: `${sectorLabelSpan(currentSector, currentSector)} : ${benchmark.repeat_customer_pct}%` }
+    ? benchmarkDelta(loyalty.repeat_customer_pct, benchmark.repeat_customer_pct, 'higher_is_better', `${benchmark.repeat_customer_pct}%`)
     : null;
 
   document.getElementById('loyaltyCards').innerHTML =
