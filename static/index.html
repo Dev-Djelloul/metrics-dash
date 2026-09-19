@@ -66,7 +66,8 @@
   .profile-avatar { width: 64px; height: 64px; }
   .profile-name { font-weight: 700; font-size: 20px; }
   .profile-email { color: var(--text-secondary); font-size: var(--fs-small); }
-  #profileModalBody .line { display: flex; align-items: center; justify-content: center; gap: var(--sp-2); font-size: var(--fs-small); }
+  #profileModalBody .line { display: block; font-size: var(--fs-small); }
+  #profileModalBody .explainer { display: flex; flex-direction: column; gap: 2px; }
   .profile-conns { display: flex; justify-content: center; gap: var(--sp-3); margin: var(--sp-3) 0; }
   .profile-conn { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: var(--sp-3); border-radius: var(--radius-lg, 16px); font-size: var(--fs-small); }
   .profile-conn img { width: 32px; height: 32px; }
@@ -87,8 +88,9 @@
   }
   .disconnect-btn:hover { filter: brightness(1.15); }
   .profile-conn .disconnect-btn { position: absolute; top: 6px; right: 6px; }
-  .disconnect-btn-google { width: auto; height: auto; border-radius: var(--radius-pill); padding: 6px 10px; margin-top: var(--sp-2); background: var(--surface-2); }
+  .disconnect-btn-google { width: auto; height: auto; border-radius: var(--radius-pill); padding: 6px 10px; margin-top: var(--sp-2); background: var(--surface-2); gap: 6px; }
   .disconnect-btn-google .google-mark { width: 16px; height: 16px; }
+  .google-wordmark { height: 14px; width: auto; }
   .shopify-mark { width: 20px; height: 20px; flex-shrink: 0; }
 
   .connections-panel {
@@ -791,13 +793,14 @@ function openProfileModal() {
       <div class="profile-email">${lastStatus.email || ''}</div>
     </div>
     <p class="explainer">
-      <span class="line">Membre depuis le ${memberSince} · Secteur : ${lastStatus.sector ? sectorLabelSpan(lastStatus.sector, lastStatus.sector) : 'non renseigné'}</span>
+      <span class="line">Membre depuis le ${memberSince}</span>
+      <span class="line">Secteur : ${lastStatus.sector ? sectorLabelSpan(lastStatus.sector, lastStatus.sector) : 'non renseigné'}</span>
     </p>
     <div class="profile-conns">
       ${stripeChip}
       ${shopifyChip}
     </div>
-    <a class="disconnect-btn disconnect-btn-google" href="/auth/logout" title="Se déconnecter" aria-label="Se déconnecter">${googleIcon}✕</a>
+    <a class="disconnect-btn disconnect-btn-google" href="/auth/logout" title="Se déconnecter" aria-label="Se déconnecter">${googleIcon}<img class="google-wordmark" src="Google-full-text.webp" alt="Google">✕</a>
   `;
   profileModal.hidden = false;
 }
