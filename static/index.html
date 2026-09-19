@@ -62,19 +62,33 @@
   .status-pill-clickable { cursor: pointer; }
   .status-pill-clickable:hover { filter: brightness(1.1); }
   #profileModalBody { display: flex; flex-direction: column; align-items: center; text-align: center; }
-  .profile-header { display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-4); }
-  .profile-avatar { width: 88px; height: 88px; }
-  .profile-name { font-weight: 700; font-size: 26px; }
-  #profileModalBody .line { display: flex; align-items: center; justify-content: center; gap: var(--sp-2); }
-  .profile-conns { display: flex; justify-content: center; gap: var(--sp-4); margin: var(--sp-4) 0; }
-  .profile-conn { display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); padding: var(--sp-3) var(--sp-4); border-radius: var(--radius-lg, 16px); font-size: var(--fs-small); }
-  .profile-conn img { width: 40px; height: 40px; }
+  .profile-header { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: var(--sp-3); }
+  .profile-avatar { width: 64px; height: 64px; }
+  .profile-name { font-weight: 700; font-size: 20px; }
+  .profile-email { color: var(--text-secondary); font-size: var(--fs-small); }
+  #profileModalBody .line { display: flex; align-items: center; justify-content: center; gap: var(--sp-2); font-size: var(--fs-small); }
+  .profile-conns { display: flex; justify-content: center; gap: var(--sp-3); margin: var(--sp-3) 0; }
+  .profile-conn { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: var(--sp-3); border-radius: var(--radius-lg, 16px); font-size: var(--fs-small); }
+  .profile-conn img { width: 32px; height: 32px; }
+  .profile-conn small { max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .profile-conn-on { background: var(--pos-soft); color: var(--pos-text); }
   .profile-conn-off { background: var(--surface-2); color: var(--text-tertiary); }
   .profile-conn-off img { opacity: .5; }
   #profileModalBody .line .google-mark, #profileModalBody .line .stripe-mark, #profileModalBody .line .shopify-mark { width: 18px; height: 18px; }
-  .profile-logout { display: inline-flex; align-items: center; gap: 6px; margin-top: var(--sp-2); }
-  .profile-logout .google-mark { width: 18px; height: 18px; }
+
+  /* Icône × plutôt que le mot "Déconnecter"/"Se déconnecter" partout où
+     c'est possible — un petit badge rond, avec title/aria-label pour
+     rester accessible malgré l'absence de texte visible. */
+  .disconnect-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 2px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--neg-soft, rgba(224,62,77,.12)); color: var(--neg-text);
+    font-size: 11px; line-height: 1; text-decoration: none; flex-shrink: 0;
+  }
+  .disconnect-btn:hover { filter: brightness(1.15); }
+  .profile-conn .disconnect-btn { position: absolute; top: 6px; right: 6px; }
+  .disconnect-btn-google { width: auto; height: auto; border-radius: var(--radius-pill); padding: 6px 10px; margin-top: var(--sp-2); background: var(--surface-2); }
+  .disconnect-btn-google .google-mark { width: 16px; height: 16px; }
   .shopify-mark { width: 20px; height: 20px; flex-shrink: 0; }
 
   .connections-panel {
@@ -228,7 +242,7 @@
      de ce qu'il y a derrière) et mise en page moitié image / moitié
      contenu, plutôt que le fond opaque des autres popups. */
   .modal-card-profile {
-    display: flex; padding: 0; overflow: hidden; max-width: 920px;
+    display: flex; padding: 0; overflow: hidden; max-width: 920px; max-height: 480px;
     background: rgba(20, 20, 28, 0.72);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
@@ -242,7 +256,7 @@
     background-position: center top;
     min-height: 100%;
   }
-  .profile-modal-content { flex: 1 1 58%; padding: var(--sp-6); min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; }
+  .profile-modal-content { flex: 1 1 58%; padding: var(--sp-5); min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
   @media (max-width: 640px) {
     .modal-card-profile { flex-direction: column; max-height: 90vh; overflow-y: auto; }
     .profile-modal-banner { flex-basis: 140px; }
@@ -760,27 +774,30 @@ function openProfileModal() {
     ? new Date(lastStatus.member_since.replace(' ', 'T') + 'Z').toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })
     : '—';
 
+  // Icône × (plutôt que le mot "Déconnecter") sur chaque chip connectée —
+  // title porte le texte accessible pour lecteurs d'écran/tooltip natif.
+  const disconnectIcon = (href) => `<a class="disconnect-btn" href="${href}" title="Déconnecter" aria-label="Déconnecter">✕</a>`;
   const stripeChip = lastStatus.stripe_connected
-    ? `<span class="profile-conn profile-conn-on">${stripeIcon}<a class="status-action" href="/auth/stripe/disconnect">Déconnecter</a></span>`
-    : `<span class="profile-conn profile-conn-off">${stripeIcon}<span>non connecté</span></span>`;
+    ? `<span class="profile-conn profile-conn-on">${disconnectIcon('/auth/stripe/disconnect')}${stripeIcon}<small>${lastStatus.account || ''}</small></span>`
+    : `<span class="profile-conn profile-conn-off">${stripeIcon}<small>non connecté</small></span>`;
   const shopifyChip = lastStatus.shopify_connected
-    ? `<span class="profile-conn profile-conn-on">${shopifyIcon}<a class="status-action" href="/auth/shopify/disconnect">Déconnecter</a></span>`
-    : `<span class="profile-conn profile-conn-off">${shopifyIcon}<span>non connecté</span></span>`;
+    ? `<span class="profile-conn profile-conn-on">${disconnectIcon('/auth/shopify/disconnect')}${shopifyIcon}<small>${lastStatus.shop_domain || ''}</small></span>`
+    : `<span class="profile-conn profile-conn-off">${shopifyIcon}<small>non connecté</small></span>`;
 
   document.getElementById('profileModalBody').innerHTML = `
     <div class="profile-header">
       ${avatar}
       <div class="profile-name">${lastStatus.name || lastStatus.email || 'Connecté'}</div>
+      <div class="profile-email">${lastStatus.email || ''}</div>
     </div>
     <p class="explainer">
-      <span class="line">Membre depuis le ${memberSince}.</span>
-      <span class="line">Secteur : ${lastStatus.sector ? sectorLabelSpan(lastStatus.sector, lastStatus.sector) : 'non renseigné'}.</span>
+      <span class="line">Membre depuis le ${memberSince} · Secteur : ${lastStatus.sector ? sectorLabelSpan(lastStatus.sector, lastStatus.sector) : 'non renseigné'}</span>
     </p>
     <div class="profile-conns">
       ${stripeChip}
       ${shopifyChip}
     </div>
-    <a class="status-action profile-logout" href="/auth/logout">${googleIcon} Se déconnecter</a>
+    <a class="disconnect-btn disconnect-btn-google" href="/auth/logout" title="Se déconnecter" aria-label="Se déconnecter">${googleIcon}✕</a>
   `;
   profileModal.hidden = false;
 }
@@ -1038,7 +1055,7 @@ async function loadStatus() {
     const avatar = data.picture
       ? `<img class="google-mark avatar-mark" src="${data.picture}" alt="" aria-hidden="true" referrerpolicy="no-referrer">`
       : googleIcon;
-    googleEl.innerHTML = `<div class="status-pill status-pill-clickable" id="openProfile" title="Voir mon profil">${avatar}<span class="status-dot"></span>Bonjour ${name}</div><a class="status-action" href="/auth/logout">Se déconnecter</a>`;
+    googleEl.innerHTML = `<div class="status-pill status-pill-clickable" id="openProfile" title="Voir mon profil">${avatar}<span class="status-dot"></span>Bonjour ${name}</div><a class="disconnect-btn" href="/auth/logout" title="Se déconnecter" aria-label="Se déconnecter">✕</a>`;
     document.getElementById('openProfile').addEventListener('click', openProfileModal);
   } else {
     googleEl.innerHTML = '';
