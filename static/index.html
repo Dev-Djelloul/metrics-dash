@@ -228,14 +228,6 @@
   </div>
 
   <div class="toolbar-row">
-    <button class="demo-btn" id="sectorBadge" type="button" title="Secteur d'activité de ces données">
-      <span class="demo-dot"></span>
-      <span id="sectorBadgeLabel">Secteur non renseigné</span>
-    </button>
-    <button class="demo-btn" id="demoToggle" data-on="false" type="button" aria-pressed="false" title="8 mois de données simulées, pour voir cohortes/tendances/prévision avec du volume">
-      <span class="demo-dot"></span>
-      Mode démo
-    </button>
     <div class="date-range">
       <label for="dateStart">Du</label>
       <input type="date" id="dateStart">
@@ -243,6 +235,14 @@
       <input type="date" id="dateEnd">
       <button class="btn" id="dateReset" type="button">Réinitialiser</button>
     </div>
+    <button class="demo-btn" id="demoToggle" data-on="false" type="button" aria-pressed="false" title="8 mois de données simulées, pour voir cohortes/tendances/prévision avec du volume">
+      <span class="demo-dot"></span>
+      Mode démo
+    </button>
+    <button class="demo-btn" id="sectorBadge" type="button" title="Secteur d'activité de ces données">
+      <span class="demo-dot"></span>
+      <span id="sectorBadgeLabel">Secteur non renseigné</span>
+    </button>
     <div class="date-range" id="currencyPicker" style="display:none;">
       <label for="currencySelect">Devise</label>
       <select id="currencySelect"></select>
