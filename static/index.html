@@ -337,6 +337,8 @@
   .term-cohort { color: var(--accent-text); }
   .term-retention { color: var(--pos-text); }
   .term-forecast { color: var(--chart-line-2); }
+  .term-pos { color: var(--pos-text); }
+  .term-neg { color: var(--neg-text); }
 
   .glossary dt { font-weight: 700; color: var(--text-primary); margin-top: var(--sp-5); padding-top: var(--sp-5); border-top: var(--border-w) solid var(--border); }
   .glossary dt:first-child { margin-top: 0; padding-top: 0; border-top: none; }
@@ -678,7 +680,7 @@
       <h3 data-i18n="h3_21">Décomposition du CA (waterfall)</h3>
       <p class="explainer">
         <span class="line" data-i18n-html="ln_35">Le MoM ci-dessus dit <em>de combien</em> le CA a bougé entre les deux derniers mois — ce graphique dit <em>pourquoi</em>, en décomposant la variation en 4 causes.</span>
-        <span class="line" data-i18n-html="ln_36"><span class="term term-yoy">Nouveaux</span> (clients apparus) · Expansion (clients existants qui dépensent plus) · Contraction (qui dépensent moins) · <span class="term term-ma">Perdus</span> (clients qui n'ont rien racheté).</span>
+        <span class="line" data-i18n-html="ln_36"><span class="term term-pos">Nouveaux</span> (clients apparus) · <span class="term term-pos">Expansion</span> (clients existants qui dépensent plus) · <span class="term term-neg">Contraction</span> (qui dépensent moins) · <span class="term term-neg">Perdus</span> (clients qui n'ont rien racheté).</span>
       </p>
       <div id="waterfallNote" class="explainer" style="margin-bottom: var(--sp-3);"></div>
       <div class="canvas-wrap"><canvas id="waterfallChart"></canvas></div>
@@ -1110,7 +1112,7 @@ const I18N = {
     ln_33: 'Parmi les clients actifs un mois donné, quelle part n\'a plus rien acheté le mois suivant ? Complète les segments RFM (qui disent qui est à risque) par un taux qui suit son évolution dans le temps.',
     ln_34: 'Un taux qui grimpe mois après mois est un signal d\'alerte précoce, avant même que ça se voie sur le CA global.',
     ln_35: 'Le MoM ci-dessus dit de combien le CA a bougé entre les deux derniers mois — ce graphique dit pourquoi, en décomposant la variation en 4 causes.',
-    ln_36: 'Nouveaux (clients apparus) · Expansion (clients existants qui dépensent plus) · Contraction (qui dépensent moins) · Perdus (clients qui n\'ont rien racheté).',
+    ln_36: '<span class="term term-pos">Nouveaux</span> (clients apparus) · <span class="term term-pos">Expansion</span> (clients existants qui dépensent plus) · <span class="term term-neg">Contraction</span> (qui dépensent moins) · <span class="term term-neg">Perdus</span> (clients qui n\'ont rien racheté).',
     ln_37: 'Part des commandes remboursées, en tout ou partie — un signal de qualité produit/service qu\'aucune autre métrique du dashboard ne couvre.',
     th_avg_ltv: 'LTV moyenne', th_orders: 'Commandes', th_refunds: 'Remboursements', th_refund_rate: 'Taux',
     kpi_refund_rate: 'Taux de remboursement', kpi_refunded_amount: 'Montant remboursé',
@@ -1220,7 +1222,7 @@ const I18N = {
     ln_33: 'Among customers active in a given month, what share bought nothing the following month? Complements RFM segments (which say who is at risk) with a rate you can track over time.',
     ln_34: 'A rate climbing month after month is an early warning sign, before it even shows up in overall revenue.',
     ln_35: 'The MoM above says how much revenue moved between the last two months — this chart says why, breaking the change into 4 causes.',
-    ln_36: 'New (customers who appeared) · Expansion (existing customers spending more) · Contraction (spending less) · Churned (customers who bought nothing again).',
+    ln_36: '<span class="term term-pos">New</span> (customers who appeared) · <span class="term term-pos">Expansion</span> (existing customers spending more) · <span class="term term-neg">Contraction</span> (spending less) · <span class="term term-neg">Churned</span> (customers who bought nothing again).',
     ln_37: 'Share of orders refunded, in full or in part — a product/service quality signal no other metric on this dashboard covers.',
     th_avg_ltv: 'Average LTV', th_orders: 'Orders', th_refunds: 'Refunds', th_refund_rate: 'Rate',
     kpi_refund_rate: 'Refund rate', kpi_refunded_amount: 'Refunded amount',
@@ -1660,9 +1662,12 @@ const ltvModal = document.getElementById('ltvModal');
 function openLtvModal(segment) {
   const bucket = ltvSegmentsCache.find(s => s.segment === segment);
   if (!bucket) return;
-  document.getElementById('ltvModalTitle').textContent = t('ltv_modal_title').replace('{segment}', segmentDisplay(segment));
+  const segColor = `var(${SEGMENT_COLOR_VAR[segment] || '--accent-text'})`;
+  document.getElementById('ltvModalTitle').innerHTML = t('ltv_modal_title').replace(
+    '{segment}', `<span style="color:${segColor}">${segmentDisplay(segment)}</span>`
+  );
   document.querySelector('#ltvModalTable tbody').innerHTML = bucket.customers.map(c =>
-    `<tr><td>${escapeHtml(c.name)}</td><td class="num">${fmtMoney(c.ltv)}</td></tr>`
+    `<tr><td>${escapeHtml(c.name)}</td><td class="num" style="color:var(--pos-text)">${fmtMoney(c.ltv)}</td></tr>`
   ).join('');
   ltvModal.hidden = false;
 }
