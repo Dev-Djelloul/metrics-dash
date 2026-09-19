@@ -467,7 +467,7 @@
       <div class="card chart-box">
         <h3 data-i18n="h3_1">Détail par pays</h3>
         <table class="data" id="geoTable">
-          <thead><tr><th data-i18n="th_country">Pays</th><th class="num" data-i18n="th_customers">Clients</th><th class="num" data-i18n="th_revenue">CA</th></tr></thead>
+          <thead><tr><th data-i18n="th_country">Pays</th><th class="num" data-i18n="th_customers">Clients</th><th class="num" data-i18n="th_revenue">CA</th><th class="num" data-i18n="th_aov">Panier moyen</th><th class="num" data-i18n="th_share">Part du CA</th></tr></thead>
           <tbody></tbody>
         </table>
         <p class="explainer" id="geoUnknownNote" style="display:none; margin: var(--sp-4) 0 0;"></p>
@@ -807,6 +807,7 @@ const I18N = {
     th_amount: 'Montant', th_month: 'Mois', th_recency: 'Récence (j)', th_frequency: 'Fréquence',
     th_action: 'Action marketing suggérée', th_segment: 'Segment', th_cohort: 'Cohorte', th_size: 'Taille',
     hover_share: 'Part du CA', hover_orders: 'Commandes', hover_last_purchase: 'Dernier achat', hover_no_segment: 'Segment non calculé',
+    th_aov: 'Panier moyen', th_share: 'Part du CA',
     alert_revenue_drop: 'CA de {month} en baisse de {pct}% vs le mois précédent.',
     alert_churn_risk: '{pct}% des clients sont à risque ou perdus ({count}/{total}).',
     auth_err_oauth_failed: 'La connexion à Stripe a échoué (code refusé ou expiré). Réessaie.',
@@ -881,6 +882,7 @@ const I18N = {
     th_amount: 'Amount', th_month: 'Month', th_recency: 'Recency (d)', th_frequency: 'Frequency',
     th_action: 'Suggested marketing action', th_segment: 'Segment', th_cohort: 'Cohort', th_size: 'Size',
     hover_share: 'Share of revenue', hover_orders: 'Orders', hover_last_purchase: 'Last purchase', hover_no_segment: 'Segment not computed',
+    th_aov: 'Average order value', th_share: 'Share of revenue',
     alert_revenue_drop: 'Revenue for {month} dropped {pct}% vs the previous month.',
     alert_churn_risk: '{pct}% of customers are at risk or lost ({count}/{total}).',
     auth_err_oauth_failed: 'The connection to Stripe failed (code rejected or expired). Please try again.',
@@ -1620,7 +1622,7 @@ async function loadGeo() {
   const geo = await res.json();
 
   document.querySelector('#geoTable tbody').innerHTML = geo.countries.map(c =>
-    `<tr><td title="${countryName(c.country)}">${c.country}</td><td class="num">${c.customer_count}</td><td class="num">${fmtMoney(c.revenue)}</td></tr>`
+    `<tr><td title="${countryName(c.country)}">${c.country}</td><td class="num">${c.customer_count}</td><td class="num">${fmtMoney(c.revenue)}</td><td class="num">${fmtMoney(c.avg_order_value)}</td><td class="num">${c.share_pct}%</td></tr>`
   ).join('');
 
   const noteEl = document.getElementById('geoUnknownNote');

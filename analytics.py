@@ -503,6 +503,7 @@ ISO_NUMERIC = {
 def revenue_by_country(records):
     revenue = defaultdict(float)
     customers = defaultdict(set)
+    orders = defaultdict(int)
     unknown_count = 0
 
     for r in records:
@@ -512,6 +513,9 @@ def revenue_by_country(records):
             continue
         revenue[country] += r["amount"]
         customers[country].add(r["customer"])
+        orders[country] += 1
+
+    total_revenue = sum(revenue.values())
 
     countries = [
         {
@@ -519,6 +523,9 @@ def revenue_by_country(records):
             "iso_numeric": ISO_NUMERIC.get(code),
             "revenue": round(amount, 2),
             "customer_count": len(customers[code]),
+            "order_count": orders[code],
+            "avg_order_value": round(amount / orders[code], 2) if orders[code] else 0,
+            "share_pct": round((amount / total_revenue) * 100, 1) if total_revenue else 0,
         }
         for code, amount in sorted(revenue.items(), key=lambda kv: kv[1], reverse=True)
     ]
