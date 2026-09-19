@@ -5,6 +5,7 @@ import threading
 import time
 from urllib.parse import urlencode
 
+import httpx
 import stripe
 from dotenv import load_dotenv
 from fastapi import Body, Depends, FastAPI, HTTPException, Request
@@ -41,6 +42,12 @@ SESSION_SECRET = os.getenv("SESSION_SECRET")
 # quand on crée le endpoint dans le dashboard Connect, sert uniquement à
 # vérifier que les événements reçus viennent bien de Stripe.
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+
+# Connexion Google : sert uniquement à identifier la personne (qui es-tu ?),
+# séparément de la connexion Stripe (à quelles données as-tu accès ?) — les
+# deux étaient confondues dans un seul bouton avant l'ajout de Google.
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 
 app = FastAPI(title="metrics-dash")
 
@@ -108,15 +115,22 @@ def get_current_user(request: Request) -> dict | None:
 
 @app.get("/api/status")
 def status(user: dict | None = Depends(get_current_user)):
-    if user:
+    if not user:
         return {
-            "connected": True,
-            "account": user.get("account_name") or user.get("stripe_user_id"),
-            "sector": user.get("sector"),
+            "authenticated": False,
+            "connected": False,
+            "reason": "Non connecté",
+            "connect_configured": bool(STRIPE_CONNECT_CLIENT_ID),
+            "google_configured": bool(GOOGLE_CLIENT_ID),
         }
+    stripe_connected = bool(user.get("stripe_user_id"))
     return {
-        "connected": False,
-        "reason": "Non connecté",
+        "authenticated": True,
+        "email": user.get("email"),
+        "name": user.get("name"),
+        "connected": stripe_connected,
+        "account": user.get("account_name") or user.get("stripe_user_id"),
+        "sector": user.get("sector"),
         "connect_configured": bool(STRIPE_CONNECT_CLIENT_ID),
     }
 
@@ -198,13 +212,18 @@ def _session_redirect(user_id: int) -> RedirectResponse:
 
 
 @app.get("/auth/callback", name="auth_callback")
-def auth_callback(code: str = None, error: str = None):
+def auth_callback(request: Request, code: str = None, error: str = None):
     if error:
         return RedirectResponse(f"/?auth_error={error}")
     if not code:
         raise HTTPException(400, "Code OAuth manquant")
     if not SESSION_SECRET:
         raise HTTPException(500, "SESSION_SECRET non configuré côté serveur")
+
+    # Session déjà ouverte (typiquement via Google) : ce callback vient alors
+    # relier Stripe à cette identité existante, pas en créer une nouvelle.
+    # Sans session, on reste sur le parcours historique "Stripe seul".
+    current_user = get_current_user(request)
 
     # Verrou global (pas seulement une vérification de cache) : deux requêtes
     # avec le même code peuvent arriver quasi simultanément (voir commentaire
@@ -236,12 +255,81 @@ def auth_callback(code: str = None, error: str = None):
             account_name = stripe_user_id
 
         try:
-            user_id = db.upsert_user(stripe_user_id, access_token, account_name)
+            if current_user:
+                db.link_stripe_connection(current_user["id"], stripe_user_id, access_token, account_name)
+                user_id = current_user["id"]
+            else:
+                user_id = db.upsert_standalone_stripe_user(stripe_user_id, access_token, account_name)
         except Exception as exc:
             print(f"[metrics-dash] Échec de l'écriture en base D1 : {type(exc).__name__}: {exc}")
             return RedirectResponse("/?auth_error=db_failed")
 
         _oauth_code_results[code] = user_id
+
+    return _session_redirect(user_id)
+
+
+@app.get("/auth/google/login")
+def auth_google_login(request: Request):
+    if not GOOGLE_CLIENT_ID:
+        raise HTTPException(500, "GOOGLE_CLIENT_ID non configuré côté serveur")
+
+    redirect_uri = str(request.url_for("auth_google_callback")).replace("http://", "https://", 1)
+    params = urlencode(
+        {
+            "response_type": "code",
+            "client_id": GOOGLE_CLIENT_ID,
+            "scope": "openid email profile",
+            "redirect_uri": redirect_uri,
+            # Sans ça, un compte déjà "souvenu" par le navigateur saute
+            # l'écran de sélection — gênant pour tester avec plusieurs comptes.
+            "prompt": "select_account",
+        }
+    )
+    return RedirectResponse(f"https://accounts.google.com/o/oauth2/v2/auth?{params}")
+
+
+@app.get("/auth/google/callback", name="auth_google_callback")
+def auth_google_callback(request: Request, code: str = None, error: str = None):
+    if error:
+        return RedirectResponse(f"/?auth_error={error}")
+    if not code:
+        raise HTTPException(400, "Code OAuth manquant")
+    if not SESSION_SECRET:
+        raise HTTPException(500, "SESSION_SECRET non configuré côté serveur")
+
+    redirect_uri = str(request.url_for("auth_google_callback")).replace("http://", "https://", 1)
+    try:
+        token_response = httpx.post(
+            "https://oauth2.googleapis.com/token",
+            data={
+                "code": code,
+                "client_id": GOOGLE_CLIENT_ID,
+                "client_secret": GOOGLE_CLIENT_SECRET,
+                "redirect_uri": redirect_uri,
+                "grant_type": "authorization_code",
+            },
+            timeout=10,
+        )
+        token_response.raise_for_status()
+        access_token = token_response.json()["access_token"]
+
+        userinfo = httpx.get(
+            "https://www.googleapis.com/oauth2/v3/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=10,
+        )
+        userinfo.raise_for_status()
+        profile = userinfo.json()
+    except Exception as exc:
+        print(f"[metrics-dash] Échec de l'échange du code Google : {type(exc).__name__}: {exc}")
+        return RedirectResponse("/?auth_error=oauth_failed")
+
+    try:
+        user_id = db.upsert_google_user(profile["sub"], profile.get("email"), profile.get("name"))
+    except Exception as exc:
+        print(f"[metrics-dash] Échec de l'écriture en base D1 : {type(exc).__name__}: {exc}")
+        return RedirectResponse("/?auth_error=db_failed")
 
     return _session_redirect(user_id)
 
