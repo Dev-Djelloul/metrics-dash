@@ -700,6 +700,37 @@ def geo(demo: bool = False, start: str = None, end: str = None, currency: str = 
     return analytics.revenue_by_country(records)
 
 
+@app.get("/api/debug/sources")
+def debug_sources(user=Depends(get_current_user)):
+    """Diagnostic temporaire : teste chaque source séparément et renvoie
+    l'erreur exacte s'il y en a une — wrangler tail ne voit pas les print()
+    Python (logs du container, pas du Worker), donc ce endpoint est le
+    moyen le plus rapide de voir la vraie cause d'un échec Stripe/Shopify.
+    À retirer une fois le diagnostic terminé."""
+    if not user:
+        return {"error": "non connecté"}
+    result = {}
+    if user.get("stripe_access_token"):
+        try:
+            charges = get_charges_for_user(user)
+            result["stripe"] = {"ok": True, "count": len(charges)}
+        except Exception as exc:
+            result["stripe"] = {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
+    else:
+        result["stripe"] = {"ok": None, "reason": "non connecté"}
+
+    if user.get("shopify_access_token"):
+        try:
+            orders = get_shopify_orders_for_user(user)
+            result["shopify"] = {"ok": True, "count": len(orders)}
+        except Exception as exc:
+            result["shopify"] = {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
+    else:
+        result["shopify"] = {"ok": None, "reason": "non connecté"}
+
+    return result
+
+
 @app.get("/api/mrr")
 def mrr(demo: bool = False, user=Depends(get_current_user)):
     """MRR (Monthly Recurring Revenue) : n'a de sens que pour de vrais
