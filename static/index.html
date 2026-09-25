@@ -2,74 +2,653 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>metrics-dash</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#0A0B0F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="metrics-dash">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-geo@4"></script>
+<link rel="stylesheet" href="design-system.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Electrolize&family=Sansation:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap" rel="stylesheet">
 <style>
-  :root { color-scheme: dark; }
-  body { font-family: -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; padding: 2rem; }
-  h1 { font-weight: 600; margin-bottom: 0.25rem; }
-  .status { font-size: 0.9rem; margin-bottom: 1.5rem; }
-  .status.ok { color: #4ade80; }
-  .status.error { color: #f87171; }
+  /* Styles propres à cette page, non couverts par le design system
+     (layout de page, panneaux d'onglets, header). */
 
-  .tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid #334155; }
-  .tab { padding: 0.6rem 1rem; cursor: pointer; color: #94a3b8; border-bottom: 2px solid transparent; font-size: 0.9rem; }
-  .tab.active { color: #e2e8f0; border-bottom-color: #60a5fa; }
+  /* Corps de texte en Electrolize : redéfinit la variable du design system,
+     donc tous les composants qui l'utilisent (boutons, tabs, tableaux,
+     badges, labels KPI...) en héritent automatiquement.
+     Attention : Electrolize n'a qu'un poids (400) — le gras est un
+     "faux gras" simulé par le navigateur, à vérifier visuellement. */
+  :root {
+    --font-sans: 'Electrolize', sans-serif;
+    /* Police globale agrandie d'~15-20% vs les valeurs par défaut du
+       design system (toute la page en hérite, une seule variable par
+       niveau à changer). */
+    --fs-h1: 32px;
+    --fs-h2: 23px;
+    --fs-body: 16px;
+    --fs-small: 15px;
+    --fs-caption: 13px;
+    --fs-kpi: 38px;
+  }
+
+  body { padding: var(--sp-8); }
+
+  .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-2); }
+  .brand { display: flex; align-items: center; gap: var(--sp-3); }
+  .brand-mark { width: 40px; height: 40px; color: var(--accent); flex-shrink: 0; }
+  .brand-name { font-family: 'Sansation', sans-serif; font-size: 28px; font-weight: 700; font-style: normal; letter-spacing: -0.01em; color: var(--text-primary); }
+  .brand-accent { color: var(--accent); }
+  .brand-blue { color: var(--chart-line-2); }
+
+  .header-actions { display: flex; align-items: center; gap: var(--sp-5); flex-wrap: wrap; }
+  .theme-toggle { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-small); color: var(--text-secondary); }
+
+  .powerbi-link { display: inline-flex; align-items: center; gap: var(--sp-2); font-family: var(--font-sans); font-size: var(--fs-small); font-weight: var(--fw-small); color: var(--text-primary); background: var(--surface-2); border: var(--border-w) solid var(--border-strong); border-radius: var(--radius-pill); padding: 7px 14px 7px 8px; cursor: pointer; transition: var(--transition); text-decoration: none; }
+  .powerbi-link:hover { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-text); }
+  .powerbi-mark { width: 20px; height: 20px; flex-shrink: 0; }
+
+  .google-status:empty { display: none; }
+  .google-status { display: flex; align-items: center; gap: var(--sp-2); }
+  .google-status .status-pill { padding: 6px 14px; gap: 8px; }
+  .google-mark { width: 20px; height: 20px; flex-shrink: 0; }
+  .avatar-mark { border-radius: 50%; object-fit: cover; }
+  .status-pill-clickable { cursor: pointer; }
+  .status-pill-clickable:hover { filter: brightness(1.1); }
+  #profileModalBody { display: flex; flex-direction: column; align-items: center; text-align: center; }
+  .profile-header { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: var(--sp-3); }
+  .profile-avatar { width: 64px; height: 64px; }
+  .profile-name { font-weight: 700; font-size: 20px; }
+  #profileModalBody .line { display: block; font-size: var(--fs-small); }
+  #profileModalBody .explainer { display: flex; flex-direction: column; gap: 2px; }
+
+  /* Lignes de connexion (Google/Stripe/Shopify) : icône, texte, ×
+     déconnexion, toutes alignées horizontalement sur une seule ligne
+     plutôt qu'empilées en bloc carré. */
+  .profile-conns { display: flex; flex-direction: column; gap: var(--sp-2); margin: var(--sp-3) 0; width: 100%; }
+  .profile-conn { position: static; display: flex; flex-direction: row; align-items: center; gap: var(--sp-2); padding: 8px 12px; border-radius: var(--radius-pill); font-size: var(--fs-small); width: 100%; }
+  .profile-conn img { width: 28px; height: 28px; flex-shrink: 0; }
+  .profile-conn-text { flex: 1 1 auto; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .profile-conn-on { background: var(--pos-soft); color: var(--pos-text); }
+  .profile-conn-off { background: var(--surface-2); color: var(--text-tertiary); }
+  .profile-conn-off img { opacity: .5; }
+  .profile-conn-google { background: var(--accent-soft); color: var(--accent-text); margin-top: 6px; width: auto; max-width: 100%; }
+  .profile-conn .disconnect-btn { flex-shrink: 0; }
+  #profileModalBody .line .google-mark, #profileModalBody .line .stripe-mark, #profileModalBody .line .shopify-mark { width: 18px; height: 18px; }
+
+  /* Icône × plutôt que le mot "Déconnecter"/"Se déconnecter" partout où
+     c'est possible — un petit badge rond, avec title/aria-label pour
+     rester accessible malgré l'absence de texte visible. */
+  .disconnect-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 2px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--neg-soft, rgba(224,62,77,.12)); color: var(--neg-text);
+    font-size: 11px; line-height: 1; text-decoration: none; flex-shrink: 0;
+  }
+  .disconnect-btn:hover { filter: brightness(1.15); }
+  .shopify-mark { width: 20px; height: 20px; flex-shrink: 0; }
+
+  .connections-panel {
+    background: linear-gradient(135deg, var(--accent-soft), transparent 70%), var(--surface-2);
+    border: var(--border-w) solid var(--border-strong);
+    border-radius: var(--radius-lg, 16px);
+    padding: var(--sp-4) var(--sp-5);
+    margin: var(--sp-5) 0 var(--sp-6);
+  }
+  .connections-panel-label { font-size: var(--fs-small); font-weight: var(--fw-small); color: var(--text-secondary); text-transform: uppercase; letter-spacing: .04em; margin-bottom: var(--sp-3); }
+  .connections-panel-chips { display: flex; align-items: stretch; gap: var(--sp-3); flex-wrap: wrap; }
+  /* #status/#shopifyStatus sont des <div> vides remplis en JS (loadStatus())
+     avec la vraie puce (<a>/<div>/<form>) — sans ça, align-items:stretch ne
+     stretche que ce wrapper invisible, pas la puce à l'intérieur, qui garde
+     sa hauteur intrinsèque : d'où "Connect Stripe" visuellement plus petit
+     que le bouton Power BI (lui, flex item direct). display:contents fait
+     disparaître le wrapper de la mise en page, la puce devient l'item flex. */
+  #status, #shopifyStatus { display: contents; }
+
+  .conn-chip {
+    display: inline-flex; align-items: center; gap: var(--sp-2);
+    font-family: var(--font-sans); font-size: var(--fs-small); font-weight: var(--fw-small);
+    border-radius: var(--radius-pill); padding: 8px 16px 8px 10px;
+    border: var(--border-w) solid transparent; cursor: pointer; transition: var(--transition);
+    text-decoration: none; line-height: 1.25;
+  }
+  .conn-chip img { width: 22px; height: 22px; flex-shrink: 0; }
+  /* .stripe-mark impose 36px plus bas dans la feuille de style (utile pour
+     l'icône seule du header) — dans une puce de connexion, ça la rendait
+     visiblement plus "grande"/tassée que ses voisines Power BI/Shopify
+     (toutes deux 20-22px) : on la ramène à la même taille ici. */
+  .conn-chip .stripe-mark { width: 22px; height: 22px; }
+  .conn-chip-text small { font-weight: 400; opacity: .8; }
+  .conn-chip-action, .conn-chip-action-btn { color: inherit; font-weight: 700; text-decoration: underline; margin-left: var(--sp-2); background: none; border: none; font-family: inherit; font-size: inherit; cursor: pointer; padding: 0; }
+
+  .conn-chip-connected { background: var(--pos-soft); border-color: var(--pos); color: var(--pos-text); cursor: pointer; }
+  .conn-chip-connected:hover { filter: brightness(1.1); }
+  .conn-chip-disconnected { background: var(--surface-1); border-color: var(--border-strong); color: var(--text-secondary); }
+  .conn-chip-disconnected:hover { border-color: var(--accent); color: var(--text-primary); }
+  .conn-chip-neutral { background: var(--surface-1); border-color: var(--border-strong); color: var(--text-primary); }
+  .conn-chip-neutral:hover { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-text); }
+
+  .shopify-connect input { font-family: var(--font-sans); font-size: var(--fs-small); color: var(--text-primary); background: var(--surface-2); border: var(--border-w) solid var(--border-strong); border-radius: var(--radius-pill); padding: 4px 10px; width: 260px; }
+  .shopify-connect input::placeholder { color: var(--text-tertiary); }
+
+  .login-gate { display: flex; align-items: center; justify-content: center; min-height: 60vh; padding: var(--sp-5); }
+  .login-gate-card { max-width: 720px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: var(--sp-4); }
+  .login-gate-card .explainer .line { white-space: nowrap; }
+  .login-gate-card .google-mark { width: 40px; height: 40px; }
+  .login-gate-card h2 { font-size: 22px; margin: 0; }
+  .login-gate-card .explainer { text-align: left; font-size: 17px; line-height: 1.5; color: var(--text-primary); }
+  .login-gate-card .explainer .line + .line { margin-top: 8px; }
+  .login-gate-btn { font-size: var(--fs-body); padding: 12px 22px 12px 14px; margin-top: var(--sp-2); }
+  .login-gate-btn .google-mark { width: 22px; height: 22px; }
+  .login-gate-icons { display: flex; align-items: center; gap: var(--sp-6); margin: var(--sp-2) 0; }
+  .login-gate-icons img { width: 64px; height: 64px; object-fit: contain; opacity: 1; filter: drop-shadow(0 2px 12px rgba(0,0,0,.25)); }
+  #gateError { color: var(--neg-text, #f87171); font-size: var(--fs-small); }
+
+
+  /* Une seule ligne, jamais de retour à la ligne : au lieu de laisser les
+     boutons (météo, mode démo, secteur…) passer à la ligne suivante dès que
+     leur somme dépasse la largeur de l'écran, la rangée défile
+     horizontalement — chaque bouton garde sa largeur naturelle (flex-shrink:0)
+     donc son texte reste lisible, jamais tronqué ni écrasé. */
+  .toolbar-row {
+    display: flex; align-items: center; gap: var(--sp-3); flex-wrap: nowrap;
+    margin: 0 0 var(--sp-6); overflow-x: auto; overflow-y: hidden;
+    -webkit-overflow-scrolling: touch; scrollbar-width: thin; padding-bottom: 4px;
+  }
+  .toolbar-row > * { flex-shrink: 0; }
+  .stripe-mark { width: 36px; height: 36px; object-fit: contain; flex-shrink: 0; }
+  #status.status-pill { padding: 8px 16px; gap: 10px; }
+  .status-action { color: inherit; font-weight: 700; text-decoration: underline; margin-left: 4px; }
+  .status-action-primary { text-decoration: none; background: var(--accent); color: #fff; padding: 4px 12px; border-radius: var(--radius-pill); }
+  .status-action-primary:hover { background: var(--accent-hover); }
+
+  .demo-btn { display: inline-flex; align-items: center; gap: var(--sp-2); font-family: var(--font-sans); font-size: var(--fs-small); font-weight: var(--fw-small); color: var(--text-secondary); background: var(--surface-2); border: var(--border-w) solid var(--border-strong); border-radius: var(--radius-pill); padding: 7px 14px 7px 8px; cursor: pointer; transition: var(--transition); }
+  /* Badge date + "météo" figurative de la santé commerciale : même gabarit
+     que .demo-btn/#sectorBadge. Clic → modale détaillant chaque mois
+     (weather_months ci-dessous). L'icône reflète le MoM du dernier mois
+     plutôt qu'une vraie météo — pas de dépendance à une API externe. */
+  .weather-badge { font-size: 15px; }
+  .weather-badge #weatherIcon { font-size: 18px; line-height: 1; }
+  /* Modale météo : fond translucide bleu ciel (glass), même esprit que
+     .modal-card-profile mais teinté plutôt que neutre, pour évoquer un
+     vrai bulletin météo plutôt qu'un popup générique du design system. */
+  #weatherModal .modal-card {
+    background: linear-gradient(160deg, rgba(56,150,224,.30), rgba(20,20,28,.85) 70%);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border-color: rgba(120,190,240,.35);
+  }
+  [data-theme="light"] #weatherModal .modal-card {
+    background: linear-gradient(160deg, rgba(135,206,250,.45), rgba(255,255,255,.85) 70%);
+  }
+  .weather-months { display: flex; flex-direction: column; gap: var(--sp-2); max-height: 50vh; overflow-y: auto; }
+  .weather-month-row {
+    display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3);
+    background: var(--surface-2); border-radius: var(--radius-sm);
+    border-left: 3px solid var(--border-strong);
+  }
+  .weather-month-icon { font-size: 22px; flex-shrink: 0; }
+  .weather-month-name { font-weight: 700; color: var(--text-primary); flex-shrink: 0; width: 90px; }
+  .weather-month-detail { color: var(--text-secondary); font-size: var(--fs-small); flex: 1; }
+  .weather-month-arrow { font-weight: 700; font-size: 16px; flex-shrink: 0; }
+  /* Même code couleur que growthArrow()/.kpi-delta ailleurs dans le
+     dashboard : vert = ça monte, orange = léger recul, rouge = net recul. */
+  .weather-month-row.weather-pos { background: var(--pos-soft); border-left-color: var(--pos); }
+  .weather-month-row.weather-pos .weather-month-arrow { color: var(--pos-text); }
+  .weather-month-row.weather-warn { background: var(--warn-soft); border-left-color: var(--warn); }
+  .weather-month-row.weather-warn .weather-month-arrow { color: var(--warn-text); }
+  .weather-month-row.weather-neg { background: var(--neg-soft); border-left-color: var(--neg); }
+  .weather-month-row.weather-neg .weather-month-arrow { color: var(--neg-text); }
+  .demo-btn:hover { border-color: var(--accent); color: var(--text-primary); }
+  .demo-btn[data-on="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-text); }
+  .demo-btn .demo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-tertiary); transition: var(--transition); }
+  .demo-btn[data-on="true"] .demo-dot { background: var(--accent); }
+  /* Couleur du secteur d'activité : reprend les mêmes 4 teintes que la
+     popup de sélection (cycle c1-c4), pour qu'on reconnaisse le secteur
+     d'un coup d'œil partout où il apparaît (badge, repères sectoriels). */
+  #sectorBadge.sector-c1 { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-text); }
+  #sectorBadge.sector-c1 .demo-dot { background: var(--accent); }
+  #sectorBadge.sector-c2 { background: var(--pos-soft); border-color: var(--pos); color: var(--pos-text); }
+  #sectorBadge.sector-c2 .demo-dot { background: var(--pos); }
+  #sectorBadge.sector-c3 { background: var(--warn-soft); border-color: var(--warn); color: var(--warn-text); }
+  #sectorBadge.sector-c3 .demo-dot { background: var(--warn); }
+  #sectorBadge.sector-c4 { background: var(--seg-new-soft); border-color: var(--seg-new); color: var(--seg-new); }
+  #sectorBadge.sector-c4 .demo-dot { background: var(--seg-new); }
+  .sector-label-c1 { color: var(--accent-text); }
+  .sector-label-c2 { color: var(--pos-text); }
+  .sector-label-c3 { color: var(--warn-text); }
+  .sector-label-c4 { color: var(--seg-new); }
+
+  /* Note de repère sectoriel ("Sector benchmark (...)") : même palette
+     c1-c4 que le badge secteur, mais en surlignage (fond + liseré gauche)
+     plutôt qu'en simple couleur de texte, pour la détacher visuellement
+     du graphique au-dessus — d'où aussi la marge haute généreuse. */
+  .sector-note { margin-top: var(--sp-5) !important; padding: var(--sp-3) var(--sp-4); border-radius: var(--radius-sm); border-left: 3px solid var(--border-strong); background: var(--surface-2); }
+  .sector-note.sector-note-c1 { background: var(--accent-soft); border-left-color: var(--accent); color: var(--accent-text); }
+  .sector-note.sector-note-c2 { background: var(--pos-soft); border-left-color: var(--pos); color: var(--pos-text); }
+  .sector-note.sector-note-c3 { background: var(--warn-soft); border-left-color: var(--warn); color: var(--warn-text); }
+  .sector-note.sector-note-c4 { background: var(--seg-new-soft); border-left-color: var(--seg-new); color: var(--seg-new); }
+
+  /* Badge de filtre pays sur le tableau RFM, posé quand on arrive depuis un
+     clic sur une ligne de "Détail par pays" — même gabarit pilule que
+     .demo-btn, avec un bouton × intégré pour revenir à la vue complète. */
+  .rfm-filter-badge {
+    display: inline-flex; align-items: center; gap: var(--sp-2);
+    font-size: var(--fs-small); color: var(--accent-text);
+    background: var(--accent-soft); border: var(--border-w) solid var(--accent);
+    border-radius: var(--radius-pill); padding: 6px 8px 6px 14px; margin-bottom: var(--sp-4);
+  }
+  .rfm-filter-badge button {
+    display: flex; align-items: center; justify-content: center; width: 20px; height: 20px;
+    border-radius: 50%; border: none; background: transparent; color: inherit;
+    font-size: 15px; line-height: 1; cursor: pointer; transition: var(--transition);
+  }
+  .rfm-filter-badge button:hover { background: rgba(0,0,0,.15); }
+  #geoTable tbody tr { cursor: pointer; }
+  /* 5 colonnes (Pays/Clients/CA/Panier moyen/Part du CA) dans une carte
+     étroite : sans ça, les montants et les en-têtes sur 2 mots (Panier
+     moyen, Part du CA) passaient à la ligne et débordaient verticalement. */
+  #geoTable { font-size: var(--fs-small); }
+  #geoTable th, #geoTable td { white-space: nowrap; padding-left: var(--sp-2); padding-right: var(--sp-2); }
+  #geoTable th:first-child, #geoTable td:first-child { padding-left: var(--sp-4); }
+
+  /* Fiche client affichée au clic sur une ligne du tableau RFM, directement
+     dans la carte (juste au-dessus du tableau, id="rfmDetail") plutôt que
+     dans une modale à part. */
+  .rfm-detail-panel {
+    display: none; background: var(--accent-soft); border: var(--border-w) solid var(--accent);
+    border-radius: var(--radius-sm); padding: var(--sp-4); margin-bottom: var(--sp-4);
+  }
+  .rfm-detail-panel.visible { display: block; }
+  .rfm-hover-name { font-size: var(--fs-h2); font-weight: var(--fw-h2); color: var(--text-primary); margin-bottom: var(--sp-3); }
+  .rfm-score-gauge-stack { display: flex; gap: var(--sp-5); flex-wrap: wrap; margin-bottom: var(--sp-3); }
+  .rfm-score-gauge { flex: 1 1 140px; }
+  .rfm-score-gauge-label { font-size: var(--fs-small); color: var(--text-secondary); margin-bottom: 4px; display: flex; justify-content: space-between; }
+  .rfm-score-gauge-track { height: 8px; border-radius: 4px; background: var(--surface-3); overflow: hidden; }
+  .rfm-score-gauge-fill { height: 100%; border-radius: 4px; background: var(--accent); transition: width .2s ease; }
+
+  /* Carte "Période des ventes" : une plage de dates ("19 févr. 2025 – 28
+     mars 2026") ne tient pas à --fs-kpi (38px, pensé pour un chiffre court)
+     sans déborder de la carte — réduite spécifiquement pour ce cas. */
+  .kpi-value-sm { font-size: var(--fs-h2); font-variant-numeric: normal; }
+  #rfmTable tbody tr.active-row { background: var(--accent-soft); }
+
+  .date-range { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-small); color: var(--text-secondary); }
+  .date-range input[type="date"] { font-family: var(--font-sans); font-size: var(--fs-small); color: var(--text-primary); background: var(--surface-2); border: var(--border-w) solid var(--border-strong); border-radius: var(--radius-sm); padding: 6px 10px; color-scheme: dark; }
+  [data-theme="light"] .date-range input[type="date"] { color-scheme: light; }
+
+  .tabs { display: flex; gap: var(--sp-5); margin-bottom: var(--sp-6); border-bottom: 1px solid var(--border); }
   .panel { display: none; }
-  .panel.active { display: block; }
+  .panel.active { display: block; animation: panel-in 200ms ease; }
+  @keyframes panel-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-  .card { background: #1e293b; border-radius: 10px; padding: 1.25rem; }
-  .card .label { font-size: 0.8rem; color: #94a3b8; }
-  .card .value { font-size: 1.6rem; font-weight: 700; margin-top: 0.25rem; }
-  .card .sub { font-size: 0.8rem; margin-top: 0.35rem; }
-  .sub.up { color: #4ade80; }
-  .sub.down { color: #f87171; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--sp-4); margin-bottom: var(--sp-8); }
+  .cards .full-width { grid-column: 1 / -1; }
 
-  .chart-box { background: #1e293b; border-radius: 10px; padding: 1.25rem; margin-bottom: 2rem; }
-  .chart-box h3 { margin-top: 0; font-size: 1rem; color: #cbd5e1; }
-  .explainer { font-size: 0.82rem; color: #94a3b8; margin: 0 0 1rem 0; line-height: 1.4; }
+  .chart-box { padding: var(--sp-5); margin-bottom: var(--sp-8); }
+  .chart-box h3 { margin: 0 0 var(--sp-2); font-size: var(--fs-h2); font-weight: var(--fw-h2); color: var(--text-primary); }
 
-  table { width: 100%; border-collapse: collapse; }
-  th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid #334155; font-size: 0.88rem; }
-  th { color: #94a3b8; font-weight: 500; }
+  /* Deux chart-box côte à côte : réduit mécaniquement la taille d'un
+     camembert en lui donnant la moitié de la largeur, au lieu de le
+     laisser s'étirer sur toute la largeur de la page. */
+  .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); margin-bottom: var(--sp-8); align-items: start; }
+  .chart-row .chart-box { margin-bottom: 0; }
+  .chart-row-wide { grid-template-columns: 2fr 1fr; align-items: stretch; }
+  /* La carte du monde (CA par pays) était toujours plus courte que son
+     voisin "Détail par pays", dont la hauteur grandit avec le nombre de
+     pays listés — plutôt que fixer une hauteur en dur (qui redeviendrait
+     fausse dès que la liste change), le duo s'étire ensemble (stretch
+     ci-dessus) et la carte remplit l'espace disponible via flex. */
+  .chart-row-wide .chart-box { display: flex; flex-direction: column; }
+  #geoMapWrap { flex: 1; height: auto; min-height: 260px; }
 
-  .badge { padding: 0.15rem 0.55rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
-  .badge.Champions, .badge.Clients.fidèles { background: #14532d; color: #4ade80; }
-  .badge.Nouveaux.clients { background: #1e3a8a; color: #93c5fd; }
-  .badge.À.risque, .badge.Perdus { background: #7f1d1d; color: #fca5a5; }
-  .badge.default { background: #334155; color: #cbd5e1; }
+  /* Hauteur fixe pour tous les graphiques Chart.js : évite qu'un camembert
+     (ratio carré par défaut) ne s'étire à la largeur de sa carte et devienne
+     énorme sur un écran large. maintainAspectRatio:false (côté JS) fait que
+     chaque chart remplit exactement ce conteneur, quelle que soit sa largeur. */
+  .canvas-wrap { position: relative; width: 100%; height: 260px; }
 
-  .heatcell { text-align: center; border-radius: 4px; padding: 0.4rem; font-size: 0.8rem; }
+  .map-zoom-controls { position: absolute; top: var(--sp-2); right: var(--sp-2); display: flex; flex-direction: column; gap: 4px; z-index: 2; }
+  .map-zoom-controls button { width: 28px; height: 28px; border-radius: var(--radius-sm); border: var(--border-w) solid var(--border-strong); background: var(--surface-2); color: var(--text-primary); font-size: 16px; font-weight: 700; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: var(--transition); }
+  .map-zoom-controls button:hover { background: var(--surface-3); border-color: var(--accent); }
+
+  /* Zoom carte : géré nous-mêmes en CSS transform sur le canvas plutôt que
+     via un plugin tiers (chartjs-plugin-zoom ne produisait aucun effet
+     visuel sur ce type de graphique, sans erreur pour l'expliquer). */
+  #geoMapWrap { overflow: hidden; cursor: grab; }
+  #geoMapWrap.is-panning { cursor: grabbing; }
+  #geoMapWrap canvas { transform-origin: center center; transition: transform 150ms ease; touch-action: none; }
+  #geoMapWrap.is-panning canvas { transition: none; }
+  .explainer { font-size: var(--fs-small); color: var(--text-secondary); margin: 0 0 var(--sp-4) 0; line-height: var(--fs-small-lh); }
+  .explainer .line { display: block; }
+  .explainer .line + .line { margin-top: 4px; }
+  .explainer .term { font-weight: 700; }
+  .term-mom { color: var(--chart-line-1); }
+  .term-yoy { color: var(--chart-line-2); }
+  .term-ma { color: var(--chart-line-3); }
+  .term-r { color: var(--accent-text); }
+  .term-f { color: var(--seg-new); }
+  .term-m { color: var(--warn-text); }
+  .term-cohort { color: var(--accent-text); }
+  .term-retention { color: var(--pos-text); }
+  .term-forecast { color: var(--chart-line-2); }
+  .term-pos { color: var(--pos-text); }
+  .term-neg { color: var(--neg-text); }
+
+  .glossary dt { font-weight: 700; color: var(--text-primary); margin-top: var(--sp-5); padding-top: var(--sp-5); border-top: var(--border-w) solid var(--border); }
+  .glossary dt:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+  .glossary dd { margin: 4px 0 0; color: var(--text-secondary); font-size: var(--fs-small); line-height: var(--fs-body-lh); }
+
+  .export-list { display: flex; flex-wrap: nowrap; gap: var(--sp-3); }
+  .export-link { display: inline-flex; align-items: center; justify-content: center; flex: 1; white-space: nowrap; font-family: var(--font-sans); font-size: var(--fs-small); font-weight: 700; padding: 8px 16px; border-radius: var(--radius-pill); border: var(--border-w) solid; text-decoration: none; transition: var(--transition); cursor: pointer; }
+  .export-link:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .export-link.active { outline: 2px solid currentColor; outline-offset: 2px; }
+  #sectorList { flex-wrap: wrap; }
+  #sectorList .export-link { flex: 1 1 auto; }
+  .export-link.c1 { background: var(--accent-soft); color: var(--accent-text); border-color: var(--accent); }
+  .export-link.c2 { background: var(--pos-soft); color: var(--pos-text); border-color: var(--pos); }
+  .export-link.c3 { background: var(--warn-soft); color: var(--warn-text); border-color: var(--warn); }
+  #alertsBanner { display: flex; flex-direction: column; gap: var(--sp-2); margin: 0 0 var(--sp-5); }
+  .alert-item { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: var(--radius-sm); font-size: var(--fs-small); font-weight: var(--fw-small); border: var(--border-w) solid transparent; }
+  .alert-item.alert-warning { background: var(--warn-soft); color: var(--warn-text); border-color: var(--warn); }
+  .alert-item.alert-success { background: var(--pos-soft); color: var(--pos-text); border-color: var(--pos); }
+  .export-link.c4 { background: var(--seg-new-soft); color: var(--seg-new); border-color: var(--seg-new); }
+
+  /* Popup Power BI */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; padding: var(--sp-4); z-index: 100; }
+  .modal-overlay[hidden] { display: none; }
+  .modal-card { position: relative; background: var(--surface-1); border: var(--border-w) solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-pop); padding: var(--sp-6); max-width: 900px; width: 100%; }
+  .modal-card h3 { margin: 0 0 var(--sp-3); font-size: var(--fs-h2); font-weight: var(--fw-h2); color: var(--text-primary); }
+
+  /* Modale profil : effet "verre dépoli" (fond semi-transparent + flou
+     de ce qu'il y a derrière) et mise en page moitié image / moitié
+     contenu, plutôt que le fond opaque des autres popups. */
+  .modal-card-profile {
+    display: flex; padding: 0; overflow: hidden; max-width: 920px; max-height: 480px;
+    background: rgba(20, 20, 28, 0.72);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  [data-theme="light"] .modal-card-profile {
+    background: rgba(255, 255, 255, 0.72);
+  }
+  .profile-modal-banner {
+    flex: 0 0 55%;
+    background-size: cover;
+    background-position: center top;
+    min-height: 100%;
+  }
+  .profile-modal-content { flex: 1 1 45%; padding: var(--sp-5); min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+
+  /* Carte de détail client (survol de "Top clients") : même effet verre
+     dépoli que la modale de profil, mais positionnée près du curseur
+     plutôt qu'au centre — pensée comme une info-bulle enrichie, pas une
+     vraie modale (pas d'overlay, pas de focus trap, disparaît au mouseleave). */
+  .customer-hover-card {
+    position: fixed; z-index: 60; width: 260px; padding: var(--sp-4);
+    border-radius: var(--radius-lg, 16px); border: var(--border-w) solid var(--border-strong);
+    background: rgba(20, 20, 28, 0.85);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    box-shadow: var(--shadow-pop); pointer-events: none;
+    opacity: 0; transform: translateY(4px); transition: opacity .12s ease, transform .12s ease;
+  }
+  .customer-hover-card.visible { opacity: 1; transform: translateY(0); }
+  [data-theme="light"] .customer-hover-card { background: rgba(255, 255, 255, 0.9); }
+  .customer-hover-card .chc-name { font-size: var(--fs-body); font-weight: 700; color: var(--text-primary); margin-bottom: var(--sp-3); }
+  .customer-hover-card .chc-row, .rfm-detail-panel .chc-row { display: flex; justify-content: space-between; align-items: center; font-size: var(--fs-small); color: var(--text-secondary); padding: 4px 0; }
+  .customer-hover-card .chc-row + .chc-row, .rfm-detail-panel .chc-row + .chc-row { border-top: var(--border-w) solid var(--border); }
+  .customer-hover-card .chc-row b, .rfm-detail-panel .chc-row b { color: var(--text-primary); font-weight: 700; }
+  /* Action marketing suggérée : phrase complète, pas une valeur courte —
+     empilée sous son libellé (comme les autres .chc-row, mais verticalement)
+     plutôt qu'alignée à droite, pour rester lisible sans se couper. */
+  .rfm-detail-panel .chc-action { align-items: flex-start; gap: var(--sp-3); }
+  .rfm-detail-panel .chc-action span { flex-shrink: 0; }
+  .rfm-detail-panel .chc-action b { font-weight: 400; text-align: right; color: var(--accent-text); }
+  #customersTable .hoverable-row, #rfmTable .hoverable-row, #monthlyTable .hoverable-row, #ltvTable .hoverable-row { cursor: pointer; }
+
+  /* Légende manuelle sous un graphique (waterfall, churn) : un point coloré
+     + un libellé par catégorie — même principe que .chc-rank-dot, mais pour
+     expliquer une couleur de graphique plutôt qu'un rang dans une liste. */
+  .chart-legend { display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-4); margin-top: var(--sp-3); font-size: var(--fs-small); color: var(--text-secondary); }
+  .chart-legend .legend-item { display: inline-flex; align-items: center; gap: 6px; }
+  .chart-legend .legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* Code couleur des cartes au survol (Top clients / CA mensuel) : un
+     petit point coloré avant chaque nom de client, qui tourne sur les 4
+     mêmes couleurs que les puces de la page de connexion (sector-label-c1
+     à c4) — repère visuel rapide du rang, cohérent avec le reste du site
+     plutôt qu'une nouvelle palette. */
+  .chc-rank-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; flex-shrink: 0; }
+  .chc-rank-dot.c1 { background: var(--accent-text); }
+  .chc-rank-dot.c2 { background: var(--pos-text); }
+  .chc-rank-dot.c3 { background: var(--warn-text); }
+  .chc-rank-dot.c4 { background: var(--seg-new); }
+  .customer-hover-card .chc-row .chc-name-cell { display: flex; align-items: center; min-width: 0; }
+  .customer-hover-card .chc-row .chc-name-cell span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  @media (max-width: 640px) {
+    .modal-card-profile { flex-direction: column; max-height: 90vh; overflow-y: auto; }
+    .profile-modal-banner { flex-basis: 140px; }
+  }
+  .modal-close { position: absolute; top: var(--sp-3); right: var(--sp-3); width: 28px; height: 28px; border-radius: 50%; border: none; background: var(--surface-2); color: var(--text-secondary); font-size: 20px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: var(--transition); }
+  .modal-close:hover { background: var(--surface-3); color: var(--text-primary); }
+
+  .card, .kpi-card { transition: var(--transition); }
+  .kpi-card:hover, .chart-box:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); border-color: var(--border-strong); }
+
+  @media (max-width: 640px) {
+    body { padding: var(--sp-4); }
+    .page-header { flex-wrap: wrap; gap: var(--sp-3); }
+    .brand-mark { width: 32px; height: 32px; }
+    .brand-name { font-size: 22px; }
+    .stripe-mark { width: 28px; height: 28px; }
+    .login-gate-card .explainer .line { white-space: normal; }
+    .header-actions { width: 100%; justify-content: space-between; }
+    .powerbi-link { font-size: 12px; padding: 6px 10px 6px 6px; }
+    .connections-row { margin: var(--sp-4) 0; }
+    .toolbar-row { margin: 0 0 var(--sp-5); }
+    .cards { grid-template-columns: 1fr; }
+    .tabs { gap: var(--sp-3); overflow-x: auto; }
+    .tab { padding: 8px 2px; white-space: nowrap; }
+    .chart-box { padding: var(--sp-4); }
+    .chart-row, .chart-row-wide { grid-template-columns: 1fr; }
+    .export-list { flex-wrap: wrap; }
+    .export-link { flex: 1 1 auto; }
+    table.data { display: block; overflow-x: auto; white-space: nowrap; }
+    .kpi-card:hover, .chart-box:hover { transform: none; }
+  }
 </style>
 </head>
 <body>
-  <h1>📊 metrics-dash</h1>
-  <div id="status" class="status">Connexion à Stripe...</div>
-  <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.85rem; color:#94a3b8; margin-bottom:1rem; cursor:pointer;">
-    <input type="checkbox" id="demoToggle">
-    Mode démo (données simulées sur 8 mois, pour voir cohortes/tendances/prévision avec du volume)
-  </label>
+  <div class="page-header">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="24" height="24" aria-hidden="true">
+        <rect width="24" height="24" rx="7" fill="url(#mdGradient)"/>
+        <path d="M3 18 L3 12 L7 12 L7 18" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M9.5 18 L9.5 8 L13.5 8 L13.5 18" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M16 18 L16 4 L20 4 L20 18" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <defs>
+          <linearGradient id="mdGradient" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#7C6CF6"/>
+            <stop offset="1" stop-color="#38BDF8"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <span class="brand-name"><span class="brand-blue">metrics</span><span class="brand-accent">-</span>dash</span>
+    </div>
+    <div class="header-actions">
+      <div id="googleStatus" class="google-status"></div>
+      <div class="theme-toggle">
+        <span>FR</span>
+        <div class="switch" id="langSwitch" role="button" aria-label="Changer de langue"><div class="switch-knob"></div></div>
+        <span>EN</span>
+      </div>
+      <div class="theme-toggle">
+        <span data-i18n="theme_light">Clair</span>
+        <div class="switch" id="themeSwitch" role="button" aria-label="Changer de thème"><div class="switch-knob"></div></div>
+        <span data-i18n="theme_dark">Sombre</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Écran d'accueil, affiché tant que la personne n'est pas identifiée
+       via Google — condition préalable à tout le reste (Power BI, Stripe,
+       Shopify, mode démo compris) : voir loadStatus() qui bascule entre
+       #loginGate et #appBody. -->
+  <div id="loginGate" class="login-gate">
+    <div class="login-gate-card">
+      <img class="google-mark" src="icons8-google-100.png" alt="" aria-hidden="true">
+      <h2 data-i18n="gate_title">Connectez-vous pour accéder à votre dashboard</h2>
+      <p class="explainer">
+        <span class="line" data-i18n="gate_p2">Une fois connecté, vous pourrez :</span>
+        <span class="line sector-label-c1" data-i18n="gate_p3">• connecter vos propres sources de données comme Stripe, Shopify ou Power BI ;</span>
+        <span class="line sector-label-c2" data-i18n="gate_p4">• analyser vos données directement depuis le dashboard ;</span>
+        <span class="line sector-label-c3" data-i18n="gate_p5">• ou explorer metrics-dash en mode démo, avec des données simulées.</span>
+      </p>
+      <div class="login-gate-icons" aria-hidden="true">
+        <img src="icons8-stripe-100.png" alt="">
+        <img src="icons8-shopify-96.png" alt="">
+        <img src="icons8-power-bi-2021-96.png" alt="">
+      </div>
+      <a class="powerbi-link login-gate-btn" id="gateGoogleLink" href="/auth/google/login">
+        <img class="google-mark" src="icons8-google-100.png" alt="" aria-hidden="true">
+        <span data-i18n="gate_btn">Se connecter avec Google</span>
+      </a>
+      <div id="gateError" style="display:none;"></div>
+    </div>
+  </div>
+
+  <div id="appBody" style="display:none;">
+  <div class="connections-panel">
+    <div class="connections-panel-label" data-i18n="connections_label">Vos connexions</div>
+    <div class="connections-panel-chips">
+      <button class="conn-chip conn-chip-neutral" id="powerBiLink" type="button">
+        <img class="powerbi-mark" src="icons8-power-bi-2021-96.png" alt="" aria-hidden="true">
+        <span class="conn-chip-text" data-i18n="connect_powerbi">Connecter à Power BI</span>
+      </button>
+      <div id="status"></div>
+      <div id="shopifyStatus"></div>
+    </div>
+  </div>
+
+  <div class="toolbar-row">
+    <div class="date-range">
+      <label for="dateStart" data-i18n="date_from">Du</label>
+      <input type="date" id="dateStart">
+      <label for="dateEnd" data-i18n="date_to">au</label>
+      <input type="date" id="dateEnd">
+      <button class="btn" id="dateReset" type="button" data-i18n="date_reset">Réinitialiser</button>
+    </div>
+    <button class="demo-btn weather-badge" id="weatherBadge" type="button" data-i18n-title="weather_badge_hint" title="Voir le détail">
+      <span id="weatherIcon" aria-hidden="true">🌤️</span>
+      <span id="weatherDateLabel"></span>
+    </button>
+    <button class="demo-btn" id="demoToggle" data-on="false" type="button" aria-pressed="false" title="8 mois de données simulées, pour voir cohortes/tendances/prévision avec du volume" data-i18n-title="demo_toggle_title">
+      <span class="demo-dot"></span>
+      <span data-i18n="demo_toggle">Mode démo</span>
+    </button>
+    <button class="demo-btn" id="demoProfileBadge" type="button" hidden title="Scénario de données simulées" data-i18n-title="demo_profile_badge_title">
+      <span class="demo-dot"></span>
+      <span id="demoProfileBadgeLabel"></span>
+    </button>
+    <button class="demo-btn" id="sectorBadge" type="button" title="Secteur d'activité de ces données" data-i18n-title="sector_badge_title">
+      <span class="demo-dot"></span>
+      <span id="sectorBadgeLabel" data-i18n="sector_unset">Secteur non renseigné</span>
+    </button>
+    <div class="date-range" id="currencyPicker" style="display:none;">
+      <label for="currencySelect" data-i18n="currency_label">Devise</label>
+      <select id="currencySelect"></select>
+    </div>
+  </div>
+
+  <div id="alertsBanner" style="display:none;"></div>
 
   <div class="tabs">
-    <div class="tab active" data-tab="overview">Vue d'ensemble</div>
-    <div class="tab" data-tab="growth">Croissance</div>
-    <div class="tab" data-tab="rfm">Clients (RFM)</div>
-    <div class="tab" data-tab="cohorts">Rétention (cohortes)</div>
-    <div class="tab" data-tab="forecast">Prévision</div>
+    <button class="tab" data-tab="overview" data-active="true" data-i18n="tab_overview">Vue d'ensemble</button>
+    <button class="tab" data-tab="growth" data-active="false" data-i18n="tab_growth">Croissance</button>
+    <button class="tab" data-tab="rfm" data-active="false" data-i18n="tab_rfm">Clients (RFM)</button>
+    <button class="tab" data-tab="cohorts" data-active="false" data-i18n="tab_cohorts">Rétention</button>
+    <button class="tab" data-tab="forecast" data-active="false" data-i18n="tab_forecast">Prévision</button>
+    <button class="tab" data-tab="lexique" data-active="false" data-i18n="tab_lexique">Lexique</button>
   </div>
 
   <!-- Overview -->
   <div class="panel active" id="panel-overview">
     <div class="cards" id="cards"></div>
-    <div class="chart-box">
-      <h3>CA par jour</h3>
-      <canvas id="revenueChart" height="80"></canvas>
+
+    <div class="chart-row chart-row-wide">
+      <div class="card chart-box">
+        <h3 data-i18n="h3_0">CA par pays</h3>
+        <p class="explainer">
+          <span class="line" data-i18n-html="ln_0">Carte colorée selon le CA généré par pays de facturation.</span>
+          <span class="line" data-i18n-html="ln_1">Plus la couleur est intense, plus ce pays représente une part importante du chiffre d'affaires. Molette ou boutons +/- pour zoomer, glisser pour te déplacer une fois zoomé.</span>
+        </p>
+        <div id="geoMapWrap" class="canvas-wrap">
+          <canvas id="geoChart"></canvas>
+          <div class="map-zoom-controls">
+            <button type="button" id="geoZoomIn" aria-label="Zoomer">+</button>
+            <button type="button" id="geoZoomOut" aria-label="Dézoomer">−</button>
+            <button type="button" id="geoZoomReset" aria-label="Réinitialiser le zoom">↺</button>
+          </div>
+        </div>
+      </div>
+      <div class="card chart-box">
+        <h3 data-i18n="h3_1">Détail par pays</h3>
+        <div class="scroll" style="overflow-x:auto;">
+          <table class="data" id="geoTable">
+            <thead><tr><th data-i18n="th_country">Pays</th><th class="num" data-i18n="th_customers">Clients</th><th class="num" data-i18n="th_revenue">CA</th><th class="num" data-i18n="th_aov">Panier moyen</th><th class="num" data-i18n="th_share">Part du CA</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="explainer" id="geoUnknownNote" style="display:none; margin: var(--sp-4) 0 0;"></p>
+      </div>
     </div>
-    <div class="chart-box">
-      <h3>Top clients</h3>
-      <table id="customersTable">
-        <thead><tr><th>Client</th><th>Montant</th></tr></thead>
+
+    <div class="card chart-box">
+      <h3 data-i18n="h3_2">CA par jour</h3>
+      <div class="canvas-wrap"><canvas id="revenueChart"></canvas></div>
+    </div>
+
+    <div class="card chart-box">
+      <h3 data-i18n="h3_3">CA par jour de la semaine</h3>
+      <p class="explainer">
+        <span class="line" data-i18n-html="ln_2">Regroupe toutes les commandes par <span class="term term-mom">jour de la semaine</span>, toutes semaines confondues.</span>
+        <span class="line" data-i18n-html="ln_3">Utile pour repérer un jour fort ou faible (ex : plus de ventes le vendredi).</span>
+      </p>
+      <div class="canvas-wrap"><canvas id="weekdayChart"></canvas></div>
+    </div>
+
+    <div class="card chart-box">
+      <h3 data-i18n="h3_4">Concentration du CA</h3>
+      <p class="explainer">
+        <span class="line" data-i18n-html="ln_4">Illustre le <span class="term term-forecast">principe de Pareto</span> (souvent "80/20") : une petite part de tes clients fait-elle une grande part du CA ?</span>
+        <span class="line" data-i18n-html="ln_5">Ici : part du CA venant des 20% de clients qui dépensent le plus, vs tous les autres.</span>
+      </p>
+      <div class="canvas-wrap"><canvas id="concentrationChart"></canvas></div>
+      <p class="explainer" id="concentrationBenchmark" style="display:none;"></p>
+    </div>
+
+    <div class="card chart-box">
+      <h3 data-i18n="h3_5">Top clients</h3>
+      <table class="data" id="customersTable">
+        <thead><tr><th data-i18n="th_customer">Client</th><th class="num" data-i18n="th_amount">Montant</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="card chart-box">
+      <h3 data-i18n="h3_22">Taux de remboursement</h3>
+      <p class="explainer">
+        <span class="line" data-i18n-html="ln_37">Part des commandes remboursées, en tout ou partie — un signal de qualité produit/service qu'aucune autre métrique du dashboard ne couvre (le churn/RFM parlent de rétention, pas de satisfaction).</span>
+      </p>
+      <div class="cards" id="refundCards"></div>
+      <table class="data" id="refundTable">
+        <thead><tr><th data-i18n="th_month">Mois</th><th class="num" data-i18n="th_orders">Commandes</th><th class="num" data-i18n="th_refunds">Remboursements</th><th class="num" data-i18n="th_refund_rate">Taux</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -77,60 +656,322 @@
 
   <!-- Growth -->
   <div class="panel" id="panel-growth">
-    <div class="chart-box">
-      <h3>CA mensuel & croissance</h3>
-      <p class="explainer">MoM (Month-over-Month) = variation vs le mois précédent. YoY (Year-over-Year) = variation vs le même mois l'année dernière. Ce sont les deux métriques de croissance les plus utilisées en BI.</p>
-      <table id="monthlyTable">
-        <thead><tr><th>Mois</th><th>CA</th><th>MoM</th><th>YoY</th></tr></thead>
+    <div class="card chart-box" id="mrrCard" style="display:none;">
+      <h3 data-i18n="h3_6">MRR (revenu récurrent mensuel)</h3>
+      <p class="explainer">
+        <span class="line" data-i18n-html="ln_6">Basé sur tes <span class="term term-mom">abonnements Stripe actifs</span> (pas les paiements ponctuels analysés ailleurs) : combien ça représenterait si chaque abonnement était facturé tous les mois, quel que soit son cycle réel (annuel, hebdomadaire...).</span>
+      </p>
+      <div class="cards" id="mrrCards"></div>
+    </div>
+
+    <div class="card chart-box">
+      <h3 data-i18n="h3_7">CA mensuel & croissance</h3>
+      <p class="explainer">
+        <span class="line" data-i18n-html="ln_7"><span class="term term-mom">MoM</span> (Month-over-Month) = variation vs le mois précédent.</span>
+        <span class="line" data-i18n-html="ln_8"><span class="term term-yoy">YoY</span> (Year-over-Year) = variation vs le même mois l'année dernière.</span>
+        <span class="line" data-i18n-html="ln_9">Ce sont les deux métriques de croissance les plus utilisées en BI.</span>
+      </p>
+      <table class="data" id="monthlyTable">
+        <thead><tr><th data-i18n="th_month">Mois</th><th class="num" data-i18n="th_revenue">CA</th><th class="num">MoM</th><th class="num">YoY</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
-    <div class="chart-box">
-      <h3>CA quotidien + moyenne mobile 7 jours</h3>
-      <p class="explainer">La moyenne mobile lisse les pics/creux journaliers pour voir la vraie tendance — c'est la technique de base pour lire un graphique de série temporelle.</p>
-      <canvas id="movingAvgChart" height="80"></canvas>
+    <div class="card chart-box">
+      <h3 data-i18n="h3_21">Décomposition du CA (waterfall)</h3>
+      <p class="explainer">
+        <span class="line" data-i18n-html="ln_35">Le MoM ci-dessus dit <em>de combien</em> le CA a bougé entre les deux derniers mois — ce graphique dit <em>pourquoi</em>, en décomposant la variation en 4 causes.</span>
+        <span class="line" data-i18n-html="ln_36"><span class="term term-pos">Nouveaux</span> (clients apparus) · <span class="term term-pos">Expansion</span> (clients existants qui dépensent plus) · <span class="term term-neg">Contraction</span> (qui dépensent moins) · <span class="term term-neg">Perdus</span> (clients qui n'ont rien racheté).</span>
+      </p>
+      <div id="waterfallNote" class="explainer" style="margin-bottom: var(--sp-3);"></div>
+      <div class="canvas-wrap"><canvas id="waterfallChart"></canvas></div>
+      <div class="chart-legend" id="waterfallLegend"></div>
+    </div>
+
+    <div class="card chart-box">
+      <h3 data-i18n="h3_8">CA quotidien + moyenne mobile 7 jours</h3>
+      <p class="explainer">
+        <span class="line" data-i18n-html="ln_10">La <span class="term term-ma">moyenne mobile</span> lisse les pics/creux journaliers pour voir la vraie tendance.</span>
+        <span class="line" data-i18n-html="ln_11">C'est la technique de base pour lire un graphique de série temporelle.</span>
+      </p>
+      <div class="canvas-wrap"><canvas id="movingAvgChart"></canvas></div>
+    </div>
+
+    <div class="card chart-box">
+      <h3 data-i18n="h3_9">Nouveaux vs clients récurrents</h3>
+      <p class="explainer">
+        <span class="line" data-i18n-html="ln_12">Chaque mois, quelle part du CA vient de <span class="term term-yoy">nouveaux clients</span> (1er achat ce mois-là) vs de <span class="term term-ma">clients qui reviennent</span> ?</span>
+        <span class="line" data-i18n-html="ln_13">Beaucoup de "nouveaux" = tu acquiers. Beaucoup de "récurrents" = tu fidélises. Les deux comptent, mais pas pour les mêmes raisons.</span>
+      </p>
+      <div class="canvas-wrap"><canvas id="newVsReturningChart"></canvas></div>
     </div>
   </div>
 
   <!-- RFM -->
   <div class="panel" id="panel-rfm">
-    <div class="chart-box">
-      <h3>Segmentation RFM (Récence / Fréquence / Montant)</h3>
+    <div class="cards" id="loyaltyCards"></div>
+
+    <div class="card chart-box">
+      <h3 data-i18n="h3_10">Répartition des clients par segment</h3>
       <p class="explainer">
-        Technique de segmentation client classique en marketing/data : chaque client reçoit un score 1-4 sur trois axes
-        — <b>R</b>écence (il a acheté récemment ?), <b>F</b>réquence (il achète souvent ?), <b>M</b>onétaire (il dépense beaucoup ?).
-        Les scores combinés donnent un segment actionnable (Champions, À risque, Perdus...).
+        <span class="line" data-i18n-html="ln_14">Combien de clients dans chaque segment RFM, en proportion.</span>
       </p>
-      <table id="rfmTable">
-        <thead><tr><th>Client</th><th>Récence (j)</th><th>Fréquence</th><th>Montant</th><th>R</th><th>F</th><th>M</th><th>Segment</th></tr></thead>
+      <div class="canvas-wrap"><canvas id="segmentChart"></canvas></div>
+    </div>
+
+    <div class="card chart-box">
+      <h3 data-i18n="h3_19">LTV par segment (valeur vie client)</h3>
+      <p class="explainer">
+        <span class="line" data-i18n-html="ln_31">La <span class="term term-forecast">LTV</span> (valeur vie client) est le montant total dépensé par un client sur toute la période observée — sert de repère pour savoir combien on peut dépenser en acquisition (publicité, commission) sans perdre d'argent sur ce client.</span>
+        <span class="line" data-i18n-html="ln_32">Moyenne historique observée par segment RFM : un Champion vaut-il vraiment plus qu'un client occasionnel ?</span>
+        <span class="line" data-i18n="ltv_click_hint">Clique une ligne pour voir quels clients composent ce segment.</span>
+      </p>
+      <table class="data" id="ltvTable">
+        <thead><tr><th data-i18n="th_segment">Segment</th><th class="num" data-i18n="th_avg_ltv">LTV moyenne</th><th class="num" data-i18n="th_customers">Clients</th></tr></thead>
         <tbody></tbody>
       </table>
+    </div>
+
+    <div class="card chart-box">
+      <h3 data-i18n="h3_11">Segmentation RFM (Récence / Fréquence / Montant)</h3>
+      <p class="explainer">
+        <span class="line" data-i18n-html="ln_15">Technique de segmentation client classique en marketing/data : chaque client reçoit un score 1-4 sur trois axes.</span>
+        <span class="line" data-i18n-html="ln_16"><span class="term term-r">Récence</span> (il a acheté récemment ?) · <span class="term term-f">Fréquence</span> (il achète souvent ?) · <span class="term term-m">Montant</span> (il dépense beaucoup ?).</span>
+        <span class="line" data-i18n="rfm_hover_hint">Clique une ligne du tableau pour voir la fiche détaillée d'un client.</span>
+      </p>
+      <div id="rfmCountryFilterBadge" class="rfm-filter-badge" hidden></div>
+      <div id="rfmDetail" class="rfm-detail-panel"></div>
+      <div class="scroll" style="overflow-x:auto;">
+        <table class="data" id="rfmTable">
+          <thead><tr><th data-i18n="th_customer">Client</th><th class="num" data-i18n="th_recency">Récence (j)</th><th class="num" data-i18n="th_frequency">Fréquence</th><th class="num" data-i18n="th_amount">Montant</th><th class="num">R</th><th class="num">F</th><th class="num">M</th><th data-i18n="th_segment">Segment</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
   <!-- Cohorts -->
   <div class="panel" id="panel-cohorts">
-    <div class="chart-box">
-      <h3>Analyse de cohortes (rétention)</h3>
+    <div class="card chart-box">
+      <h3 data-i18n="h3_20">Churn mensuel</h3>
       <p class="explainer">
-        Chaque ligne = un groupe de clients ayant acheté pour la première fois ce mois-là (la "cohorte").
-        Chaque colonne = combien de mois plus tard. La couleur montre le % de la cohorte encore active —
-        c'est l'outil de référence pour mesurer la fidélisation dans le temps.
+        <span class="line" data-i18n-html="ln_33">Parmi les clients actifs un mois donné, quelle part n'a plus rien acheté le mois suivant ? Complète les segments RFM (qui disent <em>qui</em> est à risque) par un taux qui suit son évolution dans le temps.</span>
+        <span class="line" data-i18n-html="ln_34">Un taux qui grimpe mois après mois est un signal d'alerte précoce, avant même que ça se voie sur le CA global.</span>
       </p>
-      <div id="cohortTable"></div>
+      <div class="canvas-wrap"><canvas id="churnChart"></canvas></div>
+      <div class="chart-legend" id="churnLegend"></div>
+    </div>
+
+    <div class="card chart-box">
+      <h3 data-i18n="h3_12">Rétention moyenne toutes cohortes confondues</h3>
+      <p class="explainer">
+        <span class="line" data-i18n-html="ln_18">Moyenne du % de rétention à chaque mois écoulé, sur toutes les cohortes — une seule courbe pour voir la tendance générale sans lire tout le tableau.</span>
+      </p>
+      <div class="canvas-wrap"><canvas id="cohortAvgChart"></canvas></div>
+    </div>
+
+    <div class="card chart-box">
+      <h3 data-i18n="h3_13">Analyse de cohortes (rétention)</h3>
+      <p class="explainer">
+        <span class="line" data-i18n-html="ln_19">Chaque ligne = un groupe de clients ayant acheté pour la première fois ce mois-là (la <span class="term term-cohort">cohorte</span>).</span>
+        <span class="line" data-i18n-html="ln_20">Chaque colonne = combien de mois plus tard. La couleur montre le % de la cohorte encore active.</span>
+        <span class="line" data-i18n-html="ln_21">C'est l'outil de référence pour mesurer la <span class="term term-retention">fidélisation</span> dans le temps.</span>
+      </p>
+      <div id="cohortTable" class="scroll" style="overflow-x:auto;"></div>
+    </div>
+
+    <div class="card chart-box">
+      <h3 data-i18n="h3_14">CA généré par cohorte</h3>
+      <p class="explainer">
+        <span class="line" data-i18n-html="ln_22">Même lecture que le tableau de rétention, mais en <span class="term term-cohort">chiffre d'affaires</span> plutôt qu'en % de clients actifs.</span>
+        <span class="line" data-i18n-html="ln_23">Deux cohortes avec la même rétention en % peuvent valoir très différemment si l'une regroupe des clients qui dépensent plus.</span>
+      </p>
+      <div id="cohortRevenueTable" class="scroll" style="overflow-x:auto;"></div>
     </div>
   </div>
 
   <!-- Forecast -->
   <div class="panel" id="panel-forecast">
-    <div class="chart-box">
-      <h3>Prévision de CA (régression linéaire)</h3>
+    <div class="card chart-box">
+      <h3 data-i18n="h3_15">Prévision de CA (régression linéaire)</h3>
       <p class="explainer" id="forecastNote">
-        Projette les prochains mois à partir de la tendance historique (régression linéaire simple, sans librairie externe).
-        À prendre avec des pincettes sur peu de données — c'est surtout pour comprendre le principe du forecasting.
+        <span class="line" data-i18n-html="ln_24">Projette les prochains mois à partir de la tendance historique (<span class="term term-forecast">régression linéaire simple</span>, sans librairie externe).</span>
+        <span class="line" data-i18n-html="ln_25">La zone bleue est l'intervalle de confiance (~95%) : elle s'élargit avec l'horizon, une prévision lointaine étant statistiquement moins fiable qu'une prévision proche.</span>
       </p>
-      <canvas id="forecastChart" height="80"></canvas>
+      <div class="canvas-wrap"><canvas id="forecastChart"></canvas></div>
     </div>
+
+    <div class="card chart-box">
+      <h3 data-i18n="h3_16">Prévision du nombre de commandes</h3>
+      <p class="explainer">
+        <span class="line" data-i18n-html="ln_26">Même méthode que la prévision de CA, appliquée au <span class="term term-forecast">nombre de commandes</span> plutôt qu'au montant.</span>
+        <span class="line" data-i18n-html="ln_27">Répond à « combien de ventes » plutôt qu'à « combien ça va rapporter » — les deux ne bougent pas forcément ensemble (ex : panier moyen qui grimpe).</span>
+      </p>
+      <div class="canvas-wrap"><canvas id="forecastOrdersChart"></canvas></div>
+    </div>
+
+    <div class="card chart-box">
+      <h3 data-i18n="h3_17">Prévision de nouveaux clients</h3>
+      <p class="explainer">
+        <span class="line" data-i18n-html="ln_28">Projette le rythme d'<span class="term term-forecast">acquisition de nouveaux clients</span> par mois, à partir de la tendance historique.</span>
+        <span class="line" data-i18n-html="ln_29">Utile pour anticiper si le rythme d'acquisition ralentit avant que ça se voie sur le CA.</span>
+      </p>
+      <div class="canvas-wrap"><canvas id="forecastNewCustomersChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Lexique -->
+  <div class="panel" id="panel-lexique">
+    <div class="card chart-box">
+      <h3 data-i18n="h3_18">Lexique des termes techniques</h3>
+      <p class="explainer">
+        <span class="line" data-i18n-html="ln_30">Chaque terme employé ailleurs dans le dashboard, expliqué simplement — pas besoin de tout connaître pour commencer.</span>
+      </p>
+      <dl class="glossary">
+        <dt data-i18n-html="glo_dt_0"><span class="term term-mom">MoM</span> (Month-over-Month)</dt>
+        <dd data-i18n-html="glo_dd_0">Variation du CA vs le mois précédent. Répond à : « est-ce qu'on progresse court terme ? »</dd>
+
+        <dt data-i18n-html="glo_dt_1"><span class="term term-yoy">YoY</span> (Year-over-Year)</dt>
+        <dd data-i18n-html="glo_dd_1">Variation vs le même mois l'an dernier. Neutralise la saisonnalité (ex : pic de décembre comparé au décembre précédent, pas à novembre).</dd>
+
+        <dt data-i18n-html="glo_dt_2"><span class="term term-ma">Moyenne mobile</span></dt>
+        <dd data-i18n-html="glo_dd_2">Moyenne calculée sur une fenêtre glissante (ex : les 7 derniers jours), qui lisse le bruit journalier pour voir la vraie tendance.</dd>
+
+        <dt data-i18n-html="glo_dt_3">RFM (<span class="term term-r">Récence</span> / <span class="term term-f">Fréquence</span> / <span class="term term-m">Montant</span>)</dt>
+        <dd data-i18n-html="glo_dd_3">
+          Méthode CRM qui segmente les clients sur 3 dimensions comportementales : <b>quand</b> ils ont acheté pour la dernière fois (Récence), <b>à quelle fréquence</b> ils achètent, et <b>combien</b> ils dépensent (Montant). Chaque client reçoit un score 1-4 sur chaque axe, combinés en un segment actionnable.
+          <br><br>
+          L'intérêt pratique : relier chaque segment à une action marketing concrète (visible dans la colonne dédiée de l'onglet RFM) — <i>segment → intention → action</i> :
+          <ul style="margin:8px 0 0; padding-left:20px;">
+            <li><b>Champions</b> : fidéliser → programme VIP, avantages exclusifs</li>
+            <li><b>Clients fidèles</b> : entretenir → offres régulières</li>
+            <li><b>Nouveaux clients</b> : accompagner → email de bienvenue</li>
+            <li><b>À risque</b> : prévenir le désengagement → offre personnalisée ou rappel</li>
+            <li><b>Perdus</b> : récupérer → campagne de réactivation</li>
+          </ul>
+        </dd>
+
+        <dt data-i18n-html="glo_dt_4"><span class="term term-cohort">Cohorte</span></dt>
+        <dd data-i18n-html="glo_dd_4">Groupe de clients qui partagent un point de départ commun — ici, le mois de leur tout premier achat — suivi dans le temps.</dd>
+
+        <dt data-i18n-html="glo_dt_5"><span class="term term-retention">Rétention / fidélisation</span></dt>
+        <dd data-i18n-html="glo_dd_5">% d'une cohorte encore active N mois après son premier achat. Mesure si les clients reviennent, pas juste s'ils achètent une fois.</dd>
+
+        <dt data-i18n-html="glo_dt_6"><span class="term term-forecast">Régression linéaire</span></dt>
+        <dd data-i18n-html="glo_dd_6">Méthode statistique qui trace la droite collant au mieux à des points historiques, pour projeter la tendance dans le futur. Simple, mais fragile sur peu de données.</dd>
+
+        <dt data-i18n-html="glo_dt_7">Pareto (règle du « 80/20 »)</dt>
+        <dd data-i18n-html="glo_dd_7">Observation empirique : une petite part des causes (ex : 20% des clients) produit souvent une grande part des effets (ex : 80% du CA).</dd>
+
+        <dt data-i18n-html="glo_dt_8">LTV (Lifetime Value / valeur vie client)</dt>
+        <dd data-i18n-html="glo_dd_8">CA moyen généré par un client sur toute sa relation avec toi. Sert à savoir combien tu peux dépenser pour en acquérir un nouveau sans perdre d'argent.</dd>
+
+        <dt data-i18n-html="glo_dt_9">Churn (taux d'attrition)</dt>
+        <dd data-i18n-html="glo_dd_9">Part des clients qui arrêtent d'acheter. Approximé ici par le % de clients dans les segments RFM « À risque » et « Perdus ».</dd>
+
+        <dt data-i18n-html="glo_dt_10">API</dt>
+        <dd data-i18n-html="glo_dd_10">Interface de Programmation d'Application : la façon dont deux logiciels échangent des données — ici, ton dashboard interroge l'API de Stripe.</dd>
+
+        <dt data-i18n-html="glo_dt_11">CSV</dt>
+        <dd data-i18n-html="glo_dd_11">Fichier texte tabulaire (Comma-Separated Values) : le format le plus simple pour faire passer des données d'un outil à un autre — ex : vers Excel ou Power BI.</dd>
+
+        <dt data-i18n-html="glo_dt_12">Panier moyen (AOV)</dt>
+        <dd data-i18n-html="glo_dd_12">CA total divisé par le nombre de commandes. Attention à l'interpréter seul : il peut monter simplement parce qu'il y a moins de commandes, pas parce que chaque client dépense plus.</dd>
+
+        <dt data-i18n-html="glo_dt_13">MRR (revenu récurrent mensuel)</dt>
+        <dd data-i18n-html="glo_dd_13">Ce que rapporteraient tous les abonnements actifs s'ils étaient facturés chaque mois, quel que soit leur cycle réel (annuel, hebdomadaire...). Indicateur clé en SaaS : il lisse les pics de facturation pour montrer le revenu récurrent réel.</dd>
+
+        <dt data-i18n-html="glo_dt_14">Intervalle de confiance</dt>
+        <dd data-i18n-html="glo_dd_14">Zone autour d'une prévision qui matérialise l'incertitude statistique (ici ~95%) : elle s'élargit avec l'horizon, une prévision lointaine étant toujours moins fiable qu'une prévision proche.</dd>
+
+        <dt data-i18n-html="glo_dt_15">Taux de clients récurrents</dt>
+        <dd data-i18n-html="glo_dd_15">Part des clients ayant effectué plus d'un achat. Version simple et immédiate de la fidélisation, complémentaire à l'analyse de cohortes qui, elle, suit ce taux mois par mois.</dd>
+
+        <dt data-i18n-html="glo_dt_16">Repère sectoriel (benchmark)</dt>
+        <dd data-i18n-html="glo_dd_16">Valeur de référence indicative pour ton secteur d'activité (ex : 30% de clients récurrents en e-commerce). Ce ne sont pas des moyennes calculées depuis les utilisateurs de metrics-dash — trop peu nombreux pour être significatives — juste un ordre de grandeur pour te situer.</dd>
+      </dl>
+    </div>
+  </div>
+
+  <!-- Popup Power BI -->
+  <div class="modal-overlay" id="powerBiModal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="powerBiModalTitle">
+      <button class="modal-close" id="powerBiModalClose" type="button" aria-label="Fermer">&times;</button>
+      <h3 id="powerBiModalTitle" data-i18n="powerbi_modal_title">Connecter tes données à Power BI</h3>
+      <p class="explainer">
+        <span class="line" data-i18n="powerbi_modal_p1">Power BI n'a pas besoin d'un connecteur spécial : sa fonction native « Obtenir les données &gt; Web » lit un fichier CSV en ligne directement, sans code.</span>
+        <span class="line" data-i18n-html="powerbi_modal_p2">Dans Power BI Desktop : <b>Accueil → Obtenir les données → Web</b>, colle l'une des URL ci-dessous, valide — la table apparaît, prête à être mise en forme.</span>
+      </p>
+      <div class="export-list" id="exportList"></div>
+    </div>
+  </div>
+
+  <!-- Popup secteur d'activité -->
+  <div class="modal-overlay" id="sectorModal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="sectorModalTitle">
+      <button class="modal-close" id="sectorModalClose" type="button" aria-label="Fermer">&times;</button>
+      <h3 id="sectorModalTitle" data-i18n="sector_modal_title">Quel est ton secteur d'activité ?</h3>
+      <p class="explainer">
+        <span class="line" data-i18n="sector_modal_p1">Stripe ne transmet aucune info sur ton activité (une transaction, c'est juste un montant, un client, une date) — cette info sert uniquement à situer tes métriques dans leur contexte.</span>
+      </p>
+      <div class="export-list" id="sectorList"></div>
+    </div>
+  </div>
+
+  <!-- Popup scénario de démo -->
+  <div class="modal-overlay" id="demoProfileModal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="demoProfileModalTitle">
+      <button class="modal-close" id="demoProfileModalClose" type="button" aria-label="Fermer">&times;</button>
+      <h3 id="demoProfileModalTitle" data-i18n="demo_profile_modal_title">Quel scénario de démo veux-tu explorer ?</h3>
+      <p class="explainer">
+        <span class="line" data-i18n="demo_profile_modal_p1">Chaque scénario simule une histoire de vente différente sur 8 mois (clients, montants, tendance) — utile pour voir comment le dashboard réagit à un business qui croît, décline ou reste stable.</span>
+      </p>
+      <div class="export-list" id="demoProfileList"></div>
+    </div>
+  </div>
+
+  <!-- Popup clients d'un segment LTV : clic sur une ligne du tableau LTV -->
+  <div class="modal-overlay" id="ltvModal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="ltvModalTitle">
+      <button class="modal-close" id="ltvModalClose" type="button" aria-label="Fermer">&times;</button>
+      <h3 id="ltvModalTitle"></h3>
+      <table class="data" id="ltvModalTable">
+        <thead><tr><th data-i18n="th_customer">Client</th><th class="num" data-i18n="th_avg_ltv">LTV moyenne</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Popup détail météo (santé commerciale) -->
+  <div class="modal-overlay" id="weatherModal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="weatherModalTitle">
+      <button class="modal-close" id="weatherModalClose" type="button" aria-label="Fermer">&times;</button>
+      <h3 id="weatherModalTitle" data-i18n="weather_modal_title">Météo de votre activité</h3>
+      <p class="explainer">
+        <span class="line" data-i18n="weather_modal_p1">Une icône par mois, basée sur la variation du CA vs le mois précédent (MoM) — comme un bulletin météo, mais pour la santé commerciale plutôt que le ciel.</span>
+      </p>
+      <div id="weatherModalMonths" class="weather-months"></div>
+    </div>
+  </div>
+
+  <!-- Popup profil du compte connecté -->
+  <div class="modal-overlay" id="profileModal" hidden>
+    <div class="modal-card modal-card-profile" role="dialog" aria-modal="true" aria-labelledby="profileModalTitle">
+      <button class="modal-close" id="profileModalClose" type="button" aria-label="Fermer">&times;</button>
+      <div class="profile-modal-banner" style="background-image: url('profile-banner.jpg');"></div>
+      <div class="profile-modal-content">
+        <h3 id="profileModalTitle" data-i18n="profile_modal_title">Mon profil</h3>
+        <div id="profileModalBody"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Carte de détail au survol d'un client (Top clients) : positionnée en
+       JS près du curseur, remplie/affichée par customer-hover.js ci-dessous. -->
+  <div id="customerHoverCard" class="customer-hover-card" hidden></div>
+  <!-- Même carte, réutilisée pour le survol d'un mois dans "CA mensuel &
+       croissance" (onglet Croissance) : liste les clients ayant acheté ce
+       mois-là, remplie/affichée par showMonthHoverCard() plus bas. -->
+  <div id="monthHoverCard" class="customer-hover-card" hidden></div>
   </div>
 
 <script>
@@ -140,56 +981,875 @@ function destroyChart(id) {
   if (charts[id]) { charts[id].destroy(); delete charts[id]; }
 }
 
-function isDemo() {
-  return document.getElementById('demoToggle').checked;
+/* --- Thème clair/sombre --- */
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
-function apiUrl(path) {
-  return isDemo() ? `${path}?demo=true` : path;
-}
-
-document.getElementById('demoToggle').addEventListener('change', () => {
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('themeSwitch').setAttribute('data-on', theme === 'light' ? 'true' : 'false');
+  localStorage.setItem('theme', theme);
+  // Chart.js lit les couleurs au moment de la création : il faut tout
+  // détruire et recréer pour qu'un graphique déjà affiché change de couleurs.
   loadAll();
+}
+
+(function initTheme() {
+  const saved = localStorage.getItem('theme');
+  const theme = saved === 'light' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('themeSwitch') && document.getElementById('themeSwitch').setAttribute('data-on', theme === 'light' ? 'true' : 'false');
+})();
+
+document.getElementById('themeSwitch').addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme');
+  applyTheme(current === 'light' ? 'dark' : 'light');
 });
 
-document.querySelectorAll('.tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    tab.classList.add('active');
-    document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+/* --- Langue (FR/EN) --- */
+// Couvre toute la coquille statique (nav, boutons, écran de connexion,
+// panneaux, popups) via data-i18n/data-i18n-title sur les éléments HTML.
+// Ne couvre PAS (pour l'instant) le contenu généré dynamiquement en JS —
+// libellés des cartes KPI, en-têtes de tableaux, infobulles des
+// graphiques, textes d'alerte — qui restent en français quel que soit le
+// réglage : ce sont des dizaines d'appels séparés (card(), les fonctions
+// loadX()) à traiter dans une passe ultérieure dédiée.
+const I18N = {
+  fr: {
+    theme_light: 'Clair', theme_dark: 'Sombre',
+    tab_overview: "Vue d'ensemble", tab_growth: 'Croissance', tab_rfm: 'Clients (RFM)',
+    tab_cohorts: 'Rétention', tab_forecast: 'Prévision', tab_lexique: 'Lexique',
+    connections_label: 'Vos connexions', connect_powerbi: 'Connecter à Power BI',
+    date_from: 'Du', date_to: 'au', date_reset: 'Réinitialiser',
+    demo_toggle: 'Mode démo', demo_toggle_title: '8 mois de données simulées, pour voir cohortes/tendances/prévision avec du volume',
+    sector_badge_title: "Secteur d'activité de ces données", sector_unset: 'Secteur non renseigné',
+    currency_label: 'Devise',
+    gate_title: 'Connectez-vous pour accéder à votre dashboard',
+    gate_p2: 'Une fois connecté, vous pourrez :',
+    gate_p3: '• connecter vos propres sources de données comme Stripe, Shopify ou Power BI ;',
+    gate_p4: '• analyser vos données directement depuis le dashboard ;',
+    gate_p5: '• ou explorer metrics-dash en mode démo, avec des données simulées.',
+    gate_btn: 'Se connecter avec Google',
+    powerbi_modal_title: 'Connecter tes données à Power BI',
+    powerbi_modal_p1: "Power BI n'a pas besoin d'un connecteur spécial : sa fonction native « Obtenir les données > Web » lit un fichier CSV en ligne directement, sans code.",
+    powerbi_modal_p2: 'Dans Power BI Desktop : <b>Accueil → Obtenir les données → Web</b>, colle l\'une des URL ci-dessous, valide — la table apparaît, prête à être mise en forme.',
+    sector_modal_title: "Quel est ton secteur d'activité ?",
+    sector_modal_p1: "Stripe ne transmet aucune info sur ton activité (une transaction, c'est juste un montant, un client, une date) — cette info sert uniquement à situer tes métriques dans leur contexte.",
+    profile_modal_title: 'Mon profil',
+    kpi_revenue: "Chiffre d'affaires", kpi_orders: 'Commandes', kpi_aov: 'Panier moyen', kpi_period: 'Période des ventes',
+    weather_sunny: 'CA en forte hausse ce mois-ci ({pct}% vs le mois précédent).',
+    weather_partly: 'CA stable ou en légère hausse ce mois-ci ({pct}% vs le mois précédent).',
+    weather_cloudy: 'CA en légère baisse ce mois-ci ({pct}% vs le mois précédent).',
+    weather_stormy: 'CA en forte baisse ce mois-ci ({pct}% vs le mois précédent).',
+    weather_unknown: 'Pas encore assez de mois de données pour évaluer la tendance.',
+    weather_badge_hint: 'Voir le détail mois par mois',
+    weather_modal_title: 'Météo de votre activité',
+    weather_modal_p1: 'Une icône par mois, basée sur la variation du CA vs le mois précédent (MoM) — comme un bulletin météo, mais pour la santé commerciale plutôt que le ciel.',
+    demo_profile_badge_title: 'Scénario de données simulées',
+    demo_profile_modal_title: 'Quel scénario de démo veux-tu explorer ?',
+    demo_profile_modal_p1: 'Chaque scénario simule une histoire de vente différente sur 8 mois (clients, montants, tendance) — utile pour voir comment le dashboard réagit à un business qui croît, décline ou reste stable.',
+    kpi_ltv: 'LTV moyen (valeur vie client)', kpi_delay: 'Délai moyen entre 2 achats',
+    kpi_atrisk: 'Clients à risque / perdus', kpi_repeat: 'Taux de clients récurrents',
+    kpi_active_subs: 'Abonnements actifs',
+    th_country: 'Pays', th_customers: 'Clients', th_revenue: 'CA', th_customer: 'Client',
+    th_amount: 'Montant', th_month: 'Mois', th_recency: 'Récence (j)', th_frequency: 'Fréquence',
+    th_action: 'Action marketing suggérée', th_segment: 'Segment', th_cohort: 'Cohorte', th_size: 'Taille',
+    hover_share: 'Part du CA', hover_orders: 'Commandes', hover_last_purchase: 'Dernier achat', hover_no_segment: 'Segment non calculé',
+    hover_month_customers: 'Clients ce mois-ci', hover_no_data: 'Aucune donnée',
+    th_aov: 'Panier moyen', th_share: 'Part du CA',
+    rfm_filter_label: 'Filtré par pays : {country}',
+    rfm_hover_hint: "Clique une ligne du tableau pour voir la fiche détaillée d'un client.",
+    rfm_gauge_recency: 'Récence', rfm_gauge_frequency: 'Fréquence', rfm_gauge_monetary: 'Montant',
+    rfm_detail_last_purchase: 'Dernier achat il y a {days} jours', rfm_detail_frequency: '{count} commandes',
+    alert_revenue_drop: 'CA de {month} en baisse de {pct}% vs le mois précédent.',
+    alert_revenue_growth: 'CA de {month} en hausse de {pct}% vs le mois précédent.',
+    alert_churn_risk: '{pct}% des clients sont à risque ou perdus ({count}/{total}).',
+    auth_err_oauth_failed: 'La connexion à Stripe a échoué (code refusé ou expiré). Réessaie.',
+    auth_err_db_failed: "La connexion à Stripe a réussi côté Stripe, mais l'enregistrement a échoué côté serveur. Réessaie dans un instant.",
+    auth_err_login_required_before_stripe: "Connecte-toi d'abord avec Google avant de relier Stripe.",
+    auth_err_login_required_before_shopify: "Connecte-toi d'abord avec Google avant de relier Shopify.",
+    auth_err_default: 'La connexion a échoué. Réessaie.',
+    hello_user: 'Bonjour {name}', hello_default: 'Connecté', view_profile: 'Voir mon profil',
+    profile_member_since: 'Membre depuis le {date}', profile_not_set: 'non renseigné',
+    profile_sector_prefix: 'Secteur : ', profile_not_connected: 'non connecté', disconnect_title: 'Déconnecter',
+    conn_connect_stripe: 'Connecter Stripe', conn_connect: 'Connecter', conn_stripe_unavailable: 'Stripe indisponible',
+    concentration_top: 'Top {pct}% clients', concentration_rest: 'Autres clients',
+    concentration_note: 'Repère secteur ({sector}) : le top {topPct}% des clients y pèse en général {benchPct}% du CA (toi : {observedPct}%).',
+    benchmark_vs_sector: '{arrow} {sign}{pct}% vs secteur ({label})',
+    legend_new_customers: 'Nouveaux clients', legend_returning_customers: 'Clients récurrents',
+    legend_daily_revenue: 'CA quotidien', legend_moving_avg: 'Moyenne mobile 7j',
+    legend_avg_retention: 'Rétention moyenne', legend_history: 'Historique', legend_forecast: 'Prévision',
+    legend_interval: 'Intervalle ~95%', legend_interval_low: 'Intervalle bas',
+    legend_revenue_by_day: 'CA par jour', legend_revenue_by_weekday: 'CA', legend_revenue_by_country: 'CA par pays',
+    pct_tooltip: '{label}: {pct}%',
+    export_monthly: 'CA mensuel', export_rfm: 'Segmentation RFM', export_cohorts: 'Cohortes de rétention',
+    weekday_0: 'Lundi', weekday_1: 'Mardi', weekday_2: 'Mercredi', weekday_3: 'Jeudi',
+    weekday_4: 'Vendredi', weekday_5: 'Samedi', weekday_6: 'Dimanche',
+    geo_map_unavailable: 'Carte indisponible pour le moment. Le détail par pays reste affiché à côté.',
+    geo_unknown_note: '{count} commande(s) sans pays de facturation connu, non comptabilisée(s) sur la carte.',
+    not_enough_data: 'Pas assez de données', days_unit: '{n} jours',
+    not_enough_months: 'Pas assez de mois de données pour projeter.',
+    set_sector_prompt: "Renseigne ton secteur d'activité (badge en haut) pour comparer ces chiffres à des repères sectoriels.",
+    sector_ecommerce: 'E-commerce / vente au détail', sector_saas: 'SaaS / logiciel',
+    sector_conseil: 'Conseil / services professionnels', sector_formation: 'Formation / éducation',
+    sector_restauration: 'Restauration / hôtellerie', sector_sante: 'Santé / bien-être',
+    sector_media: 'Média / création de contenu', sector_asso: 'Association / non lucratif', sector_autre: 'Autre',
+    seg_champions: 'Champions', seg_loyal: 'Clients fidèles', seg_new: 'Nouveaux clients',
+    seg_atrisk_big: 'À risque (gros clients)', seg_atrisk: 'À risque', seg_occasional: 'Clients occasionnels',
+    seg_atrisk_lost: 'À risque / Perdus', seg_lost: 'Perdus',
+    seg_action_champions: 'Programme VIP, avant-première, avantages exclusifs',
+    seg_action_loyal: 'Email/SMS de fidélisation, offres régulières',
+    seg_action_new: 'Email de bienvenue, accompagnement des premiers achats',
+    seg_action_atrisk_big: 'Contact prioritaire + offre personnalisée (forte valeur à ne pas perdre)',
+    seg_action_atrisk: 'Offre personnalisée ou rappel pour prévenir le désengagement',
+    seg_action_occasional: 'Offre incitative pour encourager la récurrence',
+    seg_action_atrisk_lost: 'Campagne de réactivation (email marketing)',
+    seg_action_lost: 'Campagne de réactivation (email marketing)',
+    ln_0: 'Carte colorée selon le CA généré par pays de facturation.', ln_1: 'Plus la couleur est intense, plus ce pays représente une part importante du chiffre d\'affaires. Molette ou boutons +/- pour zoomer, glisser pour te déplacer une fois zoomé.', ln_2: 'Regroupe toutes les commandes par <span class="term term-mom">jour de la semaine</span>, toutes semaines confondues.', ln_3: 'Utile pour repérer un jour fort ou faible (ex : plus de ventes le vendredi).', ln_4: 'Illustre le <span class="term term-forecast">principe de Pareto</span> (souvent "80/20") : une petite part de tes clients fait-elle une grande part du CA ?', ln_5: 'Ici : part du CA venant des 20% de clients qui dépensent le plus, vs tous les autres.', ln_6: 'Basé sur tes <span class="term term-mom">abonnements Stripe actifs</span> (pas les paiements ponctuels analysés ailleurs) : combien ça représenterait si chaque abonnement était facturé tous les mois, quel que soit son cycle réel (annuel, hebdomadaire...).', ln_7: '<span class="term term-mom">MoM</span> (Month-over-Month) = variation vs le mois précédent.', ln_8: '<span class="term term-yoy">YoY</span> (Year-over-Year) = variation vs le même mois l\'année dernière.', ln_9: 'Ce sont les deux métriques de croissance les plus utilisées en BI.', ln_10: 'La <span class="term term-ma">moyenne mobile</span> lisse les pics/creux journaliers pour voir la vraie tendance.', ln_11: 'C\'est la technique de base pour lire un graphique de série temporelle.', ln_12: 'Chaque mois, quelle part du CA vient de <span class="term term-yoy">nouveaux clients</span> (1er achat ce mois-là) vs de <span class="term term-ma">clients qui reviennent</span> ?', ln_13: 'Beaucoup de "nouveaux" = tu acquiers. Beaucoup de "récurrents" = tu fidélises. Les deux comptent, mais pas pour les mêmes raisons.', ln_14: 'Combien de clients dans chaque segment RFM, en proportion.', ln_15: 'Technique de segmentation client classique en marketing/data : chaque client reçoit un score 1-4 sur trois axes.', ln_16: '<span class="term term-r">Récence</span> (il a acheté récemment ?) · <span class="term term-f">Fréquence</span> (il achète souvent ?) · <span class="term term-m">Montant</span> (il dépense beaucoup ?).', ln_17: 'Les scores combinés donnent un segment actionnable (Champions, À risque, Perdus...).', ln_18: 'Moyenne du % de rétention à chaque mois écoulé, sur toutes les cohortes — une seule courbe pour voir la tendance générale sans lire tout le tableau.', ln_19: 'Chaque ligne = un groupe de clients ayant acheté pour la première fois ce mois-là (la <span class="term term-cohort">cohorte</span>).', ln_20: 'Chaque colonne = combien de mois plus tard. La couleur montre le % de la cohorte encore active.', ln_21: 'C\'est l\'outil de référence pour mesurer la <span class="term term-retention">fidélisation</span> dans le temps.', ln_22: 'Même lecture que le tableau de rétention, mais en <span class="term term-cohort">chiffre d\'affaires</span> plutôt qu\'en % de clients actifs.', ln_23: 'Deux cohortes avec la même rétention en % peuvent valoir très différemment si l\'une regroupe des clients qui dépensent plus.', ln_24: 'Projette les prochains mois à partir de la tendance historique (<span class="term term-forecast">régression linéaire simple</span>, sans librairie externe).', ln_25: 'La zone bleue est l\'intervalle de confiance (~95%) : elle s\'élargit avec l\'horizon, une prévision lointaine étant statistiquement moins fiable qu\'une prévision proche.', ln_26: 'Même méthode que la prévision de CA, appliquée au <span class="term term-forecast">nombre de commandes</span> plutôt qu\'au montant.', ln_27: 'Répond à « combien de ventes » plutôt qu\'à « combien ça va rapporter » — les deux ne bougent pas forcément ensemble (ex : panier moyen qui grimpe).', ln_28: 'Projette le rythme d\'<span class="term term-forecast">acquisition de nouveaux clients</span> par mois, à partir de la tendance historique.', ln_29: 'Utile pour anticiper si le rythme d\'acquisition ralentit avant que ça se voie sur le CA.', ln_30: 'Chaque terme employé ailleurs dans le dashboard, expliqué simplement — pas besoin de tout connaître pour commencer.', glo_dt_0: '<span class="term term-mom">MoM</span> (Month-over-Month)', glo_dt_1: '<span class="term term-yoy">YoY</span> (Year-over-Year)', glo_dt_2: '<span class="term term-ma">Moyenne mobile</span>', glo_dt_3: 'RFM (<span class="term term-r">Récence</span> / <span class="term term-f">Fréquence</span> / <span class="term term-m">Montant</span>)', glo_dt_4: '<span class="term term-cohort">Cohorte</span>', glo_dt_5: '<span class="term term-retention">Rétention / fidélisation</span>', glo_dt_6: '<span class="term term-forecast">Régression linéaire</span>', glo_dt_7: 'Pareto (règle du « 80/20 »)', glo_dt_8: 'LTV (Lifetime Value / valeur vie client)', glo_dt_9: 'Churn (taux d\'attrition)', glo_dt_10: 'API', glo_dt_11: 'CSV', glo_dd_0: 'Variation du CA vs le mois précédent. Répond à : « est-ce qu\'on progresse court terme ? »', glo_dd_1: 'Variation vs le même mois l\'an dernier. Neutralise la saisonnalité (ex : pic de décembre comparé au décembre précédent, pas à novembre).', glo_dd_2: 'Moyenne calculée sur une fenêtre glissante (ex : les 7 derniers jours), qui lisse le bruit journalier pour voir la vraie tendance.', glo_dd_3: '\n          Méthode CRM qui segmente les clients sur 3 dimensions comportementales : <b>quand</b> ils ont acheté pour la dernière fois (Récence), <b>à quelle fréquence</b> ils achètent, et <b>combien</b> ils dépensent (Montant). Chaque client reçoit un score 1-4 sur chaque axe, combinés en un segment actionnable.\n          <br><br>\n          L\'intérêt pratique : relier chaque segment à une action marketing concrète (visible dans la colonne dédiée de l\'onglet RFM) — <i>segment → intention → action</i> :\n          <ul style="margin:8px 0 0; padding-left:20px;">\n            <li><b>Champions</b> : fidéliser → programme VIP, avantages exclusifs</li>\n            <li><b>Clients fidèles</b> : entretenir → offres régulières</li>\n            <li><b>Nouveaux clients</b> : accompagner → email de bienvenue</li>\n            <li><b>À risque</b> : prévenir le désengagement → offre personnalisée ou rappel</li>\n            <li><b>Perdus</b> : récupérer → campagne de réactivation</li>\n          </ul>\n        ', glo_dd_4: 'Groupe de clients qui partagent un point de départ commun — ici, le mois de leur tout premier achat — suivi dans le temps.', glo_dd_5: '% d\'une cohorte encore active N mois après son premier achat. Mesure si les clients reviennent, pas juste s\'ils achètent une fois.', glo_dd_6: 'Méthode statistique qui trace la droite collant au mieux à des points historiques, pour projeter la tendance dans le futur. Simple, mais fragile sur peu de données.', glo_dd_7: 'Observation empirique : une petite part des causes (ex : 20% des clients) produit souvent une grande part des effets (ex : 80% du CA).', glo_dd_8: 'CA moyen généré par un client sur toute sa relation avec toi. Sert à savoir combien tu peux dépenser pour en acquérir un nouveau sans perdre d\'argent.', glo_dd_9: 'Part des clients qui arrêtent d\'acheter. Approximé ici par le % de clients dans les segments RFM « À risque » et « Perdus ».', glo_dd_10: 'Interface de Programmation d\'Application : la façon dont deux logiciels échangent des données — ici, ton dashboard interroge l\'API de Stripe.', glo_dd_11: 'Fichier texte tabulaire (Comma-Separated Values) : le format le plus simple pour faire passer des données d\'un outil à un autre — ex : vers Excel ou Power BI.', glo_dt_12: 'Panier moyen (AOV)', glo_dd_12: 'CA total divisé par le nombre de commandes. Attention à l\'interpréter seul : il peut monter simplement parce qu\'il y a moins de commandes, pas parce que chaque client dépense plus.', glo_dt_13: 'MRR (revenu récurrent mensuel)', glo_dd_13: 'Ce que rapporteraient tous les abonnements actifs s\'ils étaient facturés chaque mois, quel que soit leur cycle réel (annuel, hebdomadaire...). Indicateur clé en SaaS : il lisse les pics de facturation pour montrer le revenu récurrent réel.', glo_dt_14: 'Intervalle de confiance', glo_dd_14: 'Zone autour d\'une prévision qui matérialise l\'incertitude statistique (ici ~95%) : elle s\'élargit avec l\'horizon, une prévision lointaine étant toujours moins fiable qu\'une prévision proche.', glo_dt_15: 'Taux de clients récurrents', glo_dd_15: 'Part des clients ayant effectué plus d\'un achat. Version simple et immédiate de la fidélisation, complémentaire à l\'analyse de cohortes qui, elle, suit ce taux mois par mois.', glo_dt_16: 'Repère sectoriel (benchmark)', glo_dd_16: 'Valeur de référence indicative pour ton secteur d\'activité (ex : 30% de clients récurrents en e-commerce). Ce ne sont pas des moyennes calculées depuis les utilisateurs de metrics-dash — trop peu nombreux pour être significatives — juste un ordre de grandeur pour te situer.', h3_0: 'CA par pays', h3_1: 'Détail par pays', h3_2: 'CA par jour', h3_3: 'CA par jour de la semaine', h3_4: 'Concentration du CA', h3_5: 'Top clients', h3_6: 'MRR (revenu récurrent mensuel)', h3_7: 'CA mensuel & croissance', h3_8: 'CA quotidien + moyenne mobile 7 jours', h3_9: 'Nouveaux vs clients récurrents', h3_10: 'Répartition des clients par segment', h3_11: 'Segmentation RFM (Récence / Fréquence / Montant)', h3_12: 'Rétention moyenne toutes cohortes confondues', h3_13: 'Analyse de cohortes (rétention)', h3_14: 'CA généré par cohorte', h3_15: 'Prévision de CA (régression linéaire)', h3_16: 'Prévision du nombre de commandes', h3_17: 'Prévision de nouveaux clients', h3_18: 'Lexique des termes techniques', h3_19: 'LTV par segment (valeur vie client)', h3_20: 'Churn mensuel', h3_21: 'Décomposition du CA (waterfall)', h3_22: 'Taux de remboursement',
+    ln_31: 'La <span class="term term-forecast">LTV</span> (valeur vie client) est le montant total dépensé par un client sur toute la période observée — sert de repère pour savoir combien on peut dépenser en acquisition (publicité, commission) sans perdre d\'argent sur ce client.',
+    ln_32: 'Moyenne historique observée par segment RFM : un Champion vaut-il vraiment plus qu\'un client occasionnel ?',
+    ln_33: 'Parmi les clients actifs un mois donné, quelle part n\'a plus rien acheté le mois suivant ? Complète les segments RFM (qui disent qui est à risque) par un taux qui suit son évolution dans le temps.',
+    ln_34: 'Un taux qui grimpe mois après mois est un signal d\'alerte précoce, avant même que ça se voie sur le CA global.',
+    ln_35: 'Le MoM ci-dessus dit de combien le CA a bougé entre les deux derniers mois — ce graphique dit pourquoi, en décomposant la variation en 4 causes.',
+    ln_36: '<span class="term term-pos">Nouveaux</span> (clients apparus) · <span class="term term-pos">Expansion</span> (clients existants qui dépensent plus) · <span class="term term-neg">Contraction</span> (qui dépensent moins) · <span class="term term-neg">Perdus</span> (clients qui n\'ont rien racheté).',
+    ln_37: 'Part des commandes remboursées, en tout ou partie — un signal de qualité produit/service qu\'aucune autre métrique du dashboard ne couvre.',
+    th_avg_ltv: 'LTV moyenne', th_orders: 'Commandes', th_refunds: 'Remboursements', th_refund_rate: 'Taux',
+    kpi_refund_rate: 'Taux de remboursement', kpi_refunded_amount: 'Montant remboursé',
+    waterfall_new: 'Nouveaux', waterfall_expansion: 'Expansion', waterfall_contraction: 'Contraction', waterfall_churned: 'Perdus',
+    waterfall_note: 'Entre {from} et {to} : {revFrom} → {revTo}',
+    churn_legend: 'Taux de churn mensuel',
+    ltv_no_data: 'Pas assez de données pour calculer une LTV.',
+    ltv_click_hint: 'Clique une ligne pour voir quels clients composent ce segment.',
+    ltv_modal_title: 'Clients du segment « {segment} »',
+    legend_waterfall_pos: 'Contribution positive (nouveaux clients, expansion)',
+    legend_waterfall_neg: 'Contribution négative (contraction, clients perdus)',
+  },
+  en: {
+    theme_light: 'Light', theme_dark: 'Dark',
+    tab_overview: 'Overview', tab_growth: 'Growth', tab_rfm: 'Customers (RFM)',
+    tab_cohorts: 'Retention', tab_forecast: 'Forecast', tab_lexique: 'Glossary',
+    connections_label: 'Your connections', connect_powerbi: 'Connect to Power BI',
+    date_from: 'From', date_to: 'to', date_reset: 'Reset',
+    demo_toggle: 'Demo mode', demo_toggle_title: '8 months of simulated data, to see cohorts/trends/forecast with volume',
+    sector_badge_title: 'Business sector for this data', sector_unset: 'Sector not set',
+    currency_label: 'Currency',
+    gate_title: 'Sign in to access your dashboard',
+    gate_p2: "Once signed in, you'll be able to:",
+    gate_p3: '• connect your own data sources like Stripe, Shopify or Power BI;',
+    gate_p4: '• analyze your data directly from the dashboard;',
+    gate_p5: '• or explore metrics-dash in demo mode, with simulated data.',
+    gate_btn: 'Sign in with Google',
+    powerbi_modal_title: 'Connect your data to Power BI',
+    powerbi_modal_p1: "Power BI doesn't need a special connector: its native \"Get Data > Web\" feature reads an online CSV file directly, no code needed.",
+    powerbi_modal_p2: 'In Power BI Desktop: <b>Home → Get Data → Web</b>, paste one of the URLs below, confirm — the table appears, ready to be shaped.',
+    sector_modal_title: "What's your business sector?",
+    sector_modal_p1: "Stripe doesn't send any info about your activity (a transaction is just an amount, a customer, a date) — this info is only used to put your metrics in context.",
+    profile_modal_title: 'My profile',
+    kpi_revenue: 'Revenue', kpi_orders: 'Orders', kpi_aov: 'Average order value', kpi_period: 'Sales period',
+    weather_sunny: 'Revenue strongly up this month ({pct}% vs the previous month).',
+    weather_partly: 'Revenue stable or slightly up this month ({pct}% vs the previous month).',
+    weather_cloudy: 'Revenue slightly down this month ({pct}% vs the previous month).',
+    weather_stormy: 'Revenue sharply down this month ({pct}% vs the previous month).',
+    weather_unknown: 'Not enough months of data yet to read the trend.',
+    weather_badge_hint: 'See the month-by-month detail',
+    weather_modal_title: 'Your business weather',
+    weather_modal_p1: 'One icon per month, based on revenue change vs the previous month (MoM) — like a weather forecast, but for business health instead of the sky.',
+    demo_profile_badge_title: 'Simulated data scenario',
+    demo_profile_modal_title: 'Which demo scenario do you want to explore?',
+    demo_profile_modal_p1: 'Each scenario simulates a different 8-month sales story (customers, amounts, trend) — useful to see how the dashboard reacts to a growing, declining or stable business.',
+    kpi_ltv: 'Average LTV (lifetime value)', kpi_delay: 'Average time between purchases',
+    kpi_atrisk: 'At-risk / lost customers', kpi_repeat: 'Repeat customer rate',
+    kpi_active_subs: 'Active subscriptions',
+    th_country: 'Country', th_customers: 'Customers', th_revenue: 'Revenue', th_customer: 'Customer',
+    th_amount: 'Amount', th_month: 'Month', th_recency: 'Recency (d)', th_frequency: 'Frequency',
+    th_action: 'Suggested marketing action', th_segment: 'Segment', th_cohort: 'Cohort', th_size: 'Size',
+    hover_share: 'Share of revenue', hover_orders: 'Orders', hover_last_purchase: 'Last purchase', hover_no_segment: 'Segment not computed',
+    hover_month_customers: 'Customers this month', hover_no_data: 'No data',
+    th_aov: 'Average order value', th_share: 'Share of revenue',
+    rfm_filter_label: 'Filtered by country: {country}',
+    rfm_hover_hint: 'Click a row in the table to see a customer\'s full detail.',
+    rfm_gauge_recency: 'Recency', rfm_gauge_frequency: 'Frequency', rfm_gauge_monetary: 'Monetary',
+    rfm_detail_last_purchase: 'Last purchase {days} days ago', rfm_detail_frequency: '{count} orders',
+    alert_revenue_drop: 'Revenue for {month} dropped {pct}% vs the previous month.',
+    alert_revenue_growth: 'Revenue for {month} grew {pct}% vs the previous month.',
+    alert_churn_risk: '{pct}% of customers are at risk or lost ({count}/{total}).',
+    auth_err_oauth_failed: 'The connection to Stripe failed (code rejected or expired). Please try again.',
+    auth_err_db_failed: 'The connection to Stripe succeeded, but saving it failed on our side. Please try again in a moment.',
+    auth_err_login_required_before_stripe: 'Sign in with Google first before connecting Stripe.',
+    auth_err_login_required_before_shopify: 'Sign in with Google first before connecting Shopify.',
+    auth_err_default: 'The connection failed. Please try again.',
+    hello_user: 'Hello {name}', hello_default: 'Signed in', view_profile: 'View my profile',
+    profile_member_since: 'Member since {date}', profile_not_set: 'not set',
+    profile_sector_prefix: 'Sector: ', profile_not_connected: 'not connected', disconnect_title: 'Disconnect',
+    conn_connect_stripe: 'Connect Stripe', conn_connect: 'Connect', conn_stripe_unavailable: 'Stripe unavailable',
+    concentration_top: 'Top {pct}% customers', concentration_rest: 'Other customers',
+    concentration_note: 'Sector benchmark ({sector}): the top {topPct}% of customers usually accounts for {benchPct}% of revenue (yours: {observedPct}%).',
+    benchmark_vs_sector: '{arrow} {sign}{pct}% vs sector ({label})',
+    legend_new_customers: 'New customers', legend_returning_customers: 'Returning customers',
+    legend_daily_revenue: 'Daily revenue', legend_moving_avg: '7-day moving average',
+    legend_avg_retention: 'Average retention', legend_history: 'History', legend_forecast: 'Forecast',
+    legend_interval: '~95% interval', legend_interval_low: 'Lower interval',
+    legend_revenue_by_day: 'Revenue by day', legend_revenue_by_weekday: 'Revenue', legend_revenue_by_country: 'Revenue by country',
+    pct_tooltip: '{label}: {pct}%',
+    export_monthly: 'Monthly revenue', export_rfm: 'RFM segmentation', export_cohorts: 'Retention cohorts',
+    weekday_0: 'Monday', weekday_1: 'Tuesday', weekday_2: 'Wednesday', weekday_3: 'Thursday',
+    weekday_4: 'Friday', weekday_5: 'Saturday', weekday_6: 'Sunday',
+    geo_map_unavailable: 'Map unavailable right now. The country breakdown is still shown alongside it.',
+    geo_unknown_note: '{count} order(s) with no known billing country, not included on the map.',
+    not_enough_data: 'Not enough data', days_unit: '{n} days',
+    not_enough_months: 'Not enough months of data to project.',
+    set_sector_prompt: 'Set your business sector (badge above) to compare these numbers to sector benchmarks.',
+    sector_ecommerce: 'E-commerce / retail', sector_saas: 'SaaS / software',
+    sector_conseil: 'Consulting / professional services', sector_formation: 'Training / education',
+    sector_restauration: 'Restaurant / hospitality', sector_sante: 'Health / wellness',
+    sector_media: 'Media / content creation', sector_asso: 'Non-profit / association', sector_autre: 'Other',
+    seg_champions: 'Champions', seg_loyal: 'Loyal customers', seg_new: 'New customers',
+    seg_atrisk_big: 'At risk (high value)', seg_atrisk: 'At risk', seg_occasional: 'Occasional customers',
+    seg_atrisk_lost: 'At risk / Lost', seg_lost: 'Lost',
+    seg_action_champions: 'VIP program, early access, exclusive perks',
+    seg_action_loyal: 'Loyalty email/SMS, regular offers',
+    seg_action_new: 'Welcome email, support for first purchases',
+    seg_action_atrisk_big: 'Priority contact + personalized offer (high value, worth keeping)',
+    seg_action_atrisk: 'Personalized offer or reminder to prevent churn',
+    seg_action_occasional: 'Incentive offer to encourage repeat purchases',
+    seg_action_atrisk_lost: 'Reactivation campaign (email marketing)',
+    seg_action_lost: 'Reactivation campaign (email marketing)',
+    ln_0: 'Colored map based on revenue generated per billing country.', ln_1: 'The more intense the color, the larger that country\'s share of revenue. Scroll wheel or +/- buttons to zoom, drag to move once zoomed.', ln_2: 'Groups all orders by <span class="term term-mom">day of the week</span>, across all weeks.', ln_3: 'Useful for spotting a strong or weak day (e.g. more sales on Fridays).', ln_4: 'Illustrates the <span class="term term-forecast">Pareto principle</span> (often "80/20"): does a small share of your customers generate a large share of revenue?', ln_5: 'Here: share of revenue coming from the top 20% of highest-spending customers, vs everyone else.', ln_6: 'Based on your <span class="term term-mom">active Stripe subscriptions</span> (not the one-off payments analyzed elsewhere): what it would represent if every subscription were billed monthly, regardless of its actual cycle (yearly, weekly...).', ln_7: '<span class="term term-mom">MoM</span> (Month-over-Month) = change vs the previous month.', ln_8: '<span class="term term-yoy">YoY</span> (Year-over-Year) = change vs the same month last year.', ln_9: 'These are the two most commonly used growth metrics in BI.', ln_10: 'The <span class="term term-ma">moving average</span> smooths daily peaks/dips to reveal the real trend.', ln_11: 'It\'s the basic technique for reading a time series chart.', ln_12: 'Each month, what share of revenue comes from <span class="term term-yoy">new customers</span> (first purchase that month) vs <span class="term term-ma">returning customers</span>?', ln_13: 'A lot of "new" = you\'re acquiring. A lot of "returning" = you\'re retaining. Both matter, but not for the same reasons.', ln_14: 'How many customers in each RFM segment, as a proportion.', ln_15: 'Classic marketing/data customer segmentation technique: each customer gets a 1-4 score on three axes.', ln_16: '<span class="term term-r">Recency</span> (did they buy recently?) · <span class="term term-f">Frequency</span> (do they buy often?) · <span class="term term-m">Monetary</span> (do they spend a lot?).', ln_17: 'The combined scores produce an actionable segment (Champions, At risk, Lost...).', ln_18: 'Average % retention at each elapsed month, across all cohorts — a single curve to see the overall trend without reading the whole table.', ln_19: 'Each row = a group of customers who made their first purchase that month (the <span class="term term-cohort">cohort</span>).', ln_20: 'Each column = how many months later. The color shows the % of the cohort still active.', ln_21: 'The reference tool for measuring <span class="term term-retention">retention</span> over time.', ln_22: 'Same reading as the retention table, but in <span class="term term-cohort">revenue</span> rather than % of active customers.', ln_23: 'Two cohorts with the same retention % can be worth very different amounts if one has higher-spending customers.', ln_24: 'Projects the coming months from the historical trend (<span class="term term-forecast">simple linear regression</span>, no external library).', ln_25: 'The blue band is the confidence interval (~95%): it widens with the horizon, since a far-off forecast is statistically less reliable than a near one.', ln_26: 'Same method as the revenue forecast, applied to the <span class="term term-forecast">order count</span> instead of the amount.', ln_27: 'Answers "how many sales" rather than "how much will it bring in" — the two don\'t necessarily move together (e.g. a rising average order value).', ln_28: 'Projects the monthly rate of <span class="term term-forecast">new customer acquisition</span> from the historical trend.', ln_29: 'Useful for anticipating a slowdown in acquisition before it shows up in revenue.', ln_30: 'Every term used elsewhere in the dashboard, explained simply — no need to know it all to get started.', glo_dt_0: '<span class="term term-mom">MoM</span> (Month-over-Month)', glo_dt_1: '<span class="term term-yoy">YoY</span> (Year-over-Year)', glo_dt_2: '<span class="term term-ma">Moving average</span>', glo_dt_3: 'RFM (<span class="term term-r">Recency</span> / <span class="term term-f">Frequency</span> / <span class="term term-m">Monetary</span>)', glo_dt_4: '<span class="term term-cohort">Cohort</span>', glo_dt_5: '<span class="term term-retention">Retention</span>', glo_dt_6: '<span class="term term-forecast">Linear regression</span>', glo_dt_7: 'Pareto (the "80/20" rule)', glo_dt_8: 'LTV (Lifetime Value)', glo_dt_9: 'Churn', glo_dt_10: 'API', glo_dt_11: 'CSV', glo_dd_0: 'Revenue change vs the previous month. Answers: "are we growing short-term?"', glo_dd_1: 'Change vs the same month last year. Cancels out seasonality (e.g. a December peak compared to the previous December, not to November).', glo_dd_2: 'Average calculated over a rolling window (e.g. the last 7 days), which smooths daily noise to reveal the real trend.', glo_dd_3: '\n          CRM method that segments customers on 3 behavioral dimensions: <b>when</b> they last bought (Recency), <b>how often</b> they buy (Frequency), and <b>how much</b> they spend (Monetary). Each customer gets a 1-4 score on each axis, combined into an actionable segment.\n          <br><br>\n          The practical value: linking each segment to a concrete marketing action (visible in the dedicated column of the RFM tab) — <i>segment → intent → action</i>:\n          <ul style="margin:8px 0 0; padding-left:20px;">\n            <li><b>Champions</b>: retain → VIP program, exclusive perks</li>\n            <li><b>Loyal customers</b>: maintain → regular offers</li>\n            <li><b>New customers</b>: onboard → welcome email</li>\n            <li><b>At risk</b>: prevent churn → personalized offer or reminder</li>\n            <li><b>Lost</b>: win back → reactivation campaign</li>\n          </ul>', glo_dd_4: 'A group of customers who share a common starting point — here, the month of their very first purchase — tracked over time.', glo_dd_5: 'The % of a cohort still active N months after their first purchase. Measures whether customers come back, not just whether they buy once.', glo_dd_6: 'A statistical method that draws the line that best fits historical data points, to project the trend into the future. Simple, but fragile with little data.', glo_dd_7: 'Empirical observation: a small share of causes (e.g. 20% of customers) often produces a large share of effects (e.g. 80% of revenue).', glo_dd_8: 'Average revenue generated by a customer over their whole relationship with you. Used to know how much you can spend acquiring a new one without losing money.', glo_dd_9: 'The share of customers who stop buying. Approximated here by the % of customers in the "At risk" and "Lost" RFM segments.', glo_dd_10: 'Application Programming Interface: the way two pieces of software exchange data — here, your dashboard queries Stripe\'s API.', glo_dd_11: 'Tabular text file (Comma-Separated Values): the simplest format for moving data from one tool to another — e.g. to Excel or Power BI.', glo_dt_12: 'Average order value (AOV)', glo_dd_12: 'Total revenue divided by the number of orders. Worth reading with care: it can rise simply because there are fewer orders, not because each customer spends more.', glo_dt_13: 'MRR (monthly recurring revenue)', glo_dd_13: 'What all active subscriptions would bring in if billed every month, regardless of their actual cycle (yearly, weekly...). A key SaaS metric: it smooths out billing spikes to show the real recurring revenue.', glo_dt_14: 'Confidence interval', glo_dd_14: 'The band around a forecast that shows statistical uncertainty (~95% here): it widens with the horizon, since a far-off forecast is always less reliable than a near one.', glo_dt_15: 'Repeat customer rate', glo_dd_15: 'Share of customers who made more than one purchase. A simple, immediate read on loyalty, complementary to cohort analysis, which tracks that rate month by month.', glo_dt_16: 'Sector benchmark', glo_dd_16: "An indicative reference value for your business sector (e.g. 30% repeat customers in e-commerce). These aren't averages computed from metrics-dash's own users — too few to be meaningful — just a rough order of magnitude to place yourself against.",
+    h3_0: 'Revenue by country', h3_1: 'Country breakdown', h3_2: 'Revenue by day', h3_3: 'Revenue by day of the week', h3_4: 'Revenue concentration', h3_5: 'Top customers', h3_6: 'MRR (monthly recurring revenue)', h3_7: 'Monthly revenue & growth', h3_8: 'Daily revenue + 7-day moving average', h3_9: 'New vs returning customers', h3_10: 'Customer segment breakdown', h3_11: 'RFM segmentation (Recency / Frequency / Monetary)', h3_12: 'Average retention across all cohorts', h3_13: 'Cohort analysis (retention)', h3_14: 'Revenue by cohort', h3_15: 'Revenue forecast (linear regression)', h3_16: 'Order count forecast', h3_17: 'New customer forecast', h3_18: 'Glossary of technical terms', h3_19: 'LTV by segment (lifetime value)', h3_20: 'Monthly churn', h3_21: 'Revenue breakdown (waterfall)', h3_22: 'Refund rate',
+    ln_31: '<span class="term term-forecast">LTV</span> (lifetime value) is the total amount a customer has spent over the whole observed period — a reference point for how much you can spend on acquisition (ads, commission) without losing money on that customer.',
+    ln_32: 'Historical average observed per RFM segment: does a Champion really spend more than an occasional customer?',
+    ln_33: 'Among customers active in a given month, what share bought nothing the following month? Complements RFM segments (which say who is at risk) with a rate you can track over time.',
+    ln_34: 'A rate climbing month after month is an early warning sign, before it even shows up in overall revenue.',
+    ln_35: 'The MoM above says how much revenue moved between the last two months — this chart says why, breaking the change into 4 causes.',
+    ln_36: '<span class="term term-pos">New</span> (customers who appeared) · <span class="term term-pos">Expansion</span> (existing customers spending more) · <span class="term term-neg">Contraction</span> (spending less) · <span class="term term-neg">Churned</span> (customers who bought nothing again).',
+    ln_37: 'Share of orders refunded, in full or in part — a product/service quality signal no other metric on this dashboard covers.',
+    th_avg_ltv: 'Average LTV', th_orders: 'Orders', th_refunds: 'Refunds', th_refund_rate: 'Rate',
+    kpi_refund_rate: 'Refund rate', kpi_refunded_amount: 'Refunded amount',
+    waterfall_new: 'New', waterfall_expansion: 'Expansion', waterfall_contraction: 'Contraction', waterfall_churned: 'Churned',
+    waterfall_note: 'Between {from} and {to}: {revFrom} → {revTo}',
+    churn_legend: 'Monthly churn rate',
+    ltv_no_data: 'Not enough data to compute an LTV.',
+    ltv_click_hint: 'Click a row to see which customers make up this segment.',
+    ltv_modal_title: 'Customers in segment "{segment}"',
+    legend_waterfall_pos: 'Positive contribution (new customers, expansion)',
+    legend_waterfall_neg: 'Negative contribution (contraction, churned customers)',
+  },
+};
+
+// t() : traduit une clé pour le contenu généré en JS (cartes KPI...),
+// pendant du data-i18n pour le HTML statique — même dictionnaire I18N.
+function t(key) {
+  const lang = localStorage.getItem('lang') === 'en' ? 'en' : 'fr';
+  return (I18N[lang] && I18N[lang][key]) || key;
+}
+
+function applyLang(lang) {
+  document.querySelectorAll('[data-i18n]').forEach((el) => {
+    const key = el.getAttribute('data-i18n');
+    if (I18N[lang][key] !== undefined) el.textContent = I18N[lang][key];
   });
+  document.querySelectorAll('[data-i18n-html]').forEach((el) => {
+    const key = el.getAttribute('data-i18n-html');
+    if (I18N[lang][key] !== undefined) el.innerHTML = I18N[lang][key];
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach((el) => {
+    const key = el.getAttribute('data-i18n-title');
+    if (I18N[lang][key] !== undefined) el.setAttribute('title', I18N[lang][key]);
+  });
+  document.getElementById('langSwitch').setAttribute('data-on', lang === 'en' ? 'true' : 'false');
+  document.documentElement.setAttribute('lang', lang === 'en' ? 'en' : 'fr');
+  localStorage.setItem('lang', lang);
+  // Le contenu généré en JS (cartes KPI via t(), tableaux, alertes, mais
+  // aussi le bandeau "Bonjour" et les puces de connexion de loadStatus())
+  // est "figé" au moment du rendu — il faut tout recharger pour qu'il
+  // reflète la nouvelle langue, même logique que le changement de thème.
+  if (typeof loadStatus === 'function') loadStatus();
+  if (typeof loadAll === 'function' && document.getElementById('appBody').style.display !== 'none') loadAll();
+  if (typeof updateWeatherDate === 'function') updateWeatherDate();
+}
+
+(function initLang() {
+  const saved = localStorage.getItem('lang');
+  applyLang(saved === 'en' ? 'en' : 'fr');
+})();
+
+document.getElementById('langSwitch').addEventListener('click', () => {
+  applyLang(localStorage.getItem('lang') === 'en' ? 'fr' : 'en');
+});
+
+const powerBiModal = document.getElementById('powerBiModal');
+
+function openPowerBiModal() {
+  powerBiModal.hidden = false;
+}
+
+function closePowerBiModal() {
+  powerBiModal.hidden = true;
+}
+
+document.getElementById('powerBiLink').addEventListener('click', openPowerBiModal);
+document.getElementById('powerBiModalClose').addEventListener('click', closePowerBiModal);
+powerBiModal.addEventListener('click', (e) => {
+  if (e.target === powerBiModal) closePowerBiModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !powerBiModal.hidden) closePowerBiModal();
+});
+
+/* --- Secteur d'activité --- */
+// Stripe ne fournit rien sur l'activité derrière les transactions : on le
+// demande une fois, de façon déclarative. Stocké en base (D1) pour un
+// compte connecté, en localStorage pour le mode démo (pas d'utilisateur
+// réel à rattacher).
+const sectorModal = document.getElementById('sectorModal');
+const DEMO_SECTOR_KEY = 'metrics-dash-demo-sector';
+let sectorsCache = null;
+
+function openSectorModal() {
+  sectorModal.hidden = false;
+}
+function closeSectorModal() {
+  sectorModal.hidden = true;
+}
+document.getElementById('sectorModalClose').addEventListener('click', closeSectorModal);
+sectorModal.addEventListener('click', (e) => {
+  if (e.target === sectorModal) closeSectorModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !sectorModal.hidden) closeSectorModal();
+});
+
+// Popup profil : centralise l'identité + l'état de chaque connexion
+// (Stripe/Shopify) au même endroit, avec leurs actions de déconnexion —
+// les dernières données /api/status connues (lastStatus) évitent un
+// second aller-retour réseau à l'ouverture.
+const profileModal = document.getElementById('profileModal');
+let lastStatus = null;
+
+function openProfileModal() {
+  if (!lastStatus) return;
+  const googleIcon = '<img class="google-mark" src="icons8-google-100.png" alt="" aria-hidden="true">';
+  const stripeIcon = '<img class="stripe-mark profile-mini-icon" src="icons8-stripe-100.png" alt="" aria-hidden="true">';
+  const shopifyIcon = '<img class="shopify-mark" src="icons8-shopify-96.png" alt="" aria-hidden="true">';
+  const avatar = lastStatus.picture
+    ? `<img class="google-mark avatar-mark profile-avatar" src="${lastStatus.picture}" alt="" aria-hidden="true" referrerpolicy="no-referrer">`
+    : googleIcon;
+  const dateLang = localStorage.getItem('lang') === 'en' ? 'en-US' : 'fr-FR';
+  const memberSince = lastStatus.member_since
+    ? new Date(lastStatus.member_since.replace(' ', 'T') + 'Z').toLocaleDateString(dateLang, { year: 'numeric', month: 'long', day: 'numeric' })
+    : '—';
+
+  // Icône × (plutôt que le mot "Déconnecter") sur chaque ligne connectée —
+  // title porte le texte accessible pour lecteurs d'écran/tooltip natif.
+  const disconnectIcon = (href) => `<a class="disconnect-btn" href="${href}" title="${t('disconnect_title')}" aria-label="${t('disconnect_title')}">✕</a>`;
+  const stripeRow = lastStatus.stripe_connected
+    ? `<span class="profile-conn profile-conn-on">${stripeIcon}<span class="profile-conn-text">${lastStatus.account || ''}</span>${disconnectIcon('/auth/stripe/disconnect')}</span>`
+    : `<span class="profile-conn profile-conn-off">${stripeIcon}<span class="profile-conn-text">${t('profile_not_connected')}</span></span>`;
+  const shopifyRow = lastStatus.shopify_connected
+    ? `<span class="profile-conn profile-conn-on">${shopifyIcon}<span class="profile-conn-text">${lastStatus.shop_domain || ''}</span>${disconnectIcon('/auth/shopify/disconnect')}</span>`
+    : `<span class="profile-conn profile-conn-off">${shopifyIcon}<span class="profile-conn-text">${t('profile_not_connected')}</span></span>`;
+
+  document.getElementById('profileModalBody').innerHTML = `
+    <div class="profile-header">
+      ${avatar}
+      <div class="profile-name">${lastStatus.name || lastStatus.email || t('hello_default')}</div>
+      <span class="profile-conn profile-conn-google">${googleIcon}<span class="profile-conn-text">${lastStatus.email || ''}</span>${disconnectIcon('/auth/logout')}</span>
+    </div>
+    <p class="explainer">
+      <span class="line">${t('profile_member_since').replace('{date}', memberSince)}</span>
+      <span class="line">${t('profile_sector_prefix')}${lastStatus.sector ? sectorLabelSpan(lastStatus.sector, lastStatus.sector) : t('profile_not_set')}</span>
+    </p>
+    <div class="profile-conns">
+      ${stripeRow}
+      ${shopifyRow}
+    </div>
+  `;
+  profileModal.hidden = false;
+}
+function closeProfileModal() {
+  profileModal.hidden = true;
+}
+document.getElementById('profileModalClose').addEventListener('click', closeProfileModal);
+profileModal.addEventListener('click', (e) => {
+  if (e.target === profileModal) closeProfileModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !profileModal.hidden) closeProfileModal();
+});
+
+async function getSectors() {
+  if (sectorsCache) return sectorsCache;
+  const res = await fetch('/api/sectors');
+  const data = await res.json();
+  sectorsCache = data.sectors;
+  return sectorsCache;
+}
+
+async function renderSectorList(currentSector) {
+  const sectors = await getSectors();
+  const list = document.getElementById('sectorList');
+  list.innerHTML = sectors.map((s, i) => {
+    const cls = 'export-link c' + ((i % 4) + 1) + (s === currentSector ? ' active' : '');
+    return `<button class="${cls}" type="button" data-sector="${s}">${sectorDisplay(s)}</button>`;
+  }).join('');
+  list.querySelectorAll('[data-sector]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const sector = btn.dataset.sector;
+      if (isDemo()) {
+        localStorage.setItem(DEMO_SECTOR_KEY, sector);
+      } else {
+        await fetch('/api/sector', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sector }),
+        });
+      }
+      await updateSectorBadge(sector);
+      if (lastStatus) lastStatus.sector = sector;
+      closeSectorModal();
+      await loadAll();
+    });
+  });
+}
+
+let currentSector = null;
+
+// Alimente la carte de détail au survol de "Top clients" (customer-hover
+// juste plus bas) : topCustomersCache vient de loadOverview() (montant,
+// commandes, dernier achat, part du CA), rfmByCustomer de loadRfm() (segment).
+// Deux caches séparés plutôt qu'un fetch combiné : les deux endpoints existent
+// déjà indépendamment (/api/metrics, /api/rfm) et se chargent en parallèle
+// dans loadAll() — le survol lit juste l'état le plus à jour de chacun,
+// peu importe lequel a fini en premier.
+let topCustomersCache = {};
+let rfmByCustomer = {};
+let rfmRowsCache = [];
+let rfmCountryFilter = null;
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// Même cycle de 4 couleurs que la popup de sélection (renderSectorList),
+// pour que le secteur soit reconnaissable à sa couleur partout où il est
+// mentionné (badge, repères sectoriels dans les KPI).
+const SECTOR_COLOR_CLASSES = ['c1', 'c2', 'c3', 'c4'];
+
+function sectorColorClass(sector) {
+  if (!sector || !sectorsCache) return null;
+  const idx = sectorsCache.indexOf(sector);
+  return idx >= 0 ? SECTOR_COLOR_CLASSES[idx % 4] : null;
+}
+
+// Le secteur est stocké et comparé en français (SECTORS côté backend) même
+// en anglais — seul l'affichage change, via l'index dans sectorsCache.
+const SECTOR_I18N_KEYS = [
+  'sector_ecommerce', 'sector_saas', 'sector_conseil', 'sector_formation',
+  'sector_restauration', 'sector_sante', 'sector_media', 'sector_asso', 'sector_autre',
+];
+function sectorDisplay(sector) {
+  if (!sector || !sectorsCache) return sector;
+  const idx = sectorsCache.indexOf(sector);
+  return idx >= 0 && SECTOR_I18N_KEYS[idx] ? t(SECTOR_I18N_KEYS[idx]) : sector;
+}
+
+function sectorLabelSpan(sector, text) {
+  const cls = sectorColorClass(sector);
+  const display = sectorDisplay(sector) ?? text;
+  return cls ? `<span class="sector-label-${cls}">${display}</span>` : display;
+}
+
+async function updateSectorBadge(sector) {
+  currentSector = sector || null;
+  if (sector) await getSectors(); // s'assure que sectorsCache est rempli pour résoudre le libellé et la couleur
+  document.getElementById('sectorBadgeLabel').textContent = sector ? sectorDisplay(sector) : t('sector_unset');
+
+  const badge = document.getElementById('sectorBadge');
+  badge.classList.remove('sector-c1', 'sector-c2', 'sector-c3', 'sector-c4');
+  if (sector) {
+    const cls = sectorColorClass(sector);
+    if (cls) badge.classList.add('sector-' + cls);
+  }
+}
+
+let benchmarksCache = {};
+
+async function getBenchmarks() {
+  if (!currentSector) return null;
+  if (benchmarksCache[currentSector]) return benchmarksCache[currentSector];
+  const res = await fetch('/api/benchmarks?sector=' + encodeURIComponent(currentSector));
+  if (!res.ok) return null;
+  const data = await res.json();
+  benchmarksCache[currentSector] = data;
+  return data;
+}
+
+function benchmarkLine(label, yours, sectorValue, unit) {
+  if (sectorValue == null) return '';
+  const delta = yours - sectorValue;
+  const cls = delta >= 0 ? 'kpi-delta pos' : 'kpi-delta neg';
+  const sign = delta >= 0 ? '+' : '';
+  return `<div class="${cls}">${label} secteur : ${sectorValue}${unit} (${sign}${delta.toFixed(1)}${unit} vs toi)</div>`;
+}
+
+document.getElementById('sectorBadge').addEventListener('click', async () => {
+  await renderSectorList(currentSector);
+  openSectorModal();
+});
+
+// Zoom/pan de la carte géographique : géré nous-mêmes en CSS transform sur
+// le canvas (chartjs-plugin-zoom ne produisait aucun effet sur ce type de
+// graphique). Le canvas n'est jamais recréé par Chart.js (juste redessiné),
+// donc cet état survit aux rechargements de données (thème, mode démo...).
+const geoMapWrap = document.getElementById('geoMapWrap');
+const geoCanvas = document.getElementById('geoChart');
+const GEO_ZOOM_MIN = 1;
+const GEO_ZOOM_MAX = 3;
+let geoZoomLevel = 1;
+let geoPanX = 0;
+let geoPanY = 0;
+
+function applyGeoTransform() {
+  geoCanvas.style.transform = `translate(${geoPanX}px, ${geoPanY}px) scale(${geoZoomLevel})`;
+}
+
+function setGeoZoom(next) {
+  geoZoomLevel = Math.min(GEO_ZOOM_MAX, Math.max(GEO_ZOOM_MIN, next));
+  if (geoZoomLevel === GEO_ZOOM_MIN) { geoPanX = 0; geoPanY = 0; }
+  applyGeoTransform();
+}
+
+document.getElementById('geoZoomIn').addEventListener('click', () => setGeoZoom(geoZoomLevel * 1.3));
+document.getElementById('geoZoomOut').addEventListener('click', () => setGeoZoom(geoZoomLevel / 1.3));
+document.getElementById('geoZoomReset').addEventListener('click', () => setGeoZoom(1));
+
+geoMapWrap.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  setGeoZoom(geoZoomLevel * (e.deltaY < 0 ? 1.1 : 1 / 1.1));
+}, { passive: false });
+
+let geoPanning = false;
+let geoPanStartX = 0;
+let geoPanStartY = 0;
+let geoPanOriginX = 0;
+let geoPanOriginY = 0;
+
+geoMapWrap.addEventListener('mousedown', (e) => {
+  if (geoZoomLevel <= GEO_ZOOM_MIN) return;
+  geoPanning = true;
+  geoMapWrap.classList.add('is-panning');
+  geoPanStartX = e.clientX;
+  geoPanStartY = e.clientY;
+  geoPanOriginX = geoPanX;
+  geoPanOriginY = geoPanY;
+});
+window.addEventListener('mousemove', (e) => {
+  if (!geoPanning) return;
+  geoPanX = geoPanOriginX + (e.clientX - geoPanStartX);
+  geoPanY = geoPanOriginY + (e.clientY - geoPanStartY);
+  applyGeoTransform();
+});
+window.addEventListener('mouseup', () => {
+  if (!geoPanning) return;
+  geoPanning = false;
+  geoMapWrap.classList.remove('is-panning');
+});
+
+function isDemo() {
+  return document.getElementById('demoToggle').getAttribute('data-on') === 'true';
+}
+
+const DEMO_PROFILE_KEY = 'metrics-dash-demo-profile';
+
+function apiUrl(path) {
+  const params = new URLSearchParams();
+  if (isDemo()) {
+    params.set('demo', 'true');
+    params.set('demo_profile', localStorage.getItem(DEMO_PROFILE_KEY) || 'growth');
+  }
+  const start = document.getElementById('dateStart').value;
+  const end = document.getElementById('dateEnd').value;
+  if (start) params.set('start', start);
+  if (end) params.set('end', end);
+  const currencySelect = document.getElementById('currencySelect');
+  if (currencySelect && currencySelect.value) params.set('currency', currencySelect.value);
+  const qs = params.toString();
+  return qs ? `${path}?${qs}` : path;
+}
+
+// Un compte peut encaisser dans plusieurs devises (EUR, USD, ...) : on ne
+// les mélange jamais (additionner des unités différentes fausserait
+// silencieusement le CA), donc chaque devise a son propre jeu de métriques,
+// et ce sélecteur bascule de l'une à l'autre. Masqué s'il n'y en a qu'une.
+async function loadCurrencyPicker() {
+  const res = await fetch(apiUrl('/api/currencies'));
+  const picker = document.getElementById('currencyPicker');
+  if (!res.ok) { picker.style.display = 'none'; return; }
+  const { currencies } = await res.json();
+  const select = document.getElementById('currencySelect');
+  const previous = select.value;
+
+  if (currencies.length <= 1) {
+    picker.style.display = 'none';
+    select.innerHTML = '';
+    return;
+  }
+
+  picker.style.display = 'flex';
+  select.innerHTML = currencies.map(c => `<option value="${c}">${c.toUpperCase()}</option>`).join('');
+  select.value = currencies.includes(previous) ? previous : currencies[0];
+}
+
+document.getElementById('dateStart').addEventListener('change', loadAll);
+document.getElementById('dateEnd').addEventListener('change', loadAll);
+document.getElementById('dateReset').addEventListener('click', () => {
+  document.getElementById('dateStart').value = '';
+  document.getElementById('dateEnd').value = '';
+  loadAll();
+});
+document.getElementById('currencySelect').addEventListener('change', loadAll);
+
+document.getElementById('demoToggle').addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  const next = btn.getAttribute('data-on') !== 'true';
+  btn.setAttribute('data-on', String(next));
+  btn.setAttribute('aria-pressed', String(next));
+  updateDemoProfileBadge();
+  const connected = await loadStatus();
+  if (connected || next) await loadAll();
+});
+
+/* --- Sélecteur de scénario de démo : n'a de sens qu'en mode démo (visible
+   seulement dans ce cas), stocké en localStorage (pas de compte réel à
+   rattacher), même pattern que le secteur d'activité en mode démo. --- */
+let demoProfilesCache = null;
+
+async function getDemoProfiles() {
+  if (demoProfilesCache) return demoProfilesCache;
+  const res = await fetch('/api/demo-profiles');
+  const data = await res.json();
+  demoProfilesCache = data.profiles;
+  return demoProfilesCache;
+}
+
+function currentDemoProfile() {
+  return localStorage.getItem(DEMO_PROFILE_KEY) || 'growth';
+}
+
+async function updateDemoProfileBadge() {
+  const badge = document.getElementById('demoProfileBadge');
+  if (!isDemo()) { badge.hidden = true; return; }
+  badge.hidden = false;
+  const profiles = await getDemoProfiles();
+  const lang = localStorage.getItem('lang') === 'en' ? 'label_en' : 'label_fr';
+  const active = profiles.find(p => p.key === currentDemoProfile()) || profiles[0];
+  document.getElementById('demoProfileBadgeLabel').textContent = active ? active[lang] : '';
+}
+
+const demoProfileModal = document.getElementById('demoProfileModal');
+function openDemoProfileModal() { demoProfileModal.hidden = false; }
+function closeDemoProfileModal() { demoProfileModal.hidden = true; }
+document.getElementById('demoProfileModalClose').addEventListener('click', closeDemoProfileModal);
+demoProfileModal.addEventListener('click', (e) => { if (e.target === demoProfileModal) closeDemoProfileModal(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !demoProfileModal.hidden) closeDemoProfileModal(); });
+
+// Popup "clients du segment" (tableau LTV) : rempli depuis ltvSegmentsCache,
+// pas de requête réseau supplémentaire — /api/ltv renvoie déjà la liste des
+// clients de chaque segment.
+let ltvSegmentsCache = [];
+const ltvModal = document.getElementById('ltvModal');
+function openLtvModal(segment) {
+  const bucket = ltvSegmentsCache.find(s => s.segment === segment);
+  if (!bucket) return;
+  const segColor = `var(${SEGMENT_COLOR_VAR[segment] || '--accent-text'})`;
+  document.getElementById('ltvModalTitle').innerHTML = t('ltv_modal_title').replace(
+    '{segment}', `<span style="color:${segColor}">${segmentDisplay(segment)}</span>`
+  );
+  document.querySelector('#ltvModalTable tbody').innerHTML = bucket.customers.map(c =>
+    `<tr><td>${escapeHtml(c.name)}</td><td class="num" style="color:var(--pos-text)">${fmtMoney(c.ltv)}</td></tr>`
+  ).join('');
+  ltvModal.hidden = false;
+}
+function closeLtvModal() { ltvModal.hidden = true; }
+document.getElementById('ltvModalClose').addEventListener('click', closeLtvModal);
+ltvModal.addEventListener('click', (e) => { if (e.target === ltvModal) closeLtvModal(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !ltvModal.hidden) closeLtvModal(); });
+document.querySelector('#ltvTable tbody').addEventListener('click', (e) => {
+  const row = e.target.closest('tr[data-segment]');
+  if (row) openLtvModal(row.dataset.segment);
+});
+
+async function renderDemoProfileList() {
+  const profiles = await getDemoProfiles();
+  const lang = localStorage.getItem('lang') === 'en' ? 'label_en' : 'label_fr';
+  const current = currentDemoProfile();
+  const list = document.getElementById('demoProfileList');
+  list.innerHTML = profiles.map((p, i) => {
+    const cls = 'export-link c' + ((i % 4) + 1) + (p.key === current ? ' active' : '');
+    return `<button class="${cls}" type="button" data-profile="${p.key}">${p[lang]}</button>`;
+  }).join('');
+  list.querySelectorAll('[data-profile]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      localStorage.setItem(DEMO_PROFILE_KEY, btn.dataset.profile);
+      await updateDemoProfileBadge();
+      closeDemoProfileModal();
+      await loadAll();
+    });
+  });
+}
+
+document.getElementById('demoProfileBadge').addEventListener('click', async () => {
+  await renderDemoProfileList();
+  openDemoProfileModal();
+});
+
+function activateTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.setAttribute('data-active', String(t.dataset.tab === name)));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => activateTab(tab.dataset.tab));
 });
 
 async function loadStatus() {
   const res = await fetch('/api/status');
   const data = await res.json();
-  const el = document.getElementById('status');
-  if (data.connected) {
-    el.textContent = `✅ Connecté à Stripe (compte ${data.account})`;
-    el.className = 'status ok';
+  lastStatus = data;
+  const stripeIcon = '<img class="stripe-mark" src="icons8-stripe-100.png" alt="" aria-hidden="true">';
+  const googleIcon = '<img class="google-mark" src="icons8-google-100.png" alt="" aria-hidden="true">';
+  const shopifyIcon = '<img class="shopify-mark" src="icons8-shopify-96.png" alt="" aria-hidden="true">';
+
+  // Connexion Google obligatoire avant tout le reste (Power BI, Stripe,
+  // Shopify, mode démo compris) : tant qu'elle n'est pas faite, seul
+  // l'écran d'accueil (#loginGate) est visible, le reste du dashboard
+  // (#appBody) reste caché plutôt que simplement vide.
+  document.getElementById('loginGate').style.display = data.authenticated ? 'none' : '';
+  document.getElementById('appBody').style.display = data.authenticated ? '' : 'none';
+
+  // Bloc identité (header) : une fois connecté seulement — avant, le CTA
+  // vit dans #loginGate, pas la peine de le dupliquer dans le header.
+  const googleEl = document.getElementById('googleStatus');
+  if (data.authenticated) {
+    const name = data.name || data.email || t('hello_default');
+    // Avatar Google si connu (photo de profil récupérée à la connexion),
+    // sinon l'icône générique en repli — ex: identité créée via le
+    // parcours Stripe seul (fallback), qui n'a jamais transité par Google.
+    const avatar = data.picture
+      ? `<img class="google-mark avatar-mark" src="${data.picture}" alt="" aria-hidden="true" referrerpolicy="no-referrer">`
+      : googleIcon;
+    googleEl.innerHTML = `<div class="status-pill status-pill-clickable" id="openProfile" title="${t('view_profile')}">${avatar}<span class="status-dot"></span>${t('hello_user').replace('{name}', name)}</div>`;
+    document.getElementById('openProfile').addEventListener('click', openProfileModal);
   } else {
-    el.textContent = `⚠️ Non connecté — ${data.reason}`;
-    el.className = 'status error';
+    googleEl.innerHTML = '';
   }
+
+  // Bloc accès aux données (corps de page) : chips uniformes, colorées
+  // selon connecté (vert) / non connecté (neutre) — même gabarit pour
+  // Stripe et Shopify, plus lisible qu'un mélange de pilules/boutons/champ
+  // texte de tailles différentes.
+  const el = document.getElementById('status');
+  if (data.stripe_connected) {
+    el.innerHTML = `<div class="conn-chip conn-chip-connected" id="openProfileFromStripe">${stripeIcon}<span class="conn-chip-text">Stripe</span></div>`;
+    document.getElementById('openProfileFromStripe').addEventListener('click', openProfileModal);
+  } else if (data.connect_configured) {
+    el.innerHTML = `<a class="conn-chip conn-chip-disconnected" href="/auth/login">${stripeIcon}<span class="conn-chip-text">${t('conn_connect_stripe')}</span></a>`;
+  } else {
+    el.innerHTML = `<div class="conn-chip conn-chip-disconnected">${stripeIcon}<span class="conn-chip-text">${t('conn_stripe_unavailable')}</span></div>`;
+  }
+
+  // Bloc Shopify (corps de page) : deuxième canal de vente possible, indépendant de Stripe.
+  const shopifyEl = document.getElementById('shopifyStatus');
+  if (data.shopify_connected) {
+    shopifyEl.innerHTML = `<div class="conn-chip conn-chip-connected" id="openProfileFromShopify">${shopifyIcon}<span class="conn-chip-text">Shopify</span></div>`;
+    document.getElementById('openProfileFromShopify').addEventListener('click', openProfileModal);
+  } else if (data.shopify_configured && data.authenticated) {
+    shopifyEl.innerHTML = `
+      <form class="conn-chip conn-chip-disconnected shopify-connect" id="shopifyConnectForm">
+        ${shopifyIcon}
+        <input type="text" id="shopifyDomainInput" placeholder="ma-boutique.myshopify.com" pattern="[a-z0-9-]+\\.myshopify\\.com">
+        <button class="conn-chip-action conn-chip-action-btn" type="submit">${t('conn_connect')}</button>
+      </form>`;
+    document.getElementById('shopifyConnectForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const shop = document.getElementById('shopifyDomainInput').value.trim();
+      if (shop) window.location.href = `/auth/shopify/login?shop=${encodeURIComponent(shop)}`;
+    });
+  } else {
+    shopifyEl.innerHTML = '';
+  }
+
+  await updateSectorBadge(isDemo() ? localStorage.getItem(DEMO_SECTOR_KEY) : data.sector);
+  await updateDemoProfileBadge();
   return data.connected;
 }
 
-function card(label, value, sub) {
-  const subHtml = sub ? `<div class="sub ${sub.cls}">${sub.text}</div>` : '';
-  return `<div class="card"><div class="label">${label}</div><div class="value">${value}</div>${subHtml}</div>`;
+// Construit le badge de comparaison au repère sectoriel : flèche ▲/▼ +
+// l'écart en %, colorée selon si l'écart va dans le bon sens pour cet
+// indicateur (direction = 'higher_is_better' ou 'lower_is_better').
+function benchmarkDelta(value, benchmarkValue, direction, label) {
+  if (!benchmarkValue) return null;
+  const diffPct = Math.round(((value - benchmarkValue) / benchmarkValue) * 100);
+  const isBetter = direction === 'higher_is_better' ? value >= benchmarkValue : value <= benchmarkValue;
+  const arrow = diffPct === 0 ? '●' : (diffPct > 0 ? '▲' : '▼');
+  const sign = diffPct > 0 ? '+' : '';
+  return {
+    cls: isBetter ? 'pos' : 'neg',
+    text: t('benchmark_vs_sector').replace('{arrow}', arrow).replace('{sign}', sign).replace('{pct}', diffPct).replace('{label}', label),
+  };
+}
+
+function card(label, value, sub, valueClass) {
+  const subHtml = sub ? `<div class="kpi-delta ${sub.cls}">${sub.text}</div>` : '';
+  return `<div class="card kpi-card"><div class="kpi-label">${label}</div><div class="kpi-value${valueClass ? ' ' + valueClass : ''}">${value}</div>${subHtml}</div>`;
+}
+
+// Devise résolue une fois par /api/metrics (seule route qui la renvoie),
+// puis réutilisée partout ailleurs (tableaux + info-bulles des graphiques)
+// pour ne pas afficher un montant sans son unité.
+const CURRENCY_SYMBOL = { EUR: '€', USD: '$', GBP: '£' };
+let currentCurrency = 'EUR';
+
+function fmtMoney(value) {
+  const symbol = CURRENCY_SYMBOL[currentCurrency];
+  return symbol ? `${value.toFixed(2)} ${symbol}` : `${value.toFixed(2)} ${currentCurrency}`;
+}
+
+function moneyTooltip(ctx) {
+  const label = ctx.dataset.label || ctx.label || '';
+  const value = ctx.parsed?.y ?? ctx.parsed;
+  return value === null || value === undefined ? label : `${label}: ${fmtMoney(value)}`;
+}
+
+// Première/dernière vente de la période affichée (revient en KPI plutôt que
+// dans le date range picker, qui montre les bornes du FILTRE demandé — pas
+// forcément les mêmes dates que les ventes réellement présentes dedans).
+function formatPeriodRange(startStr, endStr) {
+  if (!startStr || !endStr) return '—';
+  const dateLang = localStorage.getItem('lang') === 'en' ? 'en-US' : 'fr-FR';
+  const opts = { day: 'numeric', month: 'short' };
+  const start = new Date(startStr + 'T00:00:00Z');
+  const end = new Date(endStr + 'T00:00:00Z');
+  if (startStr === endStr) return start.toLocaleDateString(dateLang, { ...opts, year: 'numeric' });
+  const sameYear = start.getUTCFullYear() === end.getUTCFullYear();
+  const startLabel = start.toLocaleDateString(dateLang, sameYear ? opts : { ...opts, year: 'numeric' });
+  const endLabel = end.toLocaleDateString(dateLang, { ...opts, year: 'numeric' });
+  return `${startLabel} – ${endLabel}`;
 }
 
 async function loadOverview() {
   const res = await fetch(apiUrl('/api/metrics'));
   if (!res.ok) return;
   const m = await res.json();
-  const currency = m.currency.toUpperCase();
+  currentCurrency = m.currency.toUpperCase();
 
   document.getElementById('cards').innerHTML =
-    card('Chiffre d\'affaires', `${m.total_revenue.toFixed(2)} ${currency}`) +
-    card('Commandes', m.order_count) +
-    card('Panier moyen', `${m.avg_order_value.toFixed(2)} ${currency}`);
+    card(t('kpi_revenue'), fmtMoney(m.total_revenue)) +
+    card(t('kpi_orders'), m.order_count) +
+    card(t('kpi_aov'), fmtMoney(m.avg_order_value)) +
+    card(t('kpi_period'), formatPeriodRange(m.period_start, m.period_end), null, 'kpi-value-sm');
 
   destroyChart('revenue');
   charts.revenue = new Chart(document.getElementById('revenueChart'), {
@@ -197,33 +1857,542 @@ async function loadOverview() {
     data: {
       labels: m.revenue_by_day.map(d => d.date),
       datasets: [{
-        label: 'CA par jour', data: m.revenue_by_day.map(d => d.amount),
-        borderColor: '#60a5fa', backgroundColor: 'rgba(96,165,250,0.15)', fill: true, tension: 0.3,
+        label: t('legend_revenue_by_day'), data: m.revenue_by_day.map(d => d.amount),
+        borderColor: cssVar('--chart-line-1'), backgroundColor: cssVar('--accent-soft'), fill: true, tension: 0.3,
       }]
     },
-    options: { plugins: { legend: { display: false } } }
+    options: {
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: moneyTooltip } } },
+      scales: {
+        x: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary') } },
+        y: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary'), callback: fmtMoney } },
+      },
+    }
   });
 
+  topCustomersCache = {};
+  m.top_customers.forEach(c => { topCustomersCache[c.name] = c; });
   document.querySelector('#customersTable tbody').innerHTML = m.top_customers.map(c =>
-    `<tr><td>${c.name}</td><td>${c.amount.toFixed(2)} ${currency}</td></tr>`
+    `<tr class="hoverable-row" data-customer="${escapeHtml(c.name)}"><td>${c.name}</td><td class="num">${fmtMoney(c.amount)}</td></tr>`
+  ).join('');
+}
+
+// Carte de détail au survol d'une ligne "Top clients" : lit les deux caches
+// remplis par loadOverview() (montant/commandes/dernier achat) et loadRfm()
+// (segment) — dès que les deux ont fini de charger, peu importe l'ordre,
+// le survol affiche l'ensemble ; avant que loadRfm() ait répondu, le badge
+// segment retombe sur hover_no_segment plutôt que de bloquer l'affichage.
+const customerHoverCard = document.getElementById('customerHoverCard');
+
+function showCustomerHoverCard(row) {
+  const name = row.dataset.customer;
+  const c = topCustomersCache[name];
+  if (!c) return;
+  const rfm = rfmByCustomer[name];
+  const dateLang = localStorage.getItem('lang') === 'en' ? 'en-US' : 'fr-FR';
+  const lastPurchase = new Date(c.last_purchase + 'T00:00:00Z').toLocaleDateString(dateLang, { year: 'numeric', month: 'short', day: 'numeric' });
+  const segmentHtml = rfm
+    ? `<span class="badge ${SEGMENT_CLASS[rfm.segment] || 'loyal'}">${segmentDisplay(rfm.segment)}</span>`
+    : `<span style="color:var(--text-tertiary)">${t('hover_no_segment')}</span>`;
+
+  customerHoverCard.innerHTML = `
+    <div class="chc-name">${escapeHtml(name)}</div>
+    <div class="chc-row"><span>${t('kpi_revenue')}</span><b style="color:var(--pos-text)">${fmtMoney(c.amount)}</b></div>
+    <div class="chc-row"><span>${t('hover_share')}</span><b style="color:var(${concentrationColorVar(c.share_pct)})">${c.share_pct}%</b></div>
+    <div class="chc-row"><span>${t('hover_orders')}</span><b>${c.order_count}</b></div>
+    <div class="chc-row"><span>${t('hover_last_purchase')}</span><b>${lastPurchase}</b></div>
+    <div class="chc-row">${segmentHtml}</div>
+  `;
+
+  // Ancrée sur la cellule "nom" (étroite), pas la ligne entière (qui
+  // s'étend jusqu'au bord droit à cause de la colonne montant alignée à
+  // droite) — sinon rect.right touchait quasi toujours le bord du
+  // viewport et la carte repliait systématiquement à gauche.
+  const nameCell = row.firstElementChild;
+  const rect = nameCell.getBoundingClientRect();
+  customerHoverCard.hidden = false;
+  const cardWidth = 260;
+  let left = rect.right + 16;
+  if (left + cardWidth > window.innerWidth - 8) left = Math.max(8, window.innerWidth - cardWidth - 8);
+  const top = Math.min(Math.max(rect.top, 8), window.innerHeight - 220);
+  customerHoverCard.style.left = `${Math.max(8, left)}px`;
+  customerHoverCard.style.top = `${top}px`;
+  requestAnimationFrame(() => customerHoverCard.classList.add('visible'));
+}
+
+function hideCustomerHoverCard() {
+  customerHoverCard.classList.remove('visible');
+  customerHoverCard.hidden = true;
+}
+
+document.querySelector('#customersTable tbody').addEventListener('mouseover', (e) => {
+  const row = e.target.closest('tr[data-customer]');
+  if (row) showCustomerHoverCard(row);
+});
+document.querySelector('#customersTable tbody').addEventListener('mouseout', (e) => {
+  if (!e.relatedTarget || !e.relatedTarget.closest('tr[data-customer]')) hideCustomerHoverCard();
+});
+
+// Carte de détail au survol d'une ligne du tableau "CA mensuel &
+// croissance" (onglet Croissance) : même principe que Top clients, mais
+// lit growthMonthlyCache (rempli par loadGrowth()) plutôt que de refaire
+// un appel réseau — /api/growth renvoie déjà top_customers/customer_count
+// par mois.
+const monthHoverCard = document.getElementById('monthHoverCard');
+
+function showMonthHoverCard(row) {
+  const idx = row.dataset.monthIndex;
+  const m = growthMonthlyCache[idx];
+  if (!m) return;
+  const customers = m.top_customers || [];
+  const rowsHtml = customers.length
+    ? customers.map((c, i) => `<div class="chc-row"><span class="chc-name-cell"><span class="chc-rank-dot ${RANK_DOT_CLASSES[i % RANK_DOT_CLASSES.length]}"></span><span>${escapeHtml(c.name)}</span></span><b style="color:var(--pos-text)">${fmtMoney(c.amount)}</b></div>`).join('')
+    : `<div class="chc-row"><span style="color:var(--text-tertiary)">${t('hover_no_data')}</span></div>`;
+
+  monthHoverCard.innerHTML = `
+    <div class="chc-name">${escapeHtml(m.month)}</div>
+    <div class="chc-row"><span>${t('hover_month_customers')}</span><b style="color:var(--accent-text)">${m.customer_count}</b></div>
+    ${rowsHtml}
+  `;
+
+  const nameCell = row.firstElementChild;
+  const rect = nameCell.getBoundingClientRect();
+  monthHoverCard.hidden = false;
+  const cardWidth = 260;
+  let left = rect.right + 16;
+  if (left + cardWidth > window.innerWidth - 8) left = Math.max(8, window.innerWidth - cardWidth - 8);
+  const top = Math.min(Math.max(rect.top, 8), window.innerHeight - 220);
+  monthHoverCard.style.left = `${Math.max(8, left)}px`;
+  monthHoverCard.style.top = `${top}px`;
+  requestAnimationFrame(() => monthHoverCard.classList.add('visible'));
+}
+
+function hideMonthHoverCard() {
+  monthHoverCard.classList.remove('visible');
+  monthHoverCard.hidden = true;
+}
+
+document.querySelector('#monthlyTable tbody').addEventListener('mouseover', (e) => {
+  const row = e.target.closest('tr[data-month-index]');
+  if (row) showMonthHoverCard(row);
+});
+document.querySelector('#monthlyTable tbody').addEventListener('mouseout', (e) => {
+  if (!e.relatedTarget || !e.relatedTarget.closest('tr[data-month-index]')) hideMonthHoverCard();
+});
+
+document.querySelector('#geoTable tbody').addEventListener('click', (e) => {
+  const row = e.target.closest('tr[data-country]');
+  if (!row) return;
+  rfmCountryFilter = row.dataset.country;
+  activateTab('rfm');
+  renderRfmTable();
+});
+
+async function loadWeekday() {
+  const res = await fetch(apiUrl('/api/weekday'));
+  if (!res.ok) return;
+  const days = await res.json();
+
+  destroyChart('weekday');
+  charts.weekday = new Chart(document.getElementById('weekdayChart'), {
+    type: 'bar',
+    data: {
+      labels: days.map(d => t('weekday_' + d.weekday_index)),
+      datasets: [{
+        label: t('legend_revenue_by_weekday'), data: days.map(d => d.revenue),
+        backgroundColor: cssVar('--chart-line-1'), borderRadius: 4,
+      }]
+    },
+    options: {
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: moneyTooltip } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: cssVar('--text-secondary') } },
+        y: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary'), callback: fmtMoney } },
+      },
+    }
+  });
+}
+
+async function loadConcentration() {
+  const [res, benchmark] = await Promise.all([fetch(apiUrl('/api/concentration')), getBenchmarks()]);
+  if (!res.ok) return;
+  const c = await res.json();
+  if (!c.segments || !c.segments.length) return;
+
+  const noteEl = document.getElementById('concentrationBenchmark');
+  if (noteEl) {
+    if (benchmark && c.segments[0]) {
+      const observedPct = Math.round((c.segments[0].amount / (c.segments[0].amount + c.segments[1].amount)) * 100);
+      noteEl.style.display = 'block';
+      const noteText = t('concentration_note')
+        .replace('{sector}', sectorDisplay(currentSector))
+        .replace('{topPct}', c.top_share_pct)
+        .replace('{benchPct}', benchmark.top_share_pct)
+        .replace('{observedPct}', observedPct);
+      const sectorCls = sectorColorClass(currentSector);
+      noteEl.className = sectorCls ? `explainer sector-note sector-note-${sectorCls}` : 'explainer sector-note';
+      noteEl.textContent = noteText;
+    } else {
+      noteEl.style.display = 'none';
+    }
+  }
+
+  destroyChart('concentration');
+  charts.concentration = new Chart(document.getElementById('concentrationChart'), {
+    type: 'pie',
+    data: {
+      labels: [t('concentration_top').replace('{pct}', c.top_share_pct), t('concentration_rest')],
+      datasets: [{
+        data: c.segments.map(s => s.amount),
+        backgroundColor: [cssVar('--accent'), cssVar('--surface-3')],
+        borderColor: cssVar('--surface-1'), borderWidth: 2,
+      }]
+    },
+    options: {
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { color: cssVar('--text-secondary') } },
+        tooltip: { callbacks: { label: moneyTooltip } },
+      },
+    }
+  });
+}
+
+function hexToRgba(hex, alpha) {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.substring(0, 2), 16);
+  const g = parseInt(h.substring(2, 4), 16);
+  const b = parseInt(h.substring(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+let worldFeaturesCache = null;
+
+async function getWorldFeatures() {
+  if (worldFeaturesCache) return worldFeaturesCache;
+  const res = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json');
+  const topology = await res.json();
+  worldFeaturesCache = ChartGeo.topojson.feature(topology, topology.objects.countries).features;
+  return worldFeaturesCache;
+}
+
+// Convertit un code ISO alpha-2 ("FR") en nom de pays complet ("France"),
+// via l'API navigateur standard Intl.DisplayNames — pas de table à
+// maintenir à la main, couvre tous les pays automatiquement.
+function countryNameFormatter() {
+  const lang = localStorage.getItem('lang') === 'en' ? 'en' : 'fr';
+  return new Intl.DisplayNames([lang], { type: 'region' });
+}
+function countryName(code) {
+  try { return countryNameFormatter().of(code); } catch { return code; }
+}
+
+async function loadGeo() {
+  const res = await fetch(apiUrl('/api/geo'));
+  if (!res.ok) return;
+  const geo = await res.json();
+
+  // Chaque ligne est cliquable : bascule sur l'onglet RFM filtré sur ce
+  // pays (renderRfmTable() lit rfmRowsCache, déjà chargé par loadAll(),
+  // donc pas de nouvelle requête réseau au clic).
+  document.querySelector('#geoTable tbody').innerHTML = geo.countries.map(c =>
+    `<tr data-country="${c.country}" title="${countryName(c.country)}"><td>${c.country}</td><td class="num">${c.customer_count}</td><td class="num">${fmtMoney(c.revenue)}</td><td class="num">${fmtMoney(c.avg_order_value)}</td><td class="num">${c.share_pct}%</td></tr>`
+  ).join('');
+
+  const noteEl = document.getElementById('geoUnknownNote');
+  if (geo.unknown_count > 0) {
+    noteEl.style.display = 'block';
+    noteEl.innerHTML = `<span class="line">${t('geo_unknown_note').replace('{count}', geo.unknown_count)}</span>`;
+  } else {
+    noteEl.style.display = 'none';
+  }
+
+  const byIsoNumeric = {};
+  geo.countries.forEach(c => { if (c.iso_numeric) byIsoNumeric[c.iso_numeric] = c.revenue; });
+  const maxRevenue = Math.max(1, ...Object.values(byIsoNumeric));
+  // Terres sans donnée : volontairement à contre-sens du thème (blanc en
+  // sombre, noir en clair) pour un fort contraste avec le fond de page qui,
+  // lui, suit le thème normalement.
+  const isDarkTheme = document.documentElement.getAttribute('data-theme') !== 'light';
+  const landColor = isDarkTheme ? '#FFFFFF' : '#000000';
+  const pageBgColor = cssVar('--surface-1');
+
+  // La carte dépend d'une librairie et de données externes (chartjs-chart-geo
+  // + contours de pays) : si l'une des deux échoue à charger, on dégrade
+  // proprement plutôt que de casser le reste de la page.
+  try {
+    const features = await getWorldFeatures();
+    destroyChart('geo');
+    charts.geo = new ChartGeo.ChoroplethChart(document.getElementById('geoChart'), {
+      data: {
+        labels: features.map(f => f.properties.name),
+        datasets: [{
+          label: t('legend_revenue_by_country'),
+          data: features.map(f => ({ feature: f, value: byIsoNumeric[f.id] || 0 })),
+          backgroundColor: (ctx) => {
+            const d = ctx.dataset && ctx.dataset.data && ctx.dataset.data[ctx.dataIndex];
+            if (!d || !d.value) return landColor;
+            const alpha = 0.25 + 0.75 * (d.value / maxRevenue);
+            return hexToRgba(cssVar('--accent'), alpha);
+          },
+          borderColor: cssVar('--border'),
+          borderWidth: 0.5,
+        }],
+      },
+      options: {
+        maintainAspectRatio: false,
+        // Sur-échantillonne le canvas (bitmap interne plus grand que sa
+        // taille CSS affichée) pour que le zoom CSS (scale()) étire une
+        // image déjà plus détaillée au lieu de pixels grossiers — sans ça,
+        // zoomer un canvas rendu à sa taille d'affichage normale devient
+        // flou très vite.
+        devicePixelRatio: Math.max(4, window.devicePixelRatio * 2),
+        showOutline: true,
+        showGraticule: false,
+        // Contours du globe (l'"outline" derrière les pays) explicitement
+        // calés sur les couleurs du thème — sans ça, la librairie retombe
+        // sur ses couleurs par défaut (blanc/noir), ce qui donnait des
+        // continents à contre-sens du thème (blancs en sombre, noirs en clair).
+        outlineBackgroundColor: pageBgColor,
+        outlineBorderColor: cssVar('--border'),
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            // Taille de police fixée explicitement : par défaut, Chart.js
+            // dimensionne l'info-bulle par rapport à la résolution interne
+            // du canvas, qu'on a volontairement rendue très élevée
+            // (devicePixelRatio ci-dessus) pour que le zoom reste net —
+            // sans ces tailles fixes, l'info-bulle devient énorme.
+            titleFont: { size: 12 },
+            bodyFont: { size: 12 },
+            padding: 8,
+            displayColors: false,
+            callbacks: {
+              label: (ctx) => {
+                const d = ctx.raw;
+                const name = d.feature.properties.name;
+                return d.value ? `${name}: ${fmtMoney(d.value)}` : name;
+              },
+            },
+          },
+        },
+        scales: {
+          projection: { axis: 'x', projection: 'equalEarth' },
+        },
+      },
+    });
+  } catch (err) {
+    console.error('Carte géographique indisponible :', err);
+    const wrap = document.getElementById('geoMapWrap');
+    if (wrap) wrap.innerHTML = `<p class="explainer">${t('geo_map_unavailable')}</p>`;
+  }
+}
+
+async function loadNewVsReturning() {
+  const res = await fetch(apiUrl('/api/newvsreturning'));
+  if (!res.ok) return;
+  const rows = await res.json();
+
+  destroyChart('newVsReturning');
+  charts.newVsReturning = new Chart(document.getElementById('newVsReturningChart'), {
+    type: 'bar',
+    data: {
+      labels: rows.map(r => r.month),
+      datasets: [
+        { label: t('legend_new_customers'), data: rows.map(r => r.new_revenue), backgroundColor: cssVar('--chart-line-2') },
+        { label: t('legend_returning_customers'), data: rows.map(r => r.returning_revenue), backgroundColor: cssVar('--chart-line-3') },
+      ]
+    },
+    options: {
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: cssVar('--text-secondary') } }, tooltip: { callbacks: { label: moneyTooltip } } },
+      scales: {
+        x: { stacked: true, grid: { display: false }, ticks: { color: cssVar('--text-secondary') } },
+        y: { stacked: true, grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary'), callback: fmtMoney } },
+      },
+    }
+  });
+}
+
+async function loadLoyaltyCards() {
+  const [loyaltyRes, rfmRes, benchmark] = await Promise.all([
+    fetch(apiUrl('/api/loyalty')),
+    fetch(apiUrl('/api/rfm')),
+    getBenchmarks(),
+  ]);
+  if (!loyaltyRes.ok || !rfmRes.ok) return;
+  const loyalty = await loyaltyRes.json();
+  const rfmRows = await rfmRes.json();
+
+  const atRiskCount = rfmRows.filter(r => r.segment.includes('risque') || r.segment.includes('Perdus')).length;
+  const atRiskPct = rfmRows.length ? Math.round((atRiskCount / rfmRows.length) * 100) : 0;
+  const delayText = loyalty.avg_days_between_purchases === null
+    ? t('not_enough_data')
+    : t('days_unit').replace('{n}', loyalty.avg_days_between_purchases);
+
+  // Flèche +/- : matérialise si la métrique du compte connecté est
+  // au-dessus ou en dessous du repère sectoriel, avec le bon sens de
+  // lecture selon l'indicateur (un délai plus court est "mieux", un taux
+  // de fidélité plus élevé aussi — l'un descend quand l'autre monte).
+  const delaySub = (benchmark && loyalty.avg_days_between_purchases !== null)
+    ? benchmarkDelta(loyalty.avg_days_between_purchases, benchmark.avg_days_between_purchases, 'lower_is_better', `${benchmark.avg_days_between_purchases} j`)
+    : null;
+  const repeatSub = benchmark
+    ? benchmarkDelta(loyalty.repeat_customer_pct, benchmark.repeat_customer_pct, 'higher_is_better', `${benchmark.repeat_customer_pct}%`)
+    : null;
+
+  document.getElementById('loyaltyCards').innerHTML =
+    card(t('kpi_ltv'), fmtMoney(loyalty.avg_ltv)) +
+    card(t('kpi_delay'), delayText, delaySub) +
+    card(t('kpi_atrisk'), `${atRiskPct}%`) +
+    card(t('kpi_repeat'), `${loyalty.repeat_customer_pct}%`, repeatSub);
+
+  if (!benchmark) {
+    document.getElementById('loyaltyCards').insertAdjacentHTML('beforeend',
+      `<p class="explainer full-width"><span class="line">${t('set_sector_prompt')}</span></p>`);
+  }
+}
+
+function formatAlert(a) {
+  if (a.type === 'revenue_drop') {
+    return t('alert_revenue_drop').replace('{month}', a.month).replace('{pct}', a.pct);
+  }
+  if (a.type === 'revenue_growth') {
+    return t('alert_revenue_growth').replace('{month}', a.month).replace('{pct}', a.pct);
+  }
+  if (a.type === 'churn_risk') {
+    return t('alert_churn_risk').replace('{pct}', a.pct).replace('{count}', a.at_risk_count).replace('{total}', a.total);
+  }
+  return a.message;
+}
+
+// Un symbole par sévérité, comme les flèches ▲/▼ utilisées ailleurs pour
+// distinguer bonne/mauvaise nouvelle d'un coup d'œil — authErrorMessage
+// (pas d'objet {severity} propre) retombe sur "warning" par défaut.
+const ALERT_ICON = { success: '✅', warning: '⚠️' };
+
+async function loadAlerts() {
+  const res = await fetch(apiUrl('/api/alerts'));
+  const banner = document.getElementById('alertsBanner');
+  const alerts = res.ok ? (await res.json()).alerts : [];
+  const items = alerts.map(a => ({ severity: a.severity || 'warning', text: formatAlert(a) }));
+  if (authErrorMessage) items.unshift({ severity: 'warning', text: authErrorMessage });
+
+  if (!items.length) { banner.style.display = 'none'; banner.innerHTML = ''; return; }
+  banner.style.display = 'flex';
+  banner.innerHTML = items.map(({ severity, text }) =>
+    `<div class="alert-item alert-${severity}"><span aria-hidden="true">${ALERT_ICON[severity] || ALERT_ICON.warning}</span>${text}</div>`
+  ).join('');
+}
+
+async function loadMrr() {
+  const mrrCard = document.getElementById('mrrCard');
+  if (isDemo()) { mrrCard.style.display = 'none'; return; } // pas d'abonnements simulés en mode démo
+
+  const res = await fetch('/api/mrr');
+  if (!res.ok) { mrrCard.style.display = 'none'; return; }
+  const data = await res.json();
+  if (!data.available || !data.by_currency.length) { mrrCard.style.display = 'none'; return; }
+
+  mrrCard.style.display = 'block';
+  document.getElementById('mrrCards').innerHTML = data.by_currency.map(c => {
+    const symbol = CURRENCY_SYMBOL[c.currency.toUpperCase()] || c.currency.toUpperCase();
+    return card(`MRR (${c.currency.toUpperCase()})`, `${c.mrr.toFixed(2)} ${symbol}`) +
+      card(`${t('kpi_active_subs')} (${c.currency.toUpperCase()})`, c.active_subscriptions);
+  }).join('');
+}
+
+function renderExportLinks() {
+  const links = [
+    { label: t('export_monthly'), path: '/api/export/monthly.csv', color: 'c1' },
+    { label: t('legend_daily_revenue'), path: '/api/export/daily.csv', color: 'c2' },
+    { label: t('export_rfm'), path: '/api/export/rfm.csv', color: 'c3' },
+    { label: t('export_cohorts'), path: '/api/export/cohorts.csv', color: 'c4' },
+  ];
+  document.getElementById('exportList').innerHTML = links.map(l =>
+    `<a class="export-link ${l.color}" href="${apiUrl(l.path)}" download>${l.label} (.csv)</a>`
   ).join('');
 }
 
 function growthArrow(pct) {
-  if (pct === null || pct === undefined) return '<span style="color:#64748b">—</span>';
-  const cls = pct >= 0 ? 'up' : 'down';
+  if (pct === null || pct === undefined) return '<span style="color:var(--text-tertiary)">—</span>';
+  const cls = pct >= 0 ? 'pos' : 'neg';
   const arrow = pct >= 0 ? '▲' : '▼';
-  return `<span class="sub ${cls}">${arrow} ${pct.toFixed(1)}%</span>`;
+  return `<span class="pill-delta ${cls}">${arrow} ${pct.toFixed(1)}%</span>`;
 }
+
+// Date du jour + icône "météo" figurative de la santé commerciale, basée
+// sur le MoM du dernier mois (déjà calculé pour /api/growth et les alertes,
+// pas de nouvel appel) plutôt qu'une vraie météo — évite une dépendance à
+// une API externe et à la géolocalisation pour un gain purement décoratif.
+function updateWeatherDate() {
+  const dateLang = localStorage.getItem('lang') === 'en' ? 'en-US' : 'fr-FR';
+  document.getElementById('weatherDateLabel').textContent =
+    new Date().toLocaleDateString(dateLang, { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+// {icon, key, cls, arrow} pour un MoM donné — factorisé pour être utilisé à
+// la fois par le badge (dernier mois) et la modale de détail (tous les mois
+// du tableau). cls reprend le même code couleur pos/warn/neg que le reste
+// du dashboard (growthArrow(), kpi-delta...), arrow donne le même repère
+// visuel ▲/▼ qu'ailleurs plutôt qu'un symbole propre à la météo.
+function weatherFor(momGrowthPct) {
+  if (momGrowthPct === null || momGrowthPct === undefined) return { icon: '🌫️', key: 'weather_unknown', cls: 'neutral', arrow: '' };
+  if (momGrowthPct >= 10) return { icon: '☀️', key: 'weather_sunny', cls: 'pos', arrow: '▲' };
+  if (momGrowthPct >= 0) return { icon: '🌤️', key: 'weather_partly', cls: 'pos', arrow: '▲' };
+  if (momGrowthPct >= -10) return { icon: '⛅', key: 'weather_cloudy', cls: 'warn', arrow: '▼' };
+  return { icon: '⛈️', key: 'weather_stormy', cls: 'neg', arrow: '▼' };
+}
+
+function updateWeatherIcon(momGrowthPct) {
+  const { icon, key } = weatherFor(momGrowthPct);
+  document.getElementById('weatherIcon').textContent = icon;
+  document.getElementById('weatherBadge').title = key === 'weather_unknown'
+    ? t('weather_unknown')
+    : t(key).replace('{pct}', momGrowthPct);
+}
+
+// Rempli par loadGrowth(), lu par la modale météo au clic sur le badge —
+// évite un second appel réseau pour afficher le détail mois par mois.
+let growthMonthlyCache = [];
+
+const weatherModal = document.getElementById('weatherModal');
+function openWeatherModal() {
+  document.getElementById('weatherModalMonths').innerHTML = growthMonthlyCache.map(m => {
+    const { icon, key, cls, arrow } = weatherFor(m.mom_growth_pct);
+    const detail = key === 'weather_unknown' ? t('weather_unknown') : t(key).replace('{pct}', m.mom_growth_pct);
+    return `
+      <div class="weather-month-row weather-${cls}">
+        <span class="weather-month-icon" aria-hidden="true">${icon}</span>
+        <span class="weather-month-name">${m.month}</span>
+        <span class="weather-month-detail">${detail}</span>
+        ${arrow ? `<span class="weather-month-arrow">${arrow}</span>` : ''}
+      </div>`;
+  }).join('') || `<p class="explainer">${t('weather_unknown')}</p>`;
+  weatherModal.hidden = false;
+}
+function closeWeatherModal() { weatherModal.hidden = true; }
+document.getElementById('weatherBadge').addEventListener('click', openWeatherModal);
+document.getElementById('weatherModalClose').addEventListener('click', closeWeatherModal);
+weatherModal.addEventListener('click', (e) => { if (e.target === weatherModal) closeWeatherModal(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !weatherModal.hidden) closeWeatherModal(); });
+
+updateWeatherDate();
 
 async function loadGrowth() {
   const res = await fetch(apiUrl('/api/growth'));
   if (!res.ok) return;
   const g = await res.json();
 
-  document.querySelector('#monthlyTable tbody').innerHTML = g.monthly.map(m =>
-    `<tr><td>${m.month}</td><td>${m.revenue.toFixed(2)}</td><td>${growthArrow(m.mom_growth_pct)}</td><td>${growthArrow(m.yoy_growth_pct)}</td></tr>`
+  growthMonthlyCache = g.monthly;
+  document.querySelector('#monthlyTable tbody').innerHTML = g.monthly.map((m, i) =>
+    `<tr class="hoverable-row" data-month-index="${i}"><td>${m.month}</td><td class="num">${fmtMoney(m.revenue)}</td><td class="num">${growthArrow(m.mom_growth_pct)}</td><td class="num">${growthArrow(m.yoy_growth_pct)}</td></tr>`
   ).join('');
+
+  const lastMonth = g.monthly[g.monthly.length - 1];
+  updateWeatherIcon(lastMonth ? lastMonth.mom_growth_pct : null);
 
   destroyChart('movingAvg');
   charts.movingAvg = new Chart(document.getElementById('movingAvgChart'), {
@@ -231,12 +2400,112 @@ async function loadGrowth() {
     data: {
       labels: g.daily.map(d => d.date),
       datasets: [
-        { label: 'CA quotidien', data: g.daily.map(d => d.revenue), borderColor: '#475569', borderDash: [4,4], pointRadius: 2 },
-        { label: 'Moyenne mobile 7j', data: g.daily.map(d => d.moving_avg_7d), borderColor: '#fbbf24', borderWidth: 2, tension: 0.3 },
+        { label: t('legend_daily_revenue'), data: g.daily.map(d => d.revenue), borderColor: cssVar('--border-strong'), borderDash: [4,4], pointRadius: 2 },
+        { label: t('legend_moving_avg'), data: g.daily.map(d => d.moving_avg_7d), borderColor: cssVar('--chart-line-3'), borderWidth: 2, tension: 0.3 },
       ]
     },
-    options: { plugins: { legend: { labels: { color: '#cbd5e1' } } } }
+    options: {
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: cssVar('--text-secondary') } }, tooltip: { callbacks: { label: moneyTooltip } } },
+      scales: {
+        x: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary') } },
+        y: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary'), callback: fmtMoney } },
+      },
+    }
   });
+}
+
+const SEGMENT_CLASS = {
+  'Champions': 'champions',
+  'Clients fidèles': 'loyal',
+  'Nouveaux clients': 'new',
+  'À risque': 'atrisk',
+  'Perdus': 'lost',
+};
+
+const SEGMENT_COLOR_VAR = {
+  'Champions': '--seg-champions',
+  'Clients fidèles': '--seg-loyal',
+  'Nouveaux clients': '--seg-new',
+  'À risque': '--seg-atrisk',
+  'Perdus': '--seg-lost',
+};
+
+// Segment RFM -> action marketing suggérée : le lien entre la donnée
+// (le segment calculé) et la décision (quoi faire pour ce client), le
+// cœur de l'intérêt pratique de la RFM en CRM.
+const SEGMENT_ACTION = {
+  'Champions': 'Programme VIP, avant-première, avantages exclusifs',
+  'Clients fidèles': 'Email/SMS de fidélisation, offres régulières',
+  'Nouveaux clients': 'Email de bienvenue, accompagnement des premiers achats',
+  'À risque (gros clients)': 'Contact prioritaire + offre personnalisée (forte valeur à ne pas perdre)',
+  'À risque': 'Offre personnalisée ou rappel pour prévenir le désengagement',
+  'Clients occasionnels': 'Offre incitative pour encourager la récurrence',
+  'À risque / Perdus': 'Campagne de réactivation (email marketing)',
+  'Perdus': 'Campagne de réactivation (email marketing)',
+};
+
+// Le backend (analytics.py) calcule et renvoie ces segments en français —
+// ces deux maps ne servent qu'à l'affichage traduit, la clé de recherche
+// dans SEGMENT_CLASS/SEGMENT_ACTION ci-dessus reste toujours le français.
+const SEGMENT_I18N_KEY = {
+  'Champions': 'seg_champions',
+  'Clients fidèles': 'seg_loyal',
+  'Nouveaux clients': 'seg_new',
+  'À risque (gros clients)': 'seg_atrisk_big',
+  'À risque': 'seg_atrisk',
+  'Clients occasionnels': 'seg_occasional',
+  'À risque / Perdus': 'seg_atrisk_lost',
+  'Perdus': 'seg_lost',
+};
+const SEGMENT_ACTION_I18N_KEY = {
+  'Champions': 'seg_action_champions',
+  'Clients fidèles': 'seg_action_loyal',
+  'Nouveaux clients': 'seg_action_new',
+  'À risque (gros clients)': 'seg_action_atrisk_big',
+  'À risque': 'seg_action_atrisk',
+  'Clients occasionnels': 'seg_action_occasional',
+  'À risque / Perdus': 'seg_action_atrisk_lost',
+  'Perdus': 'seg_action_lost',
+};
+function segmentDisplay(segment) {
+  return SEGMENT_I18N_KEY[segment] ? t(SEGMENT_I18N_KEY[segment]) : segment;
+}
+function segmentActionDisplay(segment) {
+  return SEGMENT_ACTION_I18N_KEY[segment] ? t(SEGMENT_ACTION_I18N_KEY[segment]) : (SEGMENT_ACTION[segment] || '—');
+}
+
+// Rendu du tableau seul (pas le camembert, qui reste sur la répartition
+// globale) : appelé par loadRfm() après chargement, et par le filtre pays
+// (clic sur une ligne de "Détail par pays") sans refaire de requête réseau,
+// rfmRowsCache étant déjà là dès que loadAll() a tourné une fois.
+function renderRfmTable() {
+  const badge = document.getElementById('rfmCountryFilterBadge');
+  const rows = rfmCountryFilter
+    ? rfmRowsCache.filter(r => r.country === rfmCountryFilter)
+    : rfmRowsCache;
+
+  if (rfmCountryFilter) {
+    badge.hidden = false;
+    badge.innerHTML = `<span>${t('rfm_filter_label').replace('{country}', countryName(rfmCountryFilter))}</span><button type="button" aria-label="×">&times;</button>`;
+    badge.querySelector('button').addEventListener('click', () => {
+      rfmCountryFilter = null;
+      renderRfmTable();
+    });
+  } else {
+    badge.hidden = true;
+    badge.innerHTML = '';
+  }
+
+  document.querySelector('#rfmTable tbody').innerHTML = rows.map(r =>
+    `<tr class="hoverable-row" data-customer="${escapeHtml(r.customer)}">
+      <td>${r.customer}</td><td class="num">${r.recency_days}</td><td class="num">${r.frequency}</td><td class="num">${fmtMoney(r.monetary)}</td>
+      <td class="num">${r.r_score}</td><td class="num">${r.f_score}</td><td class="num">${r.m_score}</td>
+      <td><span class="badge ${SEGMENT_CLASS[r.segment] || 'loyal'}">${segmentDisplay(r.segment)}</span></td>
+    </tr>`
+  ).join('');
+
+  document.getElementById('rfmDetail').classList.remove('visible');
 }
 
 async function loadRfm() {
@@ -244,20 +2513,114 @@ async function loadRfm() {
   if (!res.ok) return;
   const rows = await res.json();
 
-  document.querySelector('#rfmTable tbody').innerHTML = rows.map(r =>
-    `<tr>
-      <td>${r.customer}</td><td>${r.recency_days}</td><td>${r.frequency}</td><td>${r.monetary.toFixed(2)}</td>
-      <td>${r.r_score}</td><td>${r.f_score}</td><td>${r.m_score}</td>
-      <td><span class="badge default">${r.segment}</span></td>
-    </tr>`
-  ).join('');
+  rfmRowsCache = rows;
+  rfmByCustomer = {};
+  rows.forEach(r => { rfmByCustomer[r.customer] = r; });
+
+  renderRfmTable();
+
+  const counts = {};
+  for (const r of rows) counts[r.segment] = (counts[r.segment] || 0) + 1;
+  const segments = Object.keys(counts);
+
+  destroyChart('segment');
+  charts.segment = new Chart(document.getElementById('segmentChart'), {
+    type: 'pie',
+    data: {
+      labels: segments.map(segmentDisplay),
+      datasets: [{
+        data: segments.map(s => counts[s]),
+        backgroundColor: segments.map(s => cssVar(SEGMENT_COLOR_VAR[s] || '--seg-loyal')),
+        borderColor: cssVar('--surface-1'), borderWidth: 2,
+      }]
+    },
+    options: {
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { color: cssVar('--text-secondary') } } },
+    }
+  });
 }
 
-function heatColor(pct) {
-  // green (100%) fading to dark red (0%)
-  const g = Math.round((pct / 100) * 160) + 40;
-  const r = Math.round(((100 - pct) / 100) * 160) + 40;
-  return `rgb(${r},${g},70)`;
+/* --- Fiche client au clic sur une ligne du tableau RFM, affichée dans la
+   carte elle-même (#rfmDetail, juste au-dessus du tableau) plutôt que dans
+   une modale séparée — tout ce que faisait la modale (méthodologie déjà
+   dans l'explainer de la carte, jauges R/F/M, action marketing) vit
+   maintenant au même endroit que le tableau. --- */
+// Mêmes couleurs que les termes R/F/M du lexique (.term-r/.term-f/.term-m)
+// et de l'explainer juste au-dessus du tableau — la fiche reprend le code
+// couleur déjà établi ailleurs plutôt que d'en inventer un nouveau.
+function rfmGauge(labelKey, score, colorVar) {
+  return `
+    <div class="rfm-score-gauge">
+      <div class="rfm-score-gauge-label"><span style="color:var(${colorVar})">${t(labelKey)}</span><b style="color:var(${colorVar})">${score}/4</b></div>
+      <div class="rfm-score-gauge-track"><div class="rfm-score-gauge-fill" style="width:${score * 25}%; background:var(${colorVar})"></div></div>
+    </div>`;
+}
+
+// Fraîcheur du dernier achat : vert si récent, orange si ça date un peu,
+// rouge si ça fait longtemps — même logique de lecture rapide que les
+// jauges, appliquée à une donnée qui n'était jusqu'ici qu'un chiffre brut.
+// Code couleur de la part du CA d'un client (carte Top clients) : plus un
+// client pèse lourd dans le CA, plus la dépendance à ce client est un
+// risque de concentration à surveiller — même logique pos/warn/neg que le
+// reste du site (croissance, récence RFM), juste appliquée à un autre
+// indicateur.
+function concentrationColorVar(sharePct) {
+  if (sharePct <= 15) return '--pos-text';
+  if (sharePct <= 30) return '--warn-text';
+  return '--neg-text';
+}
+
+const RANK_DOT_CLASSES = ['c1', 'c2', 'c3', 'c4'];
+
+function recencyColorVar(days) {
+  if (days <= 30) return '--pos-text';
+  if (days <= 90) return '--warn-text';
+  return '--neg-text';
+}
+
+function showRfmDetail(customerName, row) {
+  const r = rfmByCustomer[customerName];
+  if (!r) return;
+  const detail = document.getElementById('rfmDetail');
+  detail.innerHTML = `
+    <div class="rfm-hover-name">${escapeHtml(customerName)} <span class="badge ${SEGMENT_CLASS[r.segment] || 'loyal'}">${segmentDisplay(r.segment)}</span></div>
+    <div class="rfm-score-gauge-stack">
+      ${rfmGauge('rfm_gauge_recency', r.r_score, '--accent')}
+      ${rfmGauge('rfm_gauge_frequency', r.f_score, '--seg-new')}
+      ${rfmGauge('rfm_gauge_monetary', r.m_score, '--warn')}
+    </div>
+    <div class="chc-row"><span style="color:var(${recencyColorVar(r.recency_days)})">${t('rfm_detail_last_purchase').replace('{days}', r.recency_days)}</span></div>
+    <div class="chc-row"><span>${t('rfm_detail_frequency').replace('{count}', r.frequency)}</span><b style="color:var(--pos-text)">${fmtMoney(r.monetary)}</b></div>
+    <div class="chc-row chc-action">
+      <span>${t('th_action')}</span>
+      <b>${segmentActionDisplay(r.segment)}</b>
+    </div>
+  `;
+  detail.classList.add('visible');
+
+  // La fiche s'affiche au-dessus du tableau : sans scroll explicite, cliquer
+  // une ligne loin dans une longue liste ne montrait aucun changement
+  // visible à l'écran (il fallait remonter la page à la main).
+  detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  document.querySelectorAll('#rfmTable tbody tr').forEach(tr => tr.classList.remove('active-row'));
+  if (row) row.classList.add('active-row');
+}
+
+document.querySelector('#rfmTable tbody').addEventListener('click', (e) => {
+  const row = e.target.closest('tr[data-customer]');
+  if (row) showRfmDetail(row.dataset.customer, row);
+});
+
+function heatBucket(value, max = 100) {
+  // 0-8 : mappe une valeur (0..max) sur les 9 nuances --heat-0..8 du design system
+  return Math.min(8, Math.max(0, Math.round((value / max) * 8)));
+}
+
+function heatCell(bucket, label) {
+  const textColor = bucket >= 6 ? '#14161D' : '#F2F3F5';
+  return `<td><div class="heat-cell" style="background:var(--heat-${bucket}); color:${textColor}">${label}</div></td>`;
 }
 
 async function loadCohorts() {
@@ -266,25 +2629,136 @@ async function loadCohorts() {
   const cohorts = await res.json();
 
   const maxOffset = Math.max(0, ...cohorts.flatMap(c => c.retention.map(r => r.month_offset)));
-  let html = '<table><thead><tr><th>Cohorte</th><th>Taille</th>';
-  for (let i = 0; i <= maxOffset; i++) html += `<th>M+${i}</th>`;
+
+  // --- Tableau de rétention (%) ---
+  let html = `<table class="data"><thead><tr><th>${t('th_cohort')}</th><th class="num">${t('th_size')}</th>`;
+  for (let i = 0; i <= maxOffset; i++) html += `<th class="num">M+${i}</th>`;
   html += '</tr></thead><tbody>';
 
   for (const c of cohorts) {
-    html += `<tr><td>${c.cohort_month}</td><td>${c.cohort_size}</td>`;
+    html += `<tr><td>${c.cohort_month}</td><td class="num">${c.cohort_size}</td>`;
     const byOffset = Object.fromEntries(c.retention.map(r => [r.month_offset, r]));
     for (let i = 0; i <= maxOffset; i++) {
       const cell = byOffset[i];
-      if (cell) {
-        html += `<td><div class="heatcell" style="background:${heatColor(cell.pct)}">${cell.pct}%</div></td>`;
-      } else {
-        html += '<td></td>';
-      }
+      html += cell ? heatCell(heatBucket(cell.pct), `${cell.pct}%`) : '<td></td>';
     }
     html += '</tr>';
   }
   html += '</tbody></table>';
   document.getElementById('cohortTable').innerHTML = html;
+
+  // --- Tableau CA par cohorte ---
+  const maxRevenue = Math.max(1, ...cohorts.flatMap(c => c.retention.map(r => r.revenue)));
+  let revHtml = `<table class="data"><thead><tr><th>${t('th_cohort')}</th><th class="num">${t('th_size')}</th>`;
+  for (let i = 0; i <= maxOffset; i++) revHtml += `<th class="num">M+${i}</th>`;
+  revHtml += '</tr></thead><tbody>';
+
+  for (const c of cohorts) {
+    revHtml += `<tr><td>${c.cohort_month}</td><td class="num">${c.cohort_size}</td>`;
+    const byOffset = Object.fromEntries(c.retention.map(r => [r.month_offset, r]));
+    for (let i = 0; i <= maxOffset; i++) {
+      const cell = byOffset[i];
+      revHtml += cell ? heatCell(heatBucket(cell.revenue, maxRevenue), fmtMoney(cell.revenue)) : '<td></td>';
+    }
+    revHtml += '</tr>';
+  }
+  revHtml += '</tbody></table>';
+  document.getElementById('cohortRevenueTable').innerHTML = revHtml;
+
+  // --- Courbe de rétention moyenne (pondérée par la taille des cohortes,
+  // pas une simple moyenne de %, pour ne pas laisser une petite cohorte
+  // peser autant qu'une grande) ---
+  const activeByOffset = new Array(maxOffset + 1).fill(0);
+  const sizeByOffset = new Array(maxOffset + 1).fill(0);
+  for (const c of cohorts) {
+    for (const r of c.retention) {
+      activeByOffset[r.month_offset] += r.active;
+      sizeByOffset[r.month_offset] += c.cohort_size;
+    }
+  }
+  const avgLabels = [];
+  const avgData = [];
+  for (let i = 0; i <= maxOffset; i++) {
+    avgLabels.push(`M+${i}`);
+    avgData.push(sizeByOffset[i] ? Math.round((activeByOffset[i] / sizeByOffset[i]) * 1000) / 10 : null);
+  }
+
+  destroyChart('cohortAvg');
+  charts.cohortAvg = new Chart(document.getElementById('cohortAvgChart'), {
+    type: 'line',
+    data: {
+      labels: avgLabels,
+      datasets: [{
+        label: t('legend_avg_retention'), data: avgData,
+        borderColor: cssVar('--chart-line-1'), backgroundColor: cssVar('--accent-soft'), fill: true, tension: 0.3,
+      }]
+    },
+    options: {
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (ctx) => ctx.parsed.y === null ? '' : t('pct_tooltip').replace('{label}', t('legend_avg_retention')).replace('{pct}', ctx.parsed.y) } },
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: cssVar('--text-secondary') } },
+        y: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary'), callback: (v) => `${v}%` }, min: 0, max: 100 },
+      },
+    }
+  });
+}
+
+function countTooltip(ctx) {
+  const label = ctx.dataset.label || '';
+  const value = ctx.parsed && ctx.parsed.y;
+  return (value === null || value === undefined) ? label : `${label}: ${value}`;
+}
+
+// Trace un historique + une prévision avec une zone d'incertitude (~95%)
+// autour de la ligne de prévision — partagé par les 3 graphiques de
+// prévision (CA, commandes, nouveaux clients), même structure de données.
+function renderForecastChart(canvasId, chartKey, history, forecast, historyValueKey, forecastValueKey, tooltipFmt, tickFmt) {
+  const labels = [...history.map(h => h.month), ...forecast.map(x => x.month)];
+  const lastValue = history[history.length - 1][historyValueKey];
+
+  const historyData = [...history.map(h => h[historyValueKey]), ...forecast.map(() => null)];
+
+  const forecastData = [...history.map(() => null), lastValue, ...forecast.map(x => x[forecastValueKey])];
+  forecastData.splice(history.length - 1, 1, lastValue);
+
+  const lowData = [...history.map(() => null), lastValue, ...forecast.map(x => x.low)];
+  lowData.splice(history.length - 1, 1, lastValue);
+  const highData = [...history.map(() => null), lastValue, ...forecast.map(x => x.high)];
+  highData.splice(history.length - 1, 1, lastValue);
+
+  destroyChart(chartKey);
+  charts[chartKey] = new Chart(document.getElementById(canvasId), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: t('legend_interval_low'), data: lowData, borderWidth: 0, pointRadius: 0, fill: false },
+        { label: t('legend_interval'), data: highData, borderWidth: 0, pointRadius: 0, fill: '-1', backgroundColor: hexToRgba(cssVar('--chart-line-2'), 0.15) },
+        { label: t('legend_history'), data: historyData, borderColor: cssVar('--chart-line-1'), tension: 0.2 },
+        { label: t('legend_forecast'), data: forecastData, borderColor: cssVar('--chart-line-2'), borderDash: [6, 4], tension: 0.2 },
+      ]
+    },
+    options: {
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: { color: cssVar('--text-secondary'), filter: (item) => item.text !== t('legend_interval_low') },
+        },
+        tooltip: {
+          filter: (item) => item.dataset.label === t('legend_history') || item.dataset.label === t('legend_forecast'),
+          callbacks: { label: tooltipFmt },
+        },
+      },
+      scales: {
+        x: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary') } },
+        y: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary'), callback: tickFmt } },
+      },
+    }
+  });
 }
 
 async function loadForecast() {
@@ -292,42 +2766,210 @@ async function loadForecast() {
   if (!res.ok) return;
   const f = await res.json();
 
-  const defaultNote = "Projette les prochains mois à partir de la tendance historique (régression linéaire simple, sans librairie externe). À prendre avec des pincettes sur peu de données — c'est surtout pour comprendre le principe du forecasting.";
-  document.getElementById('forecastNote').textContent = f.note || defaultNote;
+  const defaultNoteHtml = `
+    <span class="line">${t('ln_24')}</span>
+    <span class="line">${t('ln_25')}</span>
+  `;
+  const noteEl = document.getElementById('forecastNote');
   if (f.note) {
+    noteEl.textContent = f.note_code === 'not_enough_months' ? t('not_enough_months') : f.note;
     destroyChart('forecast');
     return;
   }
+  noteEl.innerHTML = defaultNoteHtml;
 
-  const labels = [...f.history.map(h => h.month), ...f.forecast.map(x => x.month)];
-  const historyData = [...f.history.map(h => h.revenue), ...f.forecast.map(() => null)];
-  const forecastData = [...f.history.map(() => null), f.history[f.history.length-1].revenue, ...f.forecast.map(x => x.predicted_revenue)];
-  // align forecast line to connect from last history point
-  forecastData.splice(f.history.length - 1, 1, f.history[f.history.length-1].revenue);
+  renderForecastChart('forecastChart', 'forecast', f.history, f.forecast, 'revenue', 'predicted_revenue', moneyTooltip, fmtMoney);
+}
 
-  destroyChart('forecast');
-  charts.forecast = new Chart(document.getElementById('forecastChart'), {
+async function loadForecastOrders() {
+  const res = await fetch(apiUrl('/api/forecast/orders'));
+  if (!res.ok) return;
+  const f = await res.json();
+  if (f.note) { destroyChart('forecastOrders'); return; }
+
+  renderForecastChart('forecastOrdersChart', 'forecastOrders', f.history, f.forecast, 'orders', 'predicted_orders', countTooltip, (v) => v);
+}
+
+async function loadForecastNewCustomers() {
+  const res = await fetch(apiUrl('/api/forecast/newcustomers'));
+  if (!res.ok) return;
+  const f = await res.json();
+  if (f.note) { destroyChart('forecastNewCustomers'); return; }
+
+  renderForecastChart('forecastNewCustomersChart', 'forecastNewCustomers', f.history, f.forecast, 'new_customers', 'predicted_new_customers', countTooltip, (v) => v);
+}
+
+// LTV par segment : table simple, pas de graphique — le chiffre en lui-même
+// (une moyenne par segment) porte déjà l'info, un graphique n'ajouterait
+// rien qu'un tableau ne montre pas mieux.
+async function loadLtv() {
+  const res = await fetch(apiUrl('/api/ltv'));
+  if (!res.ok) return;
+  const data = await res.json();
+  ltvSegmentsCache = data.by_segment;
+  const tbody = document.querySelector('#ltvTable tbody');
+  if (!data.by_segment.length) {
+    tbody.innerHTML = `<tr><td colspan="3">${t('ltv_no_data')}</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.by_segment.map(s =>
+    `<tr class="hoverable-row" data-segment="${escapeHtml(s.segment)}"><td><span class="badge ${SEGMENT_CLASS[s.segment] || 'loyal'}">${segmentDisplay(s.segment)}</span></td><td class="num">${fmtMoney(s.avg_ltv)}</td><td class="num">${s.customer_count}</td></tr>`
+  ).join('');
+}
+
+async function loadChurn() {
+  const res = await fetch(apiUrl('/api/churn'));
+  if (!res.ok) return;
+  const { monthly } = await res.json();
+
+  destroyChart('churn');
+  charts.churn = new Chart(document.getElementById('churnChart'), {
     type: 'line',
     data: {
-      labels,
-      datasets: [
-        { label: 'Historique', data: historyData, borderColor: '#60a5fa', tension: 0.2 },
-        { label: 'Prévision', data: forecastData, borderColor: '#f472b6', borderDash: [6,4], tension: 0.2 },
-      ]
+      labels: monthly.map(m => m.month),
+      datasets: [{
+        label: t('churn_legend'), data: monthly.map(m => m.churn_rate_pct),
+        borderColor: cssVar('--neg'), backgroundColor: cssVar('--neg-soft'), fill: true, tension: 0.3,
+      }]
     },
-    options: { plugins: { legend: { labels: { color: '#cbd5e1' } } } }
+    options: {
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (ctx) => t('pct_tooltip').replace('{label}', t('churn_legend')).replace('{pct}', ctx.parsed.y) } },
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: cssVar('--text-secondary') } },
+        y: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary'), callback: (v) => `${v}%` }, min: 0 },
+      },
+    }
   });
+
+  document.getElementById('churnLegend').innerHTML =
+    `<span class="legend-item"><span class="legend-dot" style="background:var(--neg)"></span>${t('churn_legend')}</span>`;
+}
+
+async function loadRefunds() {
+  const res = await fetch(apiUrl('/api/refunds'));
+  if (!res.ok) return;
+  const data = await res.json();
+
+  document.getElementById('refundCards').innerHTML =
+    card(t('kpi_refund_rate'), `${data.refund_rate_pct}%`) +
+    card(t('kpi_refunded_amount'), fmtMoney(data.refunded_amount_total));
+
+  document.querySelector('#refundTable tbody').innerHTML = data.monthly.map(m =>
+    `<tr><td>${m.month}</td><td class="num">${m.order_count}</td><td class="num">${m.refund_count}</td><td class="num">${m.refund_rate_pct}%</td></tr>`
+  ).join('');
+}
+
+// Barres colorées pos/neg plutôt qu'un vrai waterfall empilé (base
+// transparente + delta) : plus simple à lire d'un coup d'œil pour 4
+// catégories, et Chart.js n'a pas de type "waterfall" natif.
+async function loadWaterfall() {
+  const res = await fetch(apiUrl('/api/waterfall'));
+  if (!res.ok) return;
+  const w = await res.json();
+  const note = document.getElementById('waterfallNote');
+  if (!w.steps) {
+    note.textContent = t('not_enough_months');
+    destroyChart('waterfall');
+    document.getElementById('waterfallLegend').innerHTML = '';
+    return;
+  }
+
+  note.innerHTML = `<span class="line">${t('waterfall_note').replace('{from}', w.month_from).replace('{to}', w.month_to).replace('{revFrom}', fmtMoney(w.revenue_from)).replace('{revTo}', fmtMoney(w.revenue_to))}</span>`;
+
+  const labels = [t('waterfall_new'), t('waterfall_expansion'), t('waterfall_contraction'), t('waterfall_churned')];
+  const values = w.steps.map(s => s.amount);
+  const colors = values.map(v => v >= 0 ? cssVar('--pos') : cssVar('--neg'));
+
+  destroyChart('waterfall');
+  charts.waterfall = new Chart(document.getElementById('waterfallChart'), {
+    type: 'bar',
+    data: { labels, datasets: [{ data: values, backgroundColor: colors }] },
+    options: {
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: moneyTooltip } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: cssVar('--text-secondary') } },
+        y: { grid: { color: cssVar('--chart-grid') }, ticks: { color: cssVar('--text-secondary'), callback: fmtMoney } },
+      },
+    }
+  });
+
+  document.getElementById('waterfallLegend').innerHTML =
+    `<span class="legend-item"><span class="legend-dot" style="background:var(--pos)"></span>${t('legend_waterfall_pos')}</span>` +
+    `<span class="legend-item"><span class="legend-dot" style="background:var(--neg)"></span>${t('legend_waterfall_neg')}</span>`;
 }
 
 async function loadAll() {
-  await Promise.all([loadOverview(), loadGrowth(), loadRfm(), loadCohorts(), loadForecast()]);
+  // loadCurrencyPicker() en tout premier : apiUrl() lit sa sélection pour
+  // filtrer chaque requête suivante sur une seule devise à la fois.
+  await loadCurrencyPicker();
+  // loadOverview() ensuite : c'est la seule route qui renvoie la devise
+  // (currentCurrency), utilisée par fmtMoney() dans tous les autres onglets.
+  await loadOverview();
+  renderExportLinks();
+  await Promise.all([
+    loadGrowth(), loadRfm(), loadCohorts(), loadForecast(), loadWeekday(),
+    loadConcentration(), loadNewVsReturning(), loadLoyaltyCards(), loadGeo(),
+    loadForecastOrders(), loadForecastNewCustomers(), loadAlerts(), loadMrr(),
+    loadLtv(), loadChurn(), loadRefunds(), loadWaterfall(),
+  ]);
+}
+
+// Rempli par showAuthError() si la redirection OAuth contient une erreur ;
+// loadAlerts() l'inclut dans le bandeau au lieu de l'écraser (sinon le
+// premier appel à loadAlerts(), juste après, ferait disparaître le message).
+let authErrorMessage = null;
+
+function showAuthError() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('auth_error');
+  if (!code) return;
+
+  const messages = {
+    oauth_failed: t('auth_err_oauth_failed'),
+    db_failed: t('auth_err_db_failed'),
+    login_required_before_stripe: t('auth_err_login_required_before_stripe'),
+    login_required_before_shopify: t('auth_err_login_required_before_shopify'),
+  };
+  authErrorMessage = messages[code] || t('auth_err_default');
+
+  // Retire les paramètres de l'URL pour ne pas réafficher l'erreur au
+  // prochain rechargement de la page.
+  params.delete('auth_error');
+  params.delete('detail');
+  const qs = params.toString();
+  history.replaceState({}, '', window.location.pathname + (qs ? `?${qs}` : ''));
+
+  // Erreurs survenant avant toute identité Google (Stripe/Shopify tentés
+  // sans être connecté) : l'#alertsBanner habituel vit dans #appBody, caché
+  // tant qu'on n'est pas authentifié — affichage direct dans l'écran d'accueil.
+  if (code === 'login_required_before_stripe' || code === 'login_required_before_shopify') {
+    const gateError = document.getElementById('gateError');
+    gateError.textContent = authErrorMessage;
+    gateError.style.display = '';
+    authErrorMessage = null;
+  }
 }
 
 (async () => {
+  showAuthError();
   const connected = await loadStatus();
   if (!connected && !isDemo()) return;
   await loadAll();
 })();
+
+// PWA : enregistre le service worker (app shell en cache, jamais l'API).
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch((err) => {
+      console.error('Échec de l\'enregistrement du service worker :', err);
+    });
+  });
+}
 </script>
 </body>
 </html>

@@ -1,0 +1,201 @@
+/* ==========================================================================
+   METRICS-DASH — DESIGN SYSTEM
+   ==========================================================================
+   Mode sombre par défaut ([data-theme="dark"] ou :root), mode clair en
+   option ([data-theme="light"]). Tout passe par des variables CSS pour
+   pouvoir changer de thème en changeant un seul attribut HTML.
+   ========================================================================== */
+
+:root{
+  /* --- Typographie --- */
+  --font-sans: 'Inter Tight', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --fs-h1: 28px;   --fs-h1-lh: 1.2;   --fw-h1: 700;
+  --fs-h2: 20px;   --fs-h2-lh: 1.3;   --fw-h2: 600;
+  --fs-body: 14px; --fs-body-lh: 1.5; --fw-body: 400;
+  --fs-small: 13px;--fs-small-lh: 1.4;--fw-small: 500;
+  --fs-caption: 11px; --fs-caption-lh: 1.3; --fw-caption: 600;
+  --fs-kpi: 32px;  --fs-kpi-lh: 1.1;  --fw-kpi: 700;
+
+  /* --- Grille d'espacement (base 4px) --- */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 20px; --sp-6: 24px; --sp-8: 32px; --sp-10: 40px; --sp-12: 48px;
+
+  /* --- Rayons & ombres --- */
+  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px; --radius-pill: 999px;
+  --shadow-card: 0 1px 2px rgba(0,0,0,.24), 0 4px 16px -4px rgba(0,0,0,.32);
+  --shadow-pop: 0 8px 32px -8px rgba(0,0,0,.45);
+  --border-w: 1px;
+  --transition: 150ms cubic-bezier(.4,0,.2,1);
+}
+
+/* ---- MODE SOMBRE (défaut) ---- */
+:root, [data-theme="dark"]{
+  --bg: #0A0B0F;
+  --bg-subtle: #0E1015;
+  --surface-1: #14161D;
+  --surface-2: #1A1D26;
+  --surface-3: #22252F;
+  --border: #2A2D38;
+  --border-strong: #363A47;
+
+  --text-primary: #F2F3F5;
+  --text-secondary: #9096A6;
+  --text-tertiary: #5D6273;
+
+  --accent: #7C6CF6;
+  --accent-hover: #9384FF;
+  --accent-soft: rgba(124,108,246,.14);
+  --accent-text: #B4A9FF;
+
+  --pos: #34D399;      --pos-soft: rgba(52,211,153,.14);  --pos-text: #6EE7B7;
+  --neg: #F45B69;      --neg-soft: rgba(244,91,105,.14);  --neg-text: #FF8B96;
+  --neutral: #9096A6;  --neutral-soft: rgba(144,150,166,.14);
+  --warn: #F5A623;     --warn-soft: rgba(245,166,35,.14); --warn-text: #FFC670;
+
+  /* Segments RFM */
+  --seg-champions: #34D399; --seg-champions-soft: rgba(52,211,153,.16);
+  --seg-loyal: #7C6CF6;     --seg-loyal-soft: rgba(124,108,246,.16);
+  --seg-atrisk: #F5A623;    --seg-atrisk-soft: rgba(245,166,35,.16);
+  --seg-lost: #F45B69;      --seg-lost-soft: rgba(244,91,105,.16);
+  --seg-new: #38BDF8;       --seg-new-soft: rgba(56,189,248,.16);
+
+  /* Heatmap cohortes : dégradé violet → jaune (accessible daltoniens,
+     jamais de rouge/vert pur qui se confondent en deutéranopie) */
+  --heat-0: #1A1D26;
+  --heat-1: #2E2158;
+  --heat-2: #4A2E8C;
+  --heat-3: #6B3FA0;
+  --heat-4: #9A4F9E;
+  --heat-5: #C96B87;
+  --heat-6: #E89361;
+  --heat-7: #F5C34C;
+  --heat-8: #FFE85C;
+
+  --chart-grid: rgba(255,255,255,.06);
+  --chart-line-1: #7C6CF6;
+  --chart-line-2: #38BDF8;
+  --chart-line-3: #F5A623;
+  --chart-tooltip-bg: #22252F;
+}
+
+/* ---- MODE CLAIR ---- */
+[data-theme="light"]{
+  --bg: #F6F7F9;
+  --bg-subtle: #FFFFFF;
+  --surface-1: #FFFFFF;
+  --surface-2: #F0F1F4;
+  --surface-3: #E7E9EE;
+  --border: #E1E3E9;
+  --border-strong: #CBCEDA;
+
+  --text-primary: #14161D;
+  --text-secondary: #565B6B;
+  --text-tertiary: #8A8FA0;
+
+  --accent: #6350E0;
+  --accent-hover: #5340CC;
+  --accent-soft: rgba(99,80,224,.10);
+  --accent-text: #5340CC;
+
+  --pos: #0EA968;      --pos-soft: rgba(14,169,104,.10); --pos-text: #0A7F4E;
+  --neg: #E03E4D;      --neg-soft: rgba(224,62,77,.10);  --neg-text: #C22736;
+  --neutral: #6B7080;  --neutral-soft: rgba(107,112,128,.10);
+  --warn: #C97F0A;     --warn-soft: rgba(201,127,10,.10); --warn-text: #9C6304;
+
+  --seg-champions: #0EA968; --seg-champions-soft: rgba(14,169,104,.12);
+  --seg-loyal: #6350E0;     --seg-loyal-soft: rgba(99,80,224,.12);
+  --seg-atrisk: #C97F0A;    --seg-atrisk-soft: rgba(201,127,10,.12);
+  --seg-lost: #E03E4D;      --seg-lost-soft: rgba(224,62,77,.12);
+  --seg-new: #0284C7;       --seg-new-soft: rgba(2,132,199,.12);
+
+  --heat-0: #F0F1F4;
+  --heat-1: #E4DCF7;
+  --heat-2: #CBB8ED;
+  --heat-3: #B393DE;
+  --heat-4: #C186B0;
+  --heat-5: #D98F7C;
+  --heat-6: #EFA95C;
+  --heat-7: #F4C13F;
+  --heat-8: #FFDB4D;
+
+  --chart-grid: rgba(20,22,29,.08);
+  --chart-line-1: #6350E0;
+  --chart-line-2: #0284C7;
+  --chart-line-3: #C97F0A;
+  --chart-tooltip-bg: #FFFFFF;
+
+  --shadow-card: 0 1px 2px rgba(20,22,29,.04), 0 4px 16px -4px rgba(20,22,29,.08);
+  --shadow-pop: 0 8px 32px -8px rgba(20,22,29,.16);
+}
+
+*{ box-sizing:border-box; }
+body{ margin:0; background:var(--bg); font-family:var(--font-sans); color:var(--text-primary); }
+::selection{ background:var(--accent-soft); color:var(--text-primary); }
+
+/* --- Boutons / toggle --- */
+.btn{ font-family:var(--font-sans); font-size:var(--fs-small); font-weight:var(--fw-small); border-radius:var(--radius-sm); padding:8px 14px; border:var(--border-w) solid var(--border-strong); background:var(--surface-2); color:var(--text-primary); cursor:pointer; transition:var(--transition); }
+.btn:hover{ background:var(--surface-3); border-color:var(--accent); }
+.btn-primary{ background:var(--accent); border-color:var(--accent); color:#fff; }
+.btn-primary:hover{ background:var(--accent-hover); }
+
+.switch{ width:40px; height:22px; border-radius:var(--radius-pill); background:var(--surface-3); border:1px solid var(--border-strong); position:relative; cursor:pointer; transition:var(--transition); flex-shrink:0; }
+.switch[data-on="true"]{ background:var(--accent); border-color:var(--accent); }
+.switch-knob{ position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:#fff; transition:var(--transition); }
+.switch[data-on="true"] .switch-knob{ left:20px; }
+
+/* --- Tabs --- */
+.tab{ font-family:var(--font-sans); font-size:var(--fs-small); font-weight:var(--fw-small); color:var(--text-secondary); background:transparent; border:none; padding:10px 4px; cursor:pointer; position:relative; transition:var(--transition); }
+.tab:hover{ color:var(--text-primary); }
+.tab[data-active="true"]{ color:var(--text-primary); }
+.tab[data-active="true"]::after{ content:""; position:absolute; left:0; right:0; bottom:-1px; height:2px; background:var(--accent); border-radius:2px; }
+
+/* --- Cards --- */
+.card{ background:var(--surface-1); border:var(--border-w) solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow-card); }
+.kpi-card{ padding:var(--sp-5); display:flex; flex-direction:column; gap:var(--sp-2); }
+.kpi-label{ font-size:var(--fs-caption); font-weight:var(--fw-caption); letter-spacing:.04em; text-transform:uppercase; color:var(--text-tertiary); }
+.kpi-value{ font-size:var(--fs-kpi); font-weight:var(--fw-kpi); line-height:var(--fs-kpi-lh); font-variant-numeric:tabular-nums; }
+.kpi-delta{ display:inline-flex; align-items:center; gap:4px; font-size:var(--fs-small); font-weight:var(--fw-small); width:fit-content; padding:2px 8px 2px 6px; border-radius:var(--radius-pill); }
+.kpi-delta.pos{ color:var(--pos-text); background:var(--pos-soft); }
+.kpi-delta.neg{ color:var(--neg-text); background:var(--neg-soft); }
+
+/* --- Badges de segment (RFM) --- */
+.badge{ display:inline-flex; align-items:center; gap:6px; font-size:var(--fs-caption); font-weight:var(--fw-caption); padding:4px 10px; border-radius:var(--radius-pill); white-space:nowrap; }
+.badge::before{ content:""; width:6px; height:6px; border-radius:50%; background:currentColor; }
+.badge.champions{ color:var(--seg-champions); background:var(--seg-champions-soft); }
+.badge.loyal{ color:var(--seg-loyal); background:var(--seg-loyal-soft); }
+.badge.atrisk{ color:var(--seg-atrisk); background:var(--seg-atrisk-soft); }
+.badge.lost{ color:var(--seg-lost); background:var(--seg-lost-soft); }
+.badge.new{ color:var(--seg-new); background:var(--seg-new-soft); }
+
+/* --- Tableaux --- */
+table.data{ width:100%; border-collapse:collapse; font-size:var(--fs-body); }
+table.data thead th{ text-align:left; font-size:var(--fs-caption); font-weight:var(--fw-caption); text-transform:uppercase; letter-spacing:.04em; color:var(--text-tertiary); padding:0 var(--sp-4) var(--sp-3); border-bottom:1px solid var(--border); }
+table.data thead th.num{ text-align:right; }
+table.data tbody td{ padding:var(--sp-3) var(--sp-4); border-bottom:1px solid var(--border); color:var(--text-primary); }
+table.data tbody tr{ transition:var(--transition); }
+table.data tbody tr:hover{ background:var(--surface-2); }
+table.data tbody tr:last-child td{ border-bottom:none; }
+.num{ font-variant-numeric:tabular-nums; text-align:right; }
+.mono{ font-family:var(--font-mono); }
+
+.pill-delta{ display:inline-flex; align-items:center; gap:3px; font-size:12px; font-weight:600; font-variant-numeric:tabular-nums; }
+.pill-delta.pos{ color:var(--pos-text); } .pill-delta.neg{ color:var(--neg-text); }
+
+/* --- Heatmap cohortes --- */
+.heat-cell{ width:64px; height:40px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; font-variant-numeric:tabular-nums; border-radius:var(--radius-sm); }
+
+/* --- Graphiques (frame + légende) --- */
+.chart-frame{ position:relative; }
+.chart-legend{ display:flex; gap:var(--sp-5); font-size:var(--fs-small); color:var(--text-secondary); }
+.legend-dot{ width:8px; height:8px; border-radius:2px; display:inline-block; margin-right:6px; }
+
+/* --- Statut de connexion (ex: Stripe) --- */
+.status-pill{ display:inline-flex; align-items:center; gap:6px; font-size:var(--fs-small); font-weight:var(--fw-small); color:var(--pos-text); background:var(--pos-soft); padding:5px 12px; border-radius:var(--radius-pill); }
+.status-dot{ width:6px; height:6px; border-radius:50%; background:var(--pos); }
+.status-pill.error{ color:var(--neg-text); background:var(--neg-soft); }
+.status-pill.error .status-dot{ background:var(--neg); }
+
+.scroll::-webkit-scrollbar{ height:6px; width:6px; }
+.scroll::-webkit-scrollbar-thumb{ background:var(--border-strong); border-radius:4px; }
