@@ -322,7 +322,7 @@
      visuel sur ce type de graphique, sans erreur pour l'expliquer). */
   #geoMapWrap { overflow: hidden; cursor: grab; }
   #geoMapWrap.is-panning { cursor: grabbing; }
-  #geoMapWrap canvas { transform-origin: center center; transition: transform 150ms ease; touch-action: none; }
+  #geoMapWrap canvas { transform-origin: center center; transition: transform 150ms ease; touch-action: pan-y; }
   #geoMapWrap.is-panning canvas { transition: none; }
   .explainer { font-size: var(--fs-small); color: var(--text-secondary); margin: 0 0 var(--sp-4) 0; line-height: var(--fs-small-lh); }
   .explainer .line { display: block; }
@@ -449,14 +449,23 @@
     .stripe-mark { width: 28px; height: 28px; }
     .login-gate-card .explainer .line { white-space: normal; }
     .header-actions { width: 100%; justify-content: space-between; }
+    .login-gate-card { width: 100%; min-width: 0; }
     .powerbi-link { font-size: 12px; padding: 6px 10px 6px 6px; }
     .connections-row { margin: var(--sp-4) 0; }
     .toolbar-row { margin: 0 0 var(--sp-5); }
     .cards { grid-template-columns: 1fr; }
-    .tabs { gap: var(--sp-3); overflow-x: auto; }
-    .tab { padding: 8px 2px; white-space: nowrap; }
+    .tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding-bottom: 6px; }
+    .tab { min-width: 0; min-height: 44px; padding: 8px 6px; white-space: normal; line-height: 1.25; }
     .chart-box { padding: var(--sp-4); }
     .chart-row, .chart-row-wide { grid-template-columns: 1fr; }
+    .chart-row-wide { align-items: start; }
+    .chart-row > *, .cards > *, .chart-box, .panel { min-width: 0; }
+    #geoMapWrap { flex: 0 0 auto; height: clamp(220px, 68vw, 280px); min-height: 0; }
+    #geoMapWrap canvas { max-width: 100%; }
+    .map-zoom-controls button { width: 40px; height: 40px; }
+    .scroll { max-width: 100%; }
+    #geoTable { display: table; width: max-content; min-width: 100%; }
+    #geoTable th:first-child, #geoTable td:first-child { position: sticky; left: 0; background: var(--surface-1); }
     .export-list { flex-wrap: wrap; }
     .export-link { flex: 1 1 auto; }
     table.data { display: block; overflow-x: auto; white-space: nowrap; }
@@ -1517,6 +1526,7 @@ function applyGeoTransform() {
 function setGeoZoom(next) {
   geoZoomLevel = Math.min(GEO_ZOOM_MAX, Math.max(GEO_ZOOM_MIN, next));
   if (geoZoomLevel === GEO_ZOOM_MIN) { geoPanX = 0; geoPanY = 0; }
+  geoMapWrap.style.touchAction = geoZoomLevel > GEO_ZOOM_MIN ? 'none' : 'pan-y';
   applyGeoTransform();
 }
 
@@ -1534,25 +1544,35 @@ let geoPanStartX = 0;
 let geoPanStartY = 0;
 let geoPanOriginX = 0;
 let geoPanOriginY = 0;
+let geoPanPointerId = null;
 
-geoMapWrap.addEventListener('mousedown', (e) => {
-  if (geoZoomLevel <= GEO_ZOOM_MIN) return;
+geoMapWrap.addEventListener('pointerdown', (e) => {
+  if (geoZoomLevel <= GEO_ZOOM_MIN || (e.pointerType === 'mouse' && e.button !== 0)) return;
   geoPanning = true;
+  geoPanPointerId = e.pointerId;
+  geoMapWrap.setPointerCapture(e.pointerId);
   geoMapWrap.classList.add('is-panning');
   geoPanStartX = e.clientX;
   geoPanStartY = e.clientY;
   geoPanOriginX = geoPanX;
   geoPanOriginY = geoPanY;
 });
-window.addEventListener('mousemove', (e) => {
-  if (!geoPanning) return;
+window.addEventListener('pointermove', (e) => {
+  if (!geoPanning || e.pointerId !== geoPanPointerId) return;
   geoPanX = geoPanOriginX + (e.clientX - geoPanStartX);
   geoPanY = geoPanOriginY + (e.clientY - geoPanStartY);
   applyGeoTransform();
 });
-window.addEventListener('mouseup', () => {
-  if (!geoPanning) return;
+window.addEventListener('pointerup', (e) => {
+  if (!geoPanning || e.pointerId !== geoPanPointerId) return;
   geoPanning = false;
+  geoPanPointerId = null;
+  geoMapWrap.classList.remove('is-panning');
+});
+window.addEventListener('pointercancel', (e) => {
+  if (!geoPanning || e.pointerId !== geoPanPointerId) return;
+  geoPanning = false;
+  geoPanPointerId = null;
   geoMapWrap.classList.remove('is-panning');
 });
 
